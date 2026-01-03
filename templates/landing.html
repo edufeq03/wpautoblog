@@ -9,11 +9,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-slate-50">
-    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
-        <div class="text-2xl font-black text-blue-600">WP <span class="text-slate-800">AutoBlog</span></div>
-        <div class="space-x-4">
-            <a href="{{ url_for('auth.login') }}" class="font-bold text-slate-600 hover:text-blue-600">Entrar</a>
-            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">Começar Agora</a>
+    <nav class="p-6 flex flex-wrap justify-between items-center max-w-7xl mx-auto gap-4">
+        <div class="text-2xl font-black text-blue-600">
+            WP <span class="text-slate-800">AutoBlog</span>
+        </div>
+        
+        <div class="flex items-center gap-2 sm:gap-4">
+            <a href="{{ url_for('auth.login') }}" class="font-bold text-sm sm:text-base text-slate-600 hover:text-blue-600 px-2">
+                Entrar
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-full font-bold text-sm sm:text-base hover:bg-blue-700 transition whitespace-nowrap">
+                Começar Agora
+            </a>
         </div>
     </nav>
 
