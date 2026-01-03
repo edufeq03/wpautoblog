@@ -33,8 +33,12 @@
             Tudo isso enquanto você foca no que realmente importa.
         </p>
         <div class="flex flex-col md:flex-row gap-4 justify-center">
-            <a href="{{ url_for('auth.demo_access') }}" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition">Teste Grátis 7 Dias</a>
-            <button class="bg-white text-slate-800 border border-slate-200 px-10 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition">Ver Demonstração</button>
+            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition text-center">
+                Teste Grátis 7 Dias
+            </a>
+            <a href="{{ url_for('auth.demo_access') }}" class="bg-white text-slate-800 border border-slate-200 px-10 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition text-center">
+                Ver Demonstração
+            </a>
         </div>
     </section>
 
@@ -75,7 +79,7 @@
                 <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
                     <h3 class="text-xl font-bold text-slate-700 mb-2">Plano Trial</h3>
                     <div class="text-4xl font-black text-slate-900 mb-6">Grátis</div>
-                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow">
+                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow text-sm">
                         <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site WordPress</li>
                         <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Postagem por dia</li>
                         <li><i class="fas fa-times text-red-400 mr-2"></i> Redator Espião Bloqueado</li>
@@ -87,7 +91,7 @@
                     <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Recomendado</div>
                     <h3 class="text-xl font-bold text-slate-700 mb-2">Plano Pro</h3>
                     <div class="text-4xl font-black text-slate-900 mb-6">R$ 59<span class="text-lg text-slate-400 font-normal">/mês</span></div>
-                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow">
+                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow text-sm">
                         <li><i class="fas fa-check text-green-500 mr-2"></i> Até 2 Sites WordPress</li>
                         <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Postagens por dia</li>
                         <li><i class="fas fa-check text-green-500 mr-2"></i> Acesso ao Redator Espião</li>
@@ -98,7 +102,7 @@
                 <div class="bg-slate-900 p-8 rounded-3xl shadow-sm flex flex-col text-white">
                     <h3 class="text-xl font-bold mb-2">Plano VIP</h3>
                     <div class="text-4xl font-black mb-6">R$ 249<span class="text-lg text-slate-500 font-normal">/mês</span></div>
-                    <ul class="space-y-4 mb-8 text-slate-300 flex-grow">
+                    <ul class="space-y-4 mb-8 text-slate-300 flex-grow text-sm">
                         <li><i class="fas fa-check text-blue-400 mr-2"></i> Sites Ilimitados</li>
                         <li><i class="fas fa-check text-blue-400 mr-2"></i> Postagens Ilimitadas</li>
                         <li><i class="fas fa-check text-blue-400 mr-2"></i> Suporte Prioritário</li>
