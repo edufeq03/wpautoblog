@@ -102,9 +102,11 @@ def generate_ideas():
 @dashboard_bp.route('/publish-idea/<int:idea_id>')
 @login_required
 def publish_idea(idea_id):
-    # TRAVA ATIVA AQUI
+    print(f">>> Iniciando publicação da ideia {idea_id}")
+    
     if not current_user.pode_postar_automatico():
-        flash("Você atingiu o limite de postagens automáticas do plano Trial. Faça upgrade ou poste manualmente!", "warning")
+        print(f">>> Bloqueado: Usuário {current_user.email} sem créditos ou limite atingido.")
+        flash("Você atingiu o limite de postagens automáticas.", "warning")
         return redirect(url_for('dashboard.ideas'))
     
     idea = ContentIdea.query.get_or_404(idea_id)
@@ -114,21 +116,23 @@ def publish_idea(idea_id):
         flash("Acesso negado.", "danger")
         return redirect(url_for('dashboard.ideas'))
 
-    postagem_sucesso = False  # <--- DEFINIDA AQUI INICIALMENTE
+    postagem_sucesso = False 
 
     try:
+        print(f">>> Gerando conteúdo com IA para: {idea.title}")
         groq_client = get_groq_client()
         master_prompt = site.master_prompt or "Você é um redator especialista em SEO."
         completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": master_prompt},
-                {"role": "user", "content": f"Escreva um artigo completo para: '{idea.title}'. Use tags HTML (h2, p, ul, li)."}
+                {"role": "user", "content": f"Escreva um artigo completo para: '{idea.title}'. Use tags HTML."}
             ],
             temperature=0.7,
         )
         artigo_html = completion.choices[0].message.content
 
+        print(f">>> Enviando para WordPress: {site.wp_url}")
         wp_api_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
         response = requests.post(
             wp_api_url,
@@ -137,25 +141,45 @@ def publish_idea(idea_id):
             timeout=30
         )
 
+        print(f">>> Resposta WordPress: {response.status_code}")
         if response.status_code == 201:
             data = response.json()
-            novo_log = PostLog(blog_id=site.id, title=idea.title, content=artigo_html, wp_post_id=data.get('id'), post_url=data.get('link'), status='Publicado')
+            novo_log = PostLog(
+                blog_id=site.id, 
+                title=idea.title, 
+                content=artigo_html, 
+                wp_post_id=data.get('id'), 
+                post_url=data.get('link'), 
+                status='Publicado'
+            )
             idea.is_posted = True
             db.session.add(novo_log)
-            db.session.commit()
-            postagem_sucesso = True # <--- MARCA SUCESSO AQUI
-            flash(f'Artigo publicado com sucesso!', 'success')
+            # Removi o commit daqui para fazer um só no final
+            postagem_sucesso = True 
         else:
+            print(f">>> Erro WP Detalhes: {response.text}")
             flash(f'Erro no WordPress: {response.status_code}', 'danger')
 
     except Exception as e:
+        print(f">>> ERRO NA AUTOMAÇÃO: {str(e)}")
         flash(f'Erro na automação: {str(e)}', 'danger')
     
-    # Se funcionou, desconta o crédito
+    # Processamento de Créditos
     if postagem_sucesso:
-        current_user.credits -= 1
-        db.session.commit()
-        flash(f"Artigo publicado! Créditos restantes: {current_user.credits}", "success")
+        print(f">>> Saldo ANTES: {current_user.credits}")
+        try:
+            # Deduz o crédito
+            current_user.credits -= 1
+            # Comita tudo de uma vez (Log, Status da Ideia e Crédito)
+            db.session.commit()
+            print(f">>> Saldo DEPOIS: {current_user.credits}")
+            flash(f"Artigo publicado! Créditos restantes: {current_user.credits}", "success")
+        except Exception as e:
+            db.session.rollback()
+            print(f">>> Erro ao salvar no banco: {e}")
+            flash("Erro ao atualizar saldo.", "danger")
+    else:
+        print(">>> Postagem não teve sucesso, saldo não deduzido.")
 
     return redirect(url_for('dashboard.ideas', site_id=site.id))
 
