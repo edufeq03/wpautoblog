@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, render_template
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
