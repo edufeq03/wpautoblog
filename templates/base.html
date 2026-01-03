@@ -20,6 +20,21 @@
     </style>
 </head>
 <body class="bg-gray-200 text-gray-900"> 
+    {% if current_user.email == 'demo@wpautoblog.com.br' %}
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div class="flex items-center gap-2">
+                <span class="flex h-2 w-2 rounded-full bg-green-400 animate-ping"></span>
+                <p class="font-medium text-sm md:text-base">
+                    Você está no <strong>Modo Demonstração</strong>. Gostou da facilidade?
+                </p>
+            </div>
+            <a href="{{ url_for('auth.register') }}" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm">
+                Criar Minha Conta Agora
+            </a>
+        </div>
+    </div>
+    {% endif %}
     <div class="flex min-h-screen overflow-x-hidden">
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 md:static md:inset-0 transition-transform duration-300 ease-in-out shadow-xl">
             <div class="p-6">
