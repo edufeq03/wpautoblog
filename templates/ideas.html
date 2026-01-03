@@ -3,59 +3,93 @@
 
 {% block content %}
 <div class="p-6">
-    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Fila de Ideias</h1>
-            <p class="text-sm text-gray-500">Gerencie e transforme sugestões da IA em artigos.</p>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Fila de Ideias</h1>
+            <p class="text-sm text-slate-500">Transforme sugestões da IA em artigos com um clique.</p>
         </div>
         <form action="{{ url_for('dashboard.generate_ideas') }}" method="POST">
             <input type="hidden" name="site_id" value="{{ request.args.get('site_id', '') }}">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold shadow-lg">
-                <i class="fas fa-magic"></i> Gerar Novas Ideias
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+                <i class="fas fa-magic text-sm"></i> Gerar Novas Ideias
             </button>
         </form>
     </div>
 
-    <div class="mb-6">
-        <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Site Ativo:</label>
-        {% if current_user.sites|length > 1 %}
-            <select onchange="window.location.href='/ideas?site_id=' + this.value" class="bg-white border border-gray-200 py-2 px-4 rounded-lg outline-none">
-                <option value="">Todos os sites</option>
-                {% for site in current_user.sites %}
-                    <option value="{{ site.id }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
-                {% endfor %}
-            </select>
-        {% else %}
-            <div class="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg text-gray-700 border">
-                <i class="fas fa-globe text-blue-500"></i> {{ current_user.sites[0].site_name if current_user.sites else 'Nenhum site' }}
-            </div>
-        {% endif %}
+    <div class="mb-6 flex items-center gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtrar por Site:</span>
+            {% if current_user.sites|length > 1 %}
+                <div class="relative w-64">
+                    <select onchange="window.location.href='/ideas?site_id=' + this.value" 
+                        class="w-full bg-white border border-slate-200 py-2 px-4 pr-10 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all shadow-sm">
+                        <option value="">Todos os sites</option>
+                        {% for site in current_user.sites %}
+                            <option value="{{ site.id }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </div>
+                </div>
+            {% else %}
+                <div class="inline-flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 border border-slate-200">
+                    <i class="fas fa-globe text-blue-500 text-[10px]"></i> {{ current_user.sites[0].site_name if current_user.sites else 'Nenhum site' }}
+                </div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4">
-        {% for idea in ideas %}
-        <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{{ idea.blog.site_name if idea.blog else 'Sem Blog' }}</span>
-                    <span class="text-[10px] text-gray-400 italic">{{ idea.created_at.strftime('%d/%m/%Y') }}</span>
-                </div>
-                <p class="text-gray-700 font-medium">{{ idea.title }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <form action="{{ url_for('dashboard.delete_idea', idea_id=idea.id) }}" method="POST">
-                    <button type="submit" class="p-2.5 text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
-                </form>
-                <a href="{{ url_for('dashboard.publish_idea', idea_id=idea.id) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-                    <i class="fas fa-paper-plane"></i> Postar Agora
-                </a>
-            </div>
-        </div>
-        {% else %}
-        <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed">
-            <p class="text-gray-400">Sua fila está vazia.</p>
-        </div>
-        {% endfor %}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-black tracking-widest">
+                <tr>
+                    <th class="px-6 py-4">Sugestão de Título</th>
+                    <th class="px-6 py-4">Site Destino</th>
+                    <th class="px-6 py-4">Data</th>
+                    <th class="px-6 py-4 text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm divide-y divide-slate-50">
+                {% for idea in ideas %}
+                <tr class="hover:bg-blue-50/30 transition-colors group">
+                    <td class="px-6 py-3">
+                        <p class="text-slate-700 font-semibold leading-tight group-hover:text-blue-700 transition-colors">{{ idea.title }}</p>
+                    </td>
+                    <td class="px-6 py-3">
+                        <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-lg uppercase whitespace-nowrap">
+                            {{ idea.blog.site_name if idea.blog else 'Sem Blog' }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3 text-slate-400 text-xs whitespace-nowrap">
+                        {{ idea.created_at.strftime('%d/%m/%Y') }}
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <form action="{{ url_for('dashboard.delete_idea', idea_id=idea.id) }}" method="POST" class="inline">
+                                <button type="submit" class="p-2 text-slate-300 hover:text-red-500 transition-colors" title="Excluir ideia">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </form>
+                            <a href="{{ url_for('dashboard.publish_idea', idea_id=idea.id) }}" 
+                               class="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 border border-green-100">
+                                <i class="fas fa-paper-plane text-[10px]"></i> Postar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="px-6 py-16 text-center">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-lightbulb text-slate-200 text-4xl mb-3"></i>
+                            <p class="text-slate-400 font-medium">Sua fila de ideias está vazia.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
