@@ -12,16 +12,22 @@ app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# AJUSTE 1: Usa a chave do ambiente, ou a chave do .env local como fallback
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.environ.get('FLASK_SECRET_KEY', 'chave-padrao'))
-# AJUSTE 2: Usa a DATABASE_URL do ambiente (Essencial para o Easypanel)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
+
+# Ajuste para garantir que o caminho do banco funcione localmente e no servidor
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
+    'sqlite:///' + os.path.join(basedir, 'database.db')
 
 
 # --- INICIALIZAÇÃO DE PLUGINS ---
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
+
+# Cria as tabelas automaticamente se não existirem
+with app.app_context():
+    db.create_all()
 
 # --- AGENDADOR (Scheduler) ---
 scheduler = APScheduler()
@@ -34,13 +40,17 @@ scheduler.start()
 def scheduled_radar_sync():
     with app.app_context():
         print("Iniciando sincronização automática do Radar...")
-        processar_radar_automatico()
-        print("Sincronização concluída.")
+        try:
+            processar_radar_automatico()
+            print("Sincronização concluída.")
+        except Exception as e:
+            print(f"Erro na sincronização agendada: {e}")
 
 # --- BLUEPRINTS ---
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 
+# Rota raiz para redirecionar ou mostrar landing page
 PLANOS = {
     'trial': {
         'nome': 'Plano Trial',
@@ -67,7 +77,7 @@ PLANOS = {
 
 @app.route('/')
 def index():
-    return render_template('landing.html', planos=PLANOS)
+    return render_template('landing.html', planos=PLANOS)  
 
 if __name__ == '__main__':
     with app.app_context():
