@@ -3,6 +3,7 @@ from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from flask_apscheduler import APScheduler
+from werkzeug.security import generate_password_hash
 import os
 from utils.ai_logic import processar_radar_automatico 
 
@@ -24,9 +25,44 @@ db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
+def garantir_usuario_demo():
+    """Cria o usuário demo caso ele não exista no banco de dados."""
+    from models import User, Blog  # Import local para evitar importação circular
+    
+    demo_email = 'demo@wpautoblog.com.br'
+    user_demo = User.query.filter_by(email=demo_email).first()
+
+    if not user_demo:
+        print(">>> Criando usuário demo pela primeira vez...")
+        # Cria o usuário com plano VIP para a demonstração ser completa
+        novo_demo = User(
+            email=demo_email,
+            password=generate_password_hash('demo123', method='pbkdf2:sha256'),
+            plan_type='vip',
+            credits=100  # Saldo generoso para a demo
+        )
+        db.session.add(novo_demo)
+        db.session.commit()
+        
+        # Opcional: Já conectar um site de teste ao demo
+        site_teste = Blog(
+            user_id=novo_demo.id,
+            site_name="Blog de Teste Demo",
+            wp_url="https://wp.appmydream.com.br",
+            wp_user="Maria",
+            wp_app_password="qw5Z b2K3 NcIt oHkT nmg4 bpAe",
+            macro_themes="Tecnologia, Marketing Digital, IA"
+        )
+        db.session.add(site_teste)
+        db.session.commit()
+        print(">>> Usuário demo e site de teste criados com sucesso.")
+    else:
+        print(">>> Usuário demo já existe.")
+
 # Tenta criar as colunas novas ao iniciar
 with app.app_context():
     db.create_all()
+    garantir_usuario_demo()
 
 scheduler = APScheduler()
 app.config['SCHEDULER_API_ENABLED'] = True
@@ -46,7 +82,7 @@ app.register_blueprint(dashboard_bp)
 
 @app.route('/')
 def index():
-    return render_template('login.html')
+    return render_template('landing.html')
 
 # Tarefa para resetar contadores diários (se você salvar posts_hoje no banco)
 # Se você calcula os posts_hoje por consulta (como está no dashboard.py), 
@@ -58,6 +94,6 @@ def reset_daily_limits():
         # User.query.update({User.posts_hoje: 0})
         # db.session.commit()
         print("Fim do dia: Contadores virtuais resetados pela mudança de data.")
-        
+
 if __name__ == '__main__':
     app.run(debug=True)
