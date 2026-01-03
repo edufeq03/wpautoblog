@@ -20,8 +20,8 @@
     </style>
 </head>
 <body class="bg-gray-200 text-gray-900"> 
-    <div class="flex min-h-screen">
-        <aside class="w-64 bg-gray-900 text-white hidden md:block shadow-xl">
+    <div class="flex min-h-screen overflow-x-hidden">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 md:static md:inset-0 transition-transform duration-300 ease-in-out shadow-xl">
             <div class="p-6">
                 <h1 class="text-xl font-black tracking-tighter text-blue-400">WP <span class="text-white">AutoBlog</span></h1>
             </div>
@@ -33,23 +33,23 @@
                     <i class="fas fa-chart-line w-5"></i> Dashboard
                 </a>
                 
-                <a href="{{ url_for('dashboard.ideas') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'ideas' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.ideas') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.ideas' else 'text-gray-400' }}">
                     <i class="fas fa-lightbulb w-5"></i> Fila de Ideias
                 </a>
 
-                <a href="{{ url_for('dashboard.manual_post') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'manual_post' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.manual_post') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.manual_post' else 'text-gray-400' }}">
                     <i class="fas fa-pen-fancy w-5"></i> Postagem Manual
                 </a>
 
-                <a href="{{ url_for('dashboard.post_report') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'post_report' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.post_report') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.post_report' else 'text-gray-400' }}">
                     <i class="fas fa-file-alt w-5"></i> Relatório de Posts
                 </a>
 
-                <a href="{{ url_for('dashboard.spy_writer') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'spy_writer' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.spy_writer') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.spy_writer' else 'text-gray-400' }}">
                     <i class="fas fa-user-secret w-5"></i> Redator Espião
                 </a>
 
-                <a href="{{ url_for('dashboard.radar') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'radar' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.radar') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.radar' else 'text-gray-400' }}">
                     <i class="fas fa-satellite-dish w-5"></i>
                     <span>Radar de Fontes</span>
                 </a>
@@ -58,11 +58,11 @@
                     <i class="fas fa-globe w-5"></i> Gerenciar Sites
                 </a>
 
-                <a href="{{ url_for('dashboard.general_config') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 border-t border-gray-800 mt-2 pt-2 {{ 'nav-active' if active_page == 'general_config' else 'text-gray-400' }}">
+                <a href="{{ url_for('dashboard.general_config') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 border-t border-gray-800 mt-2 pt-2 {{ 'nav-active' if active_page == 'dashboard.general_config' else 'text-gray-400' }}">
                     <i class="fas fa-cog w-5"></i> Configurações Gerais
                 </a>
 
-                <a href="{{ url_for('dashboard.pricing') }}" class="flex items-center gap-3 px-6 py-3 text-yellow-500 hover:bg-gray-800 font-bold transition-all duration-200 {{ 'nav-active' if active_page == 'pricing' else '' }}">
+                <a href="{{ url_for('dashboard.pricing') }}" class="flex items-center gap-3 px-6 py-3 text-yellow-500 hover:bg-gray-800 font-bold transition-all duration-200 {{ 'nav-active' if active_page == 'dashboard.pricing' else '' }}">
                     <i class="fas fa-crown w-5"></i> Upgrade para VIP
                 </a>
 
@@ -74,11 +74,17 @@
             </nav>
         </aside>
 
-        <main class="flex-1 flex flex-col">
+        <main class="flex-1 flex flex-col min-w-0">
             <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
-                <span class="font-medium text-gray-500 italic">Área de Trabalho</span>
+                <div class="flex items-center gap-3">
+                    <button id="mobile-menu-button" class="md:hidden text-gray-600 focus:outline-none p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <span class="font-medium text-gray-500 italic hidden sm:inline">Área de Trabalho</span>
+                </div>
+                
                 <div class="flex items-center gap-4">
-                    <div class="text-right mr-2">
+                    <div class="text-right mr-2 hidden xs:block">
                         <p class="text-xs font-bold text-gray-800">{{ current_user.email if current_user.is_authenticated else 'Usuário' }}</p>
                         <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_type if current_user.is_authenticated else 'Trial' }} Account</p>
                     </div>
@@ -88,7 +94,7 @@
                 </div>
             </header>
 
-            <div class="flex-1 overflow-y-auto bg-gray-100/80 p-6"> 
+            <div class="flex-1 overflow-y-auto bg-gray-100/80 p-4 md:p-6"> 
                 <div class="container mx-auto">
                     <div id="flash-container">
                         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -110,6 +116,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Script para fechar mensagens flash automaticamente
             setTimeout(function() {
                 const messages = document.querySelectorAll('.flash-message');
                 messages.forEach(function(msg) {
@@ -118,6 +125,22 @@
                     setTimeout(() => msg.remove(), 500); 
                 });
             }, 5000);
+
+            // Script para o Menu Mobile
+            const btn = document.getElementById('mobile-menu-button');
+            const sidebar = document.getElementById('sidebar');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('-translate-x-full');
+            });
+
+            // Fecha o menu ao clicar fora dele no celular
+            document.addEventListener('click', (e) => {
+                if (!sidebar.contains(e.target) && !btn.contains(e.target) && window.innerWidth < 768) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            });
         });
     </script>
 </body>
