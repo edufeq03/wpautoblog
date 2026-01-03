@@ -48,5 +48,16 @@ app.register_blueprint(dashboard_bp)
 def index():
     return render_template('login.html')
 
+# Tarefa para resetar contadores diários (se você salvar posts_hoje no banco)
+# Se você calcula os posts_hoje por consulta (como está no dashboard.py), 
+# o reset é "automático" porque a data muda.
+@scheduler.task('cron', id='reset_daily_limits', hour=0, minute=1)
+def reset_daily_limits():
+    with app.app_context():
+        # Se você tiver uma coluna 'posts_realizados_hoje' no User:
+        # User.query.update({User.posts_hoje: 0})
+        # db.session.commit()
+        print("Fim do dia: Contadores virtuais resetados pela mudança de data.")
+        
 if __name__ == '__main__':
     app.run(debug=True)

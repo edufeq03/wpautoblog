@@ -13,18 +13,36 @@ class User(db.Model, UserMixin):
     sites = db.relationship('Blog', backref='owner', lazy=True)
     credits = db.Column(db.Integer, default=5)  # <-- ESSA LINHA É A QUE FALTA
 
+    def get_limits(self):
+        # Centralizamos as regras de negócio aqui
+        limites = {
+            'trial': {'sites': 1, 'posts_dia': 1, 'creditos_iniciais': 1},
+            'pro':   {'sites': 2, 'posts_dia': 5, 'creditos_iniciais': 30},
+            'vip':   {'sites': 10, 'posts_dia': 50, 'creditos_iniciais': 500}
+        }
+        return limites.get(self.plan_type, limites['trial'])
+
     def can_add_site(self):
         site_count = len(self.sites)
         limits = {'trial': 1, 'pro': 2, 'vip': 10}
         return site_count < limits.get(self.plan_type, 1)
         
     def pode_postar_automatico(self):
-        """Verifica se o usuário tem créditos ou atingiu o limite do plano."""
-        if self.plan_type == 'trial':
-            # Se for Trial, verificamos se ele já gastou os créditos ou 
-            # se já postou hoje. Vamos usar os créditos como trava.
-            return (self.credits or 0) > 0
-        return True # Planos pagos podem ter lógica baseada em créditos também
+        # 1. Verifica saldo de créditos total
+        if self.credits <= 0:
+            return False
+            
+        # 2. Verifica se já atingiu o limite do plano HOJE
+        limite_diario = self.get_limits()['posts_dia']
+        
+        hoje = datetime.utcnow().date()
+        # Conta quantos logs de sucesso existem hoje para este usuário
+        posts_feitos_hoje = PostLog.query.join(Blog).filter(
+            Blog.user_id == self.id,
+            db.func.date(PostLog.posted_at) == hoje
+        ).count()
+    
+        return posts_feitos_hoje < limite_diario
 
 # ESSA FUNÇÃO É VITAL PARA O LOGIN FUNCIONAR
 @login_manager.user_loader
