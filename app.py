@@ -96,4 +96,30 @@ def reset_daily_limits():
         print("Fim do dia: Contadores virtuais resetados pela mudança de data.")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        # 1. Garante que as tabelas existam
+        db.create_all()
+        
+        # 2. Executa a lógica de semente (Cria o usuário demo se não existir)
+        from werkzeug.security import generate_password_hash
+        from models import User
+        
+        demo_email = 'demo@wpautoblog.com.br'
+        if not User.query.filter_by(email=demo_email).first():
+            print(">>> Criando ambiente de demonstração...")
+            demo_user = User(
+                email=demo_email,
+                password=generate_password_hash('demo123'),
+                plan_type='vip',
+                credits=100
+            )
+            db.session.add(demo_user)
+            db.session.commit()
+            print(">>> Usuário demo pronto!")
+
+    # 3. Inicialização completa do servidor
+    app.run(
+        host='0.0.0.0', # Permite acesso externo (essencial para Docker/Easypanel)
+        port=5000,      # Porta padrão (pode alterar para 80 ou 8080 se precisar)
+        debug=True      # Ativa o Auto-reload e o depurador interativo no navegador
+    )
