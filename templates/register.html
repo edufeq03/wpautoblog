@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta - WP AutoBlog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white max-w-md w-full rounded-3xl shadow-xl overflow-hidden">
+        <div class="p-8 md:p-12">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-black text-slate-800">Começar Agora</h2>
+                <p class="text-slate-500 mt-2">Crie sua conta gratuita e comece a automatizar.</p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('auth.register') }}" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Nome Completo</label>
+                    <input type="text" name="nome" placeholder="Seu Nome" class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">E-mail</label>
+                    <input type="email" name="email" required placeholder="seu@email.com" class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Senha</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition mt-4">
+                    Criar Minha Conta
+                </button>
+            </form>
+            
+            <p class="text-center mt-8 text-sm text-slate-500">
+                Já tem conta? <a href="{{ url_for('auth.login') }}" class="text-blue-600 font-bold hover:underline">Faça Login</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

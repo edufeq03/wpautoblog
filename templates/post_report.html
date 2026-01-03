@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Relatório de Posts - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Relatório de Postagens</h1>
+    </div>
+
+    <div class="mb-6">
+        {% if current_user.sites|length > 1 %}
+            <select onchange="location = this.value;" class="bg-white border border-gray-200 py-2 px-4 rounded-lg outline-none">
+                <option value="{{ url_for('dashboard.post_report') }}">Todos os Sites</option>
+                {% for site in current_user.sites %}
+                    <option value="{{ url_for('dashboard.post_report', site_id=site.id) }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold">
+                <tr>
+                    <th class="px-6 py-4">Data</th>
+                    <th class="px-6 py-4">Site</th>
+                    <th class="px-6 py-4">Título</th>
+                    <th class="px-6 py-4 text-center">Status</th>
+                    <th class="px-6 py-4 text-right">Ação</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm divide-y divide-gray-100">
+                {% for log in logs %}
+                <tr>
+                    <td class="px-6 py-4">{{ log.posted_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="px-6 py-4 font-semibold">{{ log.blog.site_name }}</td>
+                    <td class="px-6 py-4 truncate max-w-xs">{{ log.title }}</td>
+                    <td class="px-6 py-4 text-center"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] font-bold">PUBLICADO</span></td>
+                    <td class="px-6 py-4 text-right"><a href="{{ log.post_url }}" target="_blank" class="text-blue-600 font-bold">Ver Post</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center py-10 text-gray-400">Nenhum post realizado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

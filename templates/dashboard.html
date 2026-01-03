@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Painel de Controle</h1>
+        <p class="text-sm text-gray-500">Acompanhe o desempenho das suas postagens automatizadas.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 uppercase font-bold">Posts Hoje</p>
+                    <h3 class="text-2xl font-black text-gray-800">12</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xl">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 uppercase font-bold">Saldo de Créditos</p>
+                    <h3 class="text-2xl font-black text-gray-800">{{ saldo }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xl">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 uppercase font-bold">Próxima Postagem</p>
+                    <h3 class="text-2xl font-black text-gray-800">Em 45 min</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 class="font-bold text-gray-800">Logs de Postagens Recentes</h2>
+            <button class="text-blue-600 text-xs font-bold hover:underline">Ver tudo</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold">
+                    <tr>
+                        <th class="px-6 py-3">Site</th>
+                        <th class="px-6 py-3">Título do Post</th>
+                        <th class="px-6 py-3">Data/Hora</th>
+                        <th class="px-6 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-gray-100">
+                    {% for log in logs %}
+                    <tr>
+                        <td class="px-6 py-4 font-medium">{{ log.blog.site_name }}</td>
+                        <td class="px-6 py-4 text-gray-500">{{ log.title }}</td>
+                        <td class="px-6 py-4 text-gray-500">{{ log.posted_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">
+                                {{ log.status|upper }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-gray-400">Nenhuma postagem recente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

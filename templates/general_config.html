@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 max-w-5xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Configurações do Site</h1>
+        <p class="text-sm text-gray-500">Ajuste as credenciais e o comportamento de postagem para cada blog.</p>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 mb-8 flex items-center justify-between">
+        <div class="flex items-center gap-4 flex-1">
+            <label class="text-xs font-black text-gray-400 uppercase tracking-wider">Configurando agora:</label>
+            <select class="bg-gray-50 border border-gray-200 py-2 px-4 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600">
+                <option>Meu Blog Tech (https://techblog.com)</option>
+                <option>Lifestyle VIP (https://lifestyle.com)</option>
+            </select>
+        </div>
+        <div class="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+            <i class="fas fa-check-circle mr-1"></i> CONEXÃO ATIVA
+        </div>
+    </div>
+
+    <form class="space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-sm font-black text-gray-800 uppercase mb-6 flex items-center gap-2">
+                <i class="fab fa-wordpress text-blue-600 text-lg"></i> Credenciais de Acesso
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">URL do Site (com https://)</label>
+                    <input type="url" value="https://techblog.com" placeholder="https://seublog.com" 
+                           class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Usuário WordPress</label>
+                    <input type="text" value="admin_editor" placeholder="Nome de usuário" 
+                           class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Senha de Aplicativo (Application Password)</label>
+                    <input type="password" value="xxxx xxxx xxxx xxxx" placeholder="abcd efgh ijkl mnop" 
+                           class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono">
+                    <p class="text-[10px] text-gray-400 mt-2 italic font-medium">Não use sua senha comum. Gere uma 'Senha de Aplicativo' no seu perfil do WordPress.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-sm font-black text-gray-800 uppercase mb-6 flex items-center gap-2">
+                <i class="fas fa-cog text-gray-400 text-lg"></i> Preferências de Conteúdo
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <span class="block text-xs font-bold text-gray-500 uppercase mb-3">Modo de Publicação</span>
+                    <div class="flex gap-4">
+                        <label class="flex-1 border rounded-xl p-3 cursor-pointer hover:bg-gray-50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-all">
+                            <input type="radio" name="status" class="hidden" checked>
+                            <div class="text-center">
+                                <div class="text-sm font-bold text-gray-700">Publicado</div>
+                                <div class="text-[10px] text-gray-500">Fica visível na hora</div>
+                            </div>
+                        </label>
+                        <label class="flex-1 border rounded-xl p-3 cursor-pointer hover:bg-gray-50 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-all">
+                            <input type="radio" name="status" class="hidden">
+                            <div class="text-center">
+                                <div class="text-sm font-bold text-gray-700">Rascunho</div>
+                                <div class="text-[10px] text-gray-500">Aguardar revisão</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Frequência da Automação</label>
+                    <select class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-gray-700">
+                        <option>A cada 6 horas (4 posts/dia)</option>
+                        <option selected>A cada 12 horas (2 posts/dia)</option>
+                        <option>A cada 24 horas (1 post/dia)</option>
+                        <option>Desativar Automação</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mt-6">
+    <h2 class="text-sm font-black text-gray-800 uppercase mb-6 flex items-center gap-2">
+        <i class="fas fa-brain text-purple-600 text-lg"></i> Personalidade da IA
+    </h2>
+    
+    <div class="space-y-6">
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Temas Macro (Assuntos Principais)</label>
+            <input type="text" value="Gadgets, Inteligência Artificial, Programação Python" 
+                   placeholder="Separe os temas por vírgula..." 
+                   class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+            <p class="text-[10px] text-gray-400 mt-2 font-medium">Isso ajuda a IA a gerar ideias dentro do seu nicho.</p>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-xs font-bold text-gray-500 uppercase">Prompt Mestre (Instruções de Estilo)</label>
+                <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">Personalizado</span>
+            </div>
+            <textarea rows="6" 
+                      class="w-full bg-gray-50 border border-gray-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm text-gray-700"
+                      placeholder="Ex: Escreva como um especialista em tecnologia, use tom amigável, inclua uma lista de prós e contras e termine com uma pergunta para os leitores...">Você é um redator especialista em tecnologia. Seu objetivo é criar artigos otimizados para SEO, com parágrafos curtos e subtítulos H2/H3 atraentes. Sempre use um tom informativo e profissional.</textarea>
+            <p class="text-[10px] text-gray-400 mt-2 italic">Este prompt será enviado à IA em todas as gerações deste site.</p>
+        </div>
+    </div>
+</div>
+
+        <div class="flex items-center justify-between pt-4">
+            <button type="button" class="text-red-500 text-xs font-bold hover:underline">
+                <i class="fas fa-unlink mr-1"></i> Desconectar este site
+            </button>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">
+                Salvar Configurações do Site
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

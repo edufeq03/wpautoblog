@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Gerenciar Sites - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-black text-slate-800">Meus Sites WordPress</h2>
+            <p class="text-slate-500">Conecte e gerencie seus blogs para automação.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-plus-circle text-blue-500"></i> Adicionar Novo Site
+            </h3>
+            <form action="{{ url_for('dashboard.add_site') }}" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Site</label>
+                    <input type="text" name="site_name" required placeholder="Meu Blog de Nicho" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">URL do WordPress</label>
+                    <input type="url" name="wp_url" required placeholder="https://meusite.com" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Usuário WP</label>
+                    <input type="text" name="wp_user" required placeholder="admin" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Senha de Aplicativo</label>
+                    <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    <p class="text-[10px] text-slate-400 mt-1 italic">Use a Application Password do WP.</p>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
+                    Conectar Site
+                </button>
+            </form>
+        </div>
+
+        <div class="lg:col-span-2 space-y-4">
+            <h3 class="font-bold text-slate-800 mb-4">Sites Ativos ({{ current_user.sites|length }})</h3>
+            
+            {% if current_user.sites %}
+                {% for site in current_user.sites %}
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex justify-between items-center hover:border-blue-300 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                            <i class="fas fa-globe text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">{{ site.site_name }}</h4>
+                            <p class="text-xs text-slate-500">{{ site.wp_url }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('dashboard.test_post', site_id=site.id) }}" 
+                           class="p-2 text-slate-400 hover:text-green-500 transition" 
+                           title="Testar Postagem">
+                            <i class="fas fa-paper-plane"></i>
+                        </a>
+
+                        <button onclick="openPromptModal('{{ site.id }}', '{{ site.master_prompt or '' }}', '{{ site.macro_themes or '' }}')" 
+                                class="p-2 text-slate-400 hover:text-blue-600 transition" 
+                                title="Configurar IA e Temas">
+                            <i class="fas fa-robot"></i>
+                        </button>
+                        
+                        <form action="{{ url_for('dashboard.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este site?');">
+                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="bg-blue-50 border border-dashed border-blue-200 p-10 rounded-3xl text-center">
+                    <p class="text-blue-600 font-medium">Nenhum site conectado ainda.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="promptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-robot text-blue-500"></i> Configurações da IA
+            </h3>
+            <button onclick="closePromptModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="promptForm" method="POST" action="">
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Personalidade e Instruções</label>
+                    <textarea name="master_prompt" id="modalPromptText" rows="6" 
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="Ex: Escreva como um especialista em finanças, use tom profissional e inclua dados técnicos."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Macro Temas (Separados por vírgula)</label>
+                    <input type="text" name="macro_themes" id="modalMacroThemesText" 
+                        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="Ex: Investimentos, Criptomoedas, Economia Doméstica">
+                    <p class="text-[10px] text-slate-400 mt-2 italic">A IA usará estes temas como base para gerar ideias de conteúdo.</p>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 flex justify-end gap-3">
+                <button type="button" onclick="closePromptModal()" class="px-6 py-2 text-slate-600 font-bold">Cancelar</button>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">
+                    Salvar Configurações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openPromptModal(siteId, currentPrompt, currentMacroThemes) {
+        const modal = document.getElementById('promptModal');
+        const form = document.getElementById('promptForm');
+        
+        form.action = "/update-prompt/" + siteId; // Sua rota ajustada
+        
+        document.getElementById('modalPromptText').value = currentPrompt;
+        document.getElementById('modalMacroThemesText').value = currentMacroThemes; // Aqui ele preenche o campo
+        
+        modal.classList.remove('hidden');
+    }
+
+    function closePromptModal() {
+        document.getElementById('promptModal').classList.add('hidden');
+    }
+
+    // Fecha o modal ao clicar fora da área branca
+    window.onclick = function(event) {
+        const modal = document.getElementById('promptModal');
+        if (event.target == modal) {
+            closePromptModal();
+        }
+    }
+</script>
+{% endblock %}

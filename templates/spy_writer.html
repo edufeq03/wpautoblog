@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Spy Writer - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-5xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-user-secret text-blue-600"></i> Redator Espião
+        </h1>
+        <p class="text-sm text-gray-500">Transforme links em posts prontos instantaneamente.</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+        <form action="{{ url_for('dashboard.spy_writer') }}" method="POST" class="flex gap-4">
+            <div class="flex-1">
+                <input type="url" name="url" required placeholder="Cole a URL do vídeo ou artigo aqui para processar agora..." class="w-full bg-gray-50 border border-gray-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20">
+                Analisar
+            </button>
+        </form>
+    </div>
+
+    {% if processed_content %}
+    <form action="{{ url_for('dashboard.manual_post') }}" method="POST" class="space-y-6 animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Título Sugerido pela IA</label>
+                    <input type="text" name="title" value="{{ processed_content.title }}" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Postar no Site</label>
+                    <select name="site_id" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for site in current_user.sites %}
+                            <option value="{{ site.id }}">{{ site.site_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Conteúdo Gerado</label>
+                <textarea name="content" rows="12" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ processed_content.text }}</textarea>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-xl font-bold shadow-lg transition-all">
+                <i class="fas fa-paper-plane mr-2"></i> Publicar Agora no WordPress
+            </button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

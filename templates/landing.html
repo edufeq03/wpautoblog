@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WP AutoBlog - Automação Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50">
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <div class="text-2xl font-black text-blue-600">WP <span class="text-slate-800">AutoBlog</span></div>
+        <div class="space-x-4">
+            <a href="{{ url_for('login') }}" class="font-bold text-slate-600 hover:text-blue-600">Entrar</a>
+            <a href="{{ url_for('register') }}" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">Começar Agora</a>
+        </div>
+    </nav>
+
+    <section class="py-20 px-6 text-center max-w-4xl mx-auto">
+        <h1 class="text-5xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
+            Seu Blog WordPress no <span class="text-blue-600">Piloto Automático</span> com IA
+        </h1>
+        <p class="text-xl text-slate-600 mb-10">
+            Gere conteúdo de alta qualidade, espione concorrentes e poste automaticamente. 
+            Tudo isso enquanto você foca no que realmente importa.
+        </p>
+        <div class="flex flex-col md:flex-row gap-4 justify-center">
+            <a href="{{ url_for('register') }}" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition">Teste Grátis 7 Dias</a>
+            <button class="bg-white text-slate-800 border border-slate-200 px-10 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition">Ver Demonstração</button>
+        </div>
+    </section>
+
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            <div>
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-4">IA de Elite</h3>
+                <p class="text-slate-500">Integração nativa com Groq e Llama 3 para textos que não parecem feitos por robôs.</p>
+            </div>
+            <div>
+                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">
+                    <i class="fas fa-user-secret"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-4">Redator Espião</h3>
+                <p class="text-slate-500">Transforme vídeos do YouTube ou blogs concorrentes em conteúdo original para você.</p>
+            </div>
+            <div>
+                <div class="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-4">Agendamento Inteligente</h3>
+                <p class="text-slate-500">Defina a frequência e esqueça. Nós postamos no WordPress para você 24h por dia.</p>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

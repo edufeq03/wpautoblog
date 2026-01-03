@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Radar de Fontes - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-satellite-dish text-purple-600"></i> Radar de Fontes
+        </h1>
+        <p class="text-sm text-gray-500">Monitoramento automático de concorrentes e tendências.</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+        <form action="{{ url_for('dashboard.add_source') }}" method="POST" class="flex flex-col md:flex-row items-end gap-4">
+            <div class="flex-1 w-full">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">URL (Blog ou Canal YouTube)</label>
+                <input type="url" name="url" required placeholder="https://youtube.com/@..." class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm">
+            </div>
+
+            <div class="w-full md:w-64">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Site de Destino</label>
+                {% if current_user.sites|length > 1 %}
+                    <select name="site_id" required class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl text-sm outline-none">
+                        {% for site in current_user.sites %}
+                            <option value="{{ site.id }}">{{ site.site_name }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif current_user.sites|length == 1 %}
+                    <div class="bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl text-sm text-gray-600 font-bold">
+                        {{ current_user.sites[0].site_name }}
+                    </div>
+                    <input type="hidden" name="site_id" value="{{ current_user.sites[0].id }}">
+                {% endif %}
+            </div>
+
+            <button type="submit" {% if not current_user.sites %}disabled{% endif %} class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20 whitespace-nowrap">
+                Ativar Radar
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-wider">
+                <tr>
+                    <th class="px-6 py-4">URL da Fonte</th>
+                    <th class="px-6 py-4">Tipo</th>
+                    <th class="px-6 py-4">Destino</th>
+                    <th class="px-6 py-4 text-center">Status</th>
+                    <th class="px-6 py-4 text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm divide-y divide-gray-100">
+                {% for fonte in fontes %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-gray-700 truncate max-w-md">{{ fonte.source_url }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded text-[10px] font-bold {{ 'bg-red-50 text-red-600' if fonte.source_type == 'youtube' else 'bg-blue-50 text-blue-600' }}">
+                            {{ fonte.source_type|upper }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">{{ fonte.blog.site_name }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">ATIVO</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <form action="{{ url_for('dashboard.delete_source', source_id=fonte.id) }}" method="POST" class="inline">
+                            <button type="submit" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">O seu radar está limpo. Adicione uma fonte acima.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
