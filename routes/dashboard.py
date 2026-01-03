@@ -13,7 +13,8 @@ from utils.ai_logic import preparar_contexto_brainstorm
 # Carregar variáveis de ambiente
 load_dotenv()
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+def get_groq_client():
+    return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -28,10 +29,11 @@ def dashboard_view():
     logs_recentes = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id)\
         .order_by(PostLog.posted_at.desc()).limit(5).all()
 
+    # Contagem de posts hoje (Exemplo de lógica)
     hoje = datetime.utcnow().date()
     posts_hoje = PostLog.query.join(Blog).filter(
         Blog.user_id == current_user.id,
-        PostLog.posted_at >= hoje
+        db.func.date(PostLog.posted_at) == hoje
     ).count()
 
     return render_template('dashboard.html', 
@@ -73,7 +75,8 @@ def generate_ideas():
     contexto_enriquecido = preparar_contexto_brainstorm(site)
 
     try:
-        completion = client.chat.completions.create(
+        groq_client = get_groq_client()
+        completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "Você é um gerador de títulos SEO. Saída um por linha, sem aspas ou números."},
@@ -107,8 +110,9 @@ def publish_idea(idea_id):
         return redirect(url_for('dashboard.ideas'))
 
     try:
+        groq_client = get_groq_client()
         master_prompt = site.master_prompt or "Você é um redator especialista em SEO."
-        completion = client.chat.completions.create(
+        completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": master_prompt},
@@ -296,7 +300,8 @@ def spy_writer():
         contexto_ia = f"CONTEÚDO REAL: {conteudo_bruto}" if conteudo_bruto else f"URL: {url}"
 
         try:
-            response = client.chat.completions.create(
+            groq_client = get_groq_client()
+            response = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": "Você é um Especialista em SEO. Crie um artigo original em HTML."},
@@ -370,7 +375,8 @@ def sync_radar():
         texto_real = extrair_texto_da_url(fonte.source_url)
         if texto_real:
             try:
-                response = client.chat.completions.create(
+                groq_client = get_groq_client()
+                response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": "Resume este post em 3 pontos SEO."},
@@ -385,3 +391,23 @@ def sync_radar():
     db.session.commit()
     flash(f"Sucesso! {contador} fontes resumidas.", "success")
     return redirect(url_for('dashboard.radar'))
+
+@dashboard_bp.route('/update-prefs/<int:site_id>', methods=['POST'])
+@login_required
+def update_prefs(site_id):
+    site = Blog.query.get_or_404(site_id)
+    
+    # Verifica se o site pertence ao usuário logado
+    if site.user_id != current_user.id:
+        flash("Acesso negado.", "error")
+        return redirect(url_for('dashboard.manage_sites'))
+
+    # Coleta os dados do formulário do modal
+    site.posts_per_day = request.form.get('posts_per_day', type=int)
+    site.schedule_time = request.form.get('schedule_time')
+    site.post_status = request.form.get('post_status')
+    site.default_category = request.form.get('default_category')
+
+    db.session.commit()
+    flash(f"Preferências de {site.site_name} atualizadas com sucesso!", "success")
+    return redirect(url_for('dashboard.manage_sites'))

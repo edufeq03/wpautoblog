@@ -36,6 +36,11 @@ class Blog(db.Model):
     tracked_channels = db.Column(db.Text, nullable=True)
     ideas = db.relationship('ContentIdea', backref='blog', lazy=True)
     logs = db.relationship('PostLog', backref='blog', lazy=True)
+    # NOVAS COLUNAS:
+    posts_per_day = db.Column(db.Integer, default=1)
+    schedule_time = db.Column(db.String(5), default="08:00") # Armazena como "HH:MM"
+    post_status = db.Column(db.String(20), default="draft")  # 'draft' ou 'publish'
+    default_category = db.Column(db.String(100))
 
 class ContentIdea(db.Model):
     id = db.Column(db.Integer, primary_key=True)

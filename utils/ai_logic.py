@@ -5,7 +5,8 @@ from models import CapturedContent, ContentSource, db
 from utils.scrapers import extrair_texto_da_url
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+def get_groq_client():
+    return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def preparar_contexto_brainstorm(site):
     """Lê a memória do Radar para injetar no Gerador de Ideias."""
@@ -37,7 +38,8 @@ def processar_radar_automatico():
             
             if conteudo_bruto:
                 # IA processa o resumo
-                completion = client.chat.completions.create(
+                groq_client = get_groq_client()
+                completion = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": "Você é um analista de conteúdo. Resuma o texto em 3 tópicos curtos e identifique se é Educativo, Notícia ou Venda."},
