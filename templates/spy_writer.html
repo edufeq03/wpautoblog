@@ -11,7 +11,7 @@
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <form action="{{ url_for('dashboard.spy_writer') }}" method="POST" class="flex gap-4">
+        <form action="{{ url_for('content.spy_writer') }}" method="POST" class="flex gap-4">
             <div class="flex-1">
                 <input type="url" name="url" required placeholder="Cole a URL do vídeo ou artigo aqui para processar agora..." class="w-full bg-gray-50 border border-gray-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
@@ -22,7 +22,7 @@
     </div>
 
     {% if processed_content %}
-    <form action="{{ url_for('dashboard.manual_post') }}" method="POST" class="space-y-6 animate-fade-in">
+    <form action="{{ url_for('content.manual_post') }}" method="POST" class="space-y-6 animate-fade-in">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-6">
                 <div>

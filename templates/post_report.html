@@ -15,9 +15,9 @@
                 <div class="relative w-64">
                     <select onchange="location = this.value;" 
                         class="w-full bg-white border border-slate-200 py-2 px-4 pr-10 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all shadow-sm">
-                        <option value="{{ url_for('dashboard.post_report') }}">Todos os Sites</option>
+                        <option value="{{ url_for('content.post_report', site_id=site.id) }}">Todos os Sites</option>
                         {% for site in current_user.sites %}
-                            <option value="{{ url_for('dashboard.post_report', site_id=site.id) }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
+                            <option value="{{ url_for('content.post_report', site_id=site.id) }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
                         {% endfor %}
                     </select>
                     <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">

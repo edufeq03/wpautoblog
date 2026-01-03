@@ -58,7 +58,7 @@
             <h2 class="font-black text-slate-800 flex items-center gap-2">
                 <i class="fas fa-history text-blue-500"></i> Logs de Postagens Recentes
             </h2>
-            <a href="{{ url_for('dashboard.post_report') }}" class="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:text-blue-700 transition">
+            <a href="{{ url_for('content.post_report') }}" class="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:text-blue-700 transition">
                 Ver Relatório Completo <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
@@ -96,7 +96,7 @@
                             <div class="flex flex-col items-center gap-2">
                                 <i class="fas fa-inbox text-slate-200 text-4xl"></i>
                                 <p class="text-slate-400 font-medium italic text-sm">Nenhuma postagem realizada ainda.</p>
-                                <a href="{{ url_for('dashboard.manage_sites') }}" class="mt-2 text-blue-500 font-bold text-xs hover:underline">Conectar meu primeiro site</a>
+                                <a href="{{ url_for('sites.manage_sites') }}" class="mt-2 text-blue-500 font-bold text-xs hover:underline">Conectar meu primeiro site</a>
                             </div>
                         </td>
                     </tr>
