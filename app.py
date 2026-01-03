@@ -4,84 +4,49 @@ from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from flask_apscheduler import APScheduler
 import os
-
-# Importe a função que percorre o Radar
 from utils.ai_logic import processar_radar_automatico 
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÕES ---
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
 
-# Ajuste para garantir que o caminho do banco funcione localmente e no servidor
+# Configuração de banco para suportar PostgreSQL (Easypanel) ou SQLite local
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or \
     'sqlite:///' + os.path.join(basedir, 'database.db')
 
-
-# --- INICIALIZAÇÃO DE PLUGINS ---
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
-# Cria as tabelas automaticamente se não existirem
+# Tenta criar as colunas novas ao iniciar
 with app.app_context():
     db.create_all()
 
-# --- AGENDADOR (Scheduler) ---
 scheduler = APScheduler()
 app.config['SCHEDULER_API_ENABLED'] = True
 scheduler.init_app(app)
 scheduler.start()
 
-# Tarefa Agendada: Sincronizar Radar a cada 12 horas
 @scheduler.task('interval', id='sync_radar_job', hours=12)
 def scheduled_radar_sync():
     with app.app_context():
-        print("Iniciando sincronização automática do Radar...")
         try:
             processar_radar_automatico()
-            print("Sincronização concluída.")
         except Exception as e:
-            print(f"Erro na sincronização agendada: {e}")
+            print(f"Erro no scheduler: {e}")
 
-# --- BLUEPRINTS ---
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 
-# Rota raiz para redirecionar ou mostrar landing page
-PLANOS = {
-    'trial': {
-        'nome': 'Plano Trial',
-        'preco': 'Grátis',
-        'sites': '1',
-        'posts': '1',
-        'espiao': False
-    },
-    'pro': {
-        'nome': 'Plano Pro',
-        'preco': 'R$ 59',
-        'sites': '2',
-        'posts': '5',
-        'espiao': True
-    },
-    'vip': {
-        'nome': 'Plano VIP',
-        'preco': 'R$ 249',
-        'sites': 'Ilimitados',
-        'posts': 'Ilimitadas',
-        'espiao': True
-    }
-}
-
 @app.route('/')
 def index():
-    return render_template('landing.html', planos=PLANOS)  
+    return render_template('login.html')
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    # Busca a variável 'FLASK_DEBUG', se não existir, assume False (segurança)
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+    app.run(debug=True)

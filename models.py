@@ -11,11 +11,20 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(200), nullable=False)
     plan_type = db.Column(db.String(20), default='trial') 
     sites = db.relationship('Blog', backref='owner', lazy=True)
+    credits = db.Column(db.Integer, default=5)  # <-- ESSA LINHA É A QUE FALTA
 
     def can_add_site(self):
         site_count = len(self.sites)
         limits = {'trial': 1, 'pro': 2, 'vip': 10}
         return site_count < limits.get(self.plan_type, 1)
+        
+    def pode_postar_automatico(self):
+        """Verifica se o usuário tem créditos ou atingiu o limite do plano."""
+        if self.plan_type == 'trial':
+            # Se for Trial, verificamos se ele já gastou os créditos ou 
+            # se já postou hoje. Vamos usar os créditos como trava.
+            return (self.credits or 0) > 0
+        return True # Planos pagos podem ter lógica baseada em créditos também
 
 # ESSA FUNÇÃO É VITAL PARA O LOGIN FUNCIONAR
 @login_manager.user_loader

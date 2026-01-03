@@ -102,12 +102,19 @@ def generate_ideas():
 @dashboard_bp.route('/publish-idea/<int:idea_id>')
 @login_required
 def publish_idea(idea_id):
+    # TRAVA ATIVA AQUI
+    if not current_user.pode_postar_automatico():
+        flash("Você atingiu o limite de postagens automáticas do plano Trial. Faça upgrade ou poste manualmente!", "warning")
+        return redirect(url_for('dashboard.ideas'))
+    
     idea = ContentIdea.query.get_or_404(idea_id)
     site = Blog.query.get_or_404(idea.blog_id)
 
     if site.user_id != current_user.id:
         flash("Acesso negado.", "danger")
         return redirect(url_for('dashboard.ideas'))
+
+    postagem_sucesso = False  # <--- DEFINIDA AQUI INICIALMENTE
 
     try:
         groq_client = get_groq_client()
@@ -136,12 +143,19 @@ def publish_idea(idea_id):
             idea.is_posted = True
             db.session.add(novo_log)
             db.session.commit()
+            postagem_sucesso = True # <--- MARCA SUCESSO AQUI
             flash(f'Artigo publicado com sucesso!', 'success')
         else:
             flash(f'Erro no WordPress: {response.status_code}', 'danger')
 
     except Exception as e:
         flash(f'Erro na automação: {str(e)}', 'danger')
+    
+    # Se funcionou, desconta o crédito
+    if postagem_sucesso:
+        current_user.credits -= 1
+        db.session.commit()
+        flash(f"Artigo publicado! Créditos restantes: {current_user.credits}", "success")
 
     return redirect(url_for('dashboard.ideas', site_id=site.id))
 
@@ -261,11 +275,7 @@ PLANOS = {
 @login_required
 def manual_post():
     if request.method == 'POST':
-        # TRAVA DEMO: Limitar postagens manuais para não poluir o site demo
-        if current_user.email == DEMO_EMAIL:
-            flash('Modo Demo: Utilize a geração automática para testar a ferramenta.', 'info')
-            return redirect(url_for('dashboard.post_report'))
-
+        
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
