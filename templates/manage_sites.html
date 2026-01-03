@@ -10,74 +10,82 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-plus-circle text-blue-500"></i> Adicionar Novo Site
-            </h3>
-            <form action="{{ url_for('dashboard.add_site') }}" method="POST" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Site</label>
-                    <input type="text" name="site_name" required placeholder="Meu Blog de Nicho" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">URL do WordPress</label>
-                    <input type="url" name="wp_url" required placeholder="https://meusite.com" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Usuário WP</label>
-                    <input type="text" name="wp_user" required placeholder="admin" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Senha de Aplicativo</label>
-                    <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                    <p class="text-[10px] text-slate-400 mt-1 italic">Use a Application Password do WP.</p>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
-                    Conectar Site
-                </button>
-            </form>
-        </div>
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-plus-circle text-blue-500"></i> Conectar Novo Site
+        </h3>
+        <form action="{{ url_for('dashboard.add_site') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Nome do Site</label>
+                <input type="text" name="site_name" required placeholder="Meu Blog" class="w-full bg-slate-50 border border-slate-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">URL WordPress</label>
+                <input type="url" name="wp_url" required placeholder="https://site.com" class="w-full bg-slate-50 border border-slate-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Usuário WP</label>
+                <input type="text" name="wp_user" required placeholder="admin" class="w-full bg-slate-50 border border-slate-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-wider">Senha de Aplicativo</label>
+                <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-50 border border-slate-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 text-sm">
+                Conectar Site
+            </button>
+        </form>
+    </div>
 
-        <div class="lg:col-span-2 space-y-4">
-            <h3 class="font-bold text-slate-800 mb-4">Sites Ativos ({{ current_user.sites|length }})</h3>
-            
+    <div class="space-y-4">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+            Sites Ativos <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg text-xs">{{ current_user.sites|length }}</span>
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% if current_user.sites %}
                 {% for site in current_user.sites %}
-                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex justify-between items-center hover:border-blue-300 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 hover:border-blue-300 transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                             <i class="fas fa-globe text-xl"></i>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">{{ site.site_name }}</h4>
-                            <p class="text-xs text-slate-500">{{ site.wp_url }}</p>
+                        <div class="flex gap-1">
+                            <a href="{{ url_for('dashboard.test_post', site_id=site.id) }}" 
+                               class="p-2 text-slate-400 hover:text-green-500 transition" 
+                               title="Testar Postagem">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </a>
+
+                            <button onclick="openPromptModal('{{ site.id }}', '{{ site.master_prompt or '' }}', '{{ site.macro_themes or '' }}')" 
+                                    class="p-2 text-slate-400 hover:text-blue-600 transition" 
+                                    title="Configurar IA e Temas">
+                                <i class="fas fa-robot text-sm"></i>
+                            </button>
+                            
+                            <form action="{{ url_for('dashboard.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este site?');" class="inline">
+                                <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <a href="{{ url_for('dashboard.test_post', site_id=site.id) }}" 
-                           class="p-2 text-slate-400 hover:text-green-500 transition" 
-                           title="Testar Postagem">
-                            <i class="fas fa-paper-plane"></i>
-                        </a>
+                    
+                    <div>
+                        <h4 class="font-bold text-slate-800 truncate">{{ site.site_name }}</h4>
+                        <p class="text-xs text-slate-500 truncate">{{ site.wp_url }}</p>
+                    </div>
 
-                        <button onclick="openPromptModal('{{ site.id }}', '{{ site.master_prompt or '' }}', '{{ site.macro_themes or '' }}')" 
-                                class="p-2 text-slate-400 hover:text-blue-600 transition" 
-                                title="Configurar IA e Temas">
-                            <i class="fas fa-robot"></i>
-                        </button>
-                        
-                        <form action="{{ url_for('dashboard.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este site?');">
-                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
+                    <div class="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status: Ativo</span>
+                        <div class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
                     </div>
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="bg-blue-50 border border-dashed border-blue-200 p-10 rounded-3xl text-center">
-                    <p class="text-blue-600 font-medium">Nenhum site conectado ainda.</p>
+                <div class="col-span-full bg-blue-50 border border-dashed border-blue-200 p-12 rounded-3xl text-center">
+                    <div class="text-blue-300 text-4xl mb-4"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <p class="text-blue-600 font-medium">Nenhum site conectado. Use o formulário acima para começar.</p>
                 </div>
             {% endif %}
         </div>
@@ -98,15 +106,14 @@
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Personalidade e Instruções</label>
                     <textarea name="master_prompt" id="modalPromptText" rows="6" 
                         class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                        placeholder="Ex: Escreva como um especialista em finanças, use tom profissional e inclua dados técnicos."></textarea>
+                        placeholder="Ex: Escreva como um especialista em finanças..."></textarea>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Macro Temas (Separados por vírgula)</label>
                     <input type="text" name="macro_themes" id="modalMacroThemesText" 
                         class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                        placeholder="Ex: Investimentos, Criptomoedas, Economia Doméstica">
-                    <p class="text-[10px] text-slate-400 mt-2 italic">A IA usará estes temas como base para gerar ideias de conteúdo.</p>
+                        placeholder="Ex: Investimentos, Criptomoedas...">
                 </div>
             </div>
             <div class="p-6 bg-slate-50 flex justify-end gap-3">
@@ -123,12 +130,9 @@
     function openPromptModal(siteId, currentPrompt, currentMacroThemes) {
         const modal = document.getElementById('promptModal');
         const form = document.getElementById('promptForm');
-        
-        form.action = "/update-prompt/" + siteId; // Sua rota ajustada
-        
+        form.action = "/update-prompt/" + siteId;
         document.getElementById('modalPromptText').value = currentPrompt;
-        document.getElementById('modalMacroThemesText').value = currentMacroThemes; // Aqui ele preenche o campo
-        
+        document.getElementById('modalMacroThemesText').value = currentMacroThemes;
         modal.classList.remove('hidden');
     }
 
@@ -136,12 +140,9 @@
         document.getElementById('promptModal').classList.add('hidden');
     }
 
-    // Fecha o modal ao clicar fora da área branca
     window.onclick = function(event) {
         const modal = document.getElementById('promptModal');
-        if (event.target == modal) {
-            closePromptModal();
-        }
+        if (event.target == modal) { closePromptModal(); }
     }
 </script>
 {% endblock %}
