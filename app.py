@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
@@ -40,6 +40,11 @@ def scheduled_radar_sync():
 # --- BLUEPRINTS ---
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
+
+# --- ROTA DA LANDING PAGE ---
+@app.route('/')
+def index():
+    return render_template('landing.html')
 
 if __name__ == '__main__':
     with app.app_context():

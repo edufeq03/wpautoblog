@@ -11,8 +11,8 @@
     <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto">
         <div class="text-2xl font-black text-blue-600">WP <span class="text-slate-800">AutoBlog</span></div>
         <div class="space-x-4">
-            <a href="{{ url_for('login') }}" class="font-bold text-slate-600 hover:text-blue-600">Entrar</a>
-            <a href="{{ url_for('register') }}" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">Começar Agora</a>
+            <a href="{{ url_for('auth.login') }}" class="font-bold text-slate-600 hover:text-blue-600">Entrar</a>
+            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">Começar Agora</a>
         </div>
     </nav>
 
@@ -25,7 +25,7 @@
             Tudo isso enquanto você foca no que realmente importa.
         </p>
         <div class="flex flex-col md:flex-row gap-4 justify-center">
-            <a href="{{ url_for('register') }}" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition">Teste Grátis 7 Dias</a>
+            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition">Teste Grátis 7 Dias</a>
             <button class="bg-white text-slate-800 border border-slate-200 px-10 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition">Ver Demonstração</button>
         </div>
     </section>
