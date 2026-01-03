@@ -255,13 +255,50 @@ def delete_site(site_id):
 @login_required
 def test_post(site_id):
     site = Blog.query.get_or_404(site_id)
-    wp_endpoint = f"{site.wp_url}/wp-json/wp/v2/posts"
+    wp_endpoint = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
+    
+    # Conteúdo formatado para o post de teste
+    titulo_teste = "🚀 Teste de Conexão: WP AutoBlog"
+    corpo_teste = f"""
+    <h2>Conexão Bem-Sucedida!</h2>
+    <p>Este post é um teste automático gerado pelo <strong>WP AutoBlog</strong> para o site <em>{site.site_name}</em>.</p>
+    <p>Se você está lendo isso, significa que:</p>
+    <ul>
+        <li>A API REST do seu WordPress está ativa.</li>
+        <li>As credenciais de Application Password são válidas.</li>
+        <li>O servidor conseguiu estabelecer comunicação com seu blog.</li>
+    </ul>
+    <p><em>Você pode excluir este post manualmente a qualquer momento.</em></p>
+    <hr>
+    <p><small>Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</small></p>
+    """
+
     try:
-        response = requests.post(wp_endpoint, json={"title": "Teste", "content": "OK", "status": "publish"},
-            auth=HTTPBasicAuth(site.wp_user, site.wp_app_password), timeout=10)
-        flash("Conexão OK!" if response.status_code == 201 else "Erro de Conexão", "success" if response.status_code == 201 else "error")
+        response = requests.post(
+            wp_endpoint, 
+            json={
+                "title": titulo_teste, 
+                "content": corpo_teste, 
+                "status": "publish",
+                "categories": [] # Opcional: define uma categoria se desejar
+            },
+            auth=HTTPBasicAuth(site.wp_user, site.wp_app_password), 
+            timeout=15
+        )
+        
+        if response.status_code == 201:
+            data = response.json()
+            link_post = data.get('link')
+            flash(f"✅ Conexão estabelecida! O post de teste foi publicado com sucesso.", "success")
+            # Opcional: Você pode até enviar o link no flash para o usuário clicar
+            print(f"Post de teste publicado em: {link_post}")
+        else:
+            print(f"Erro WP: {response.text}")
+            flash(f"❌ Erro de Conexão (Status {response.status_code}). Verifique as credenciais.", "danger")
+            
     except Exception as e:
-        flash(f"Erro: {str(e)}", "error")
+        flash(f"⚠️ Erro ao tentar conectar: {str(e)}", "danger")
+        
     return redirect(url_for('dashboard.manage_sites'))
 
 @dashboard_bp.route('/update-prompt/<int:site_id>', methods=['POST'])
