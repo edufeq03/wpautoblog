@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
-from models import db, Blog, ContentIdea, PostLog, ContentSource
+from models import db, Blog, ContentIdea, PostLog, ContentSource, CapturedContent
 import requests
 from requests.auth import HTTPBasicAuth
 import os, re
@@ -17,18 +17,17 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
+# --- CONSTANTE PARA O USUÁRIO DEMO ---
+DEMO_EMAIL = 'demo@wpautoblog.com.br'
+
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard_view():
-    # 1. Pegamos o saldo de créditos do usuário (ajuste conforme seu modelo User)
     saldo_atual = current_user.credits if hasattr(current_user, 'credits') else 0
     
-    # 2. Pegamos os últimos 5 logs de postagem do usuário para a tabela
-    # Fizemos um join com Blog para garantir que pegamos apenas os logs deste usuário
     logs_recentes = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id)\
         .order_by(PostLog.posted_at.desc()).limit(5).all()
 
-    # 3. Contagem de posts feitos hoje
     hoje = datetime.utcnow().date()
     posts_hoje = PostLog.query.join(Blog).filter(
         Blog.user_id == current_user.id,
@@ -56,6 +55,13 @@ def ideas():
 @dashboard_bp.route('/generate-ideas', methods=['POST'])
 @login_required
 def generate_ideas():
+    # TRAVA DEMO: Limitar geração excessiva na conta demo (Opcional, mas recomendado)
+    if current_user.email == DEMO_EMAIL:
+        ideias_existentes = ContentIdea.query.join(Blog).filter(Blog.user_id == current_user.id).count()
+        if ideias_existentes > 20:
+            flash('Modo Demo: Limite de ideias atingido para demonstração.', 'warning')
+            return redirect(url_for('dashboard.ideas'))
+
     site_id = request.form.get('site_id')
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first() if site_id else \
            Blog.query.filter_by(user_id=current_user.id).first()
@@ -70,22 +76,8 @@ def generate_ideas():
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {
-                    "role": "system", 
-                    "content": (
-                        "Você é um gerador de títulos SEO. "
-                        "Sua saída deve conter APENAS os títulos, um por linha. "
-                        "PROIBIDO incluir introduções, conclusões, explicações ou numeração. "
-                        "PROIBIDO usar aspas ou negritos nos títulos."
-                    )
-                },
-                {
-                    "role": "user", 
-                    "content": (
-                        f"CONTEXTO: {contexto_enriquecido}\n\n"
-                        "Gere 10 títulos virais seguindo as regras rigorosamente."
-                    )
-                }
+                {"role": "system", "content": "Você é um gerador de títulos SEO. Saída um por linha, sem aspas ou números."},
+                {"role": "user", "content": f"CONTEXTO: {contexto_enriquecido}\n\nGere 10 títulos virais."}
             ],
             temperature=0.8,
         )
@@ -100,7 +92,7 @@ def generate_ideas():
         flash(f'Novas ideias geradas para {site.site_name}!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro no Groq: {str(e)}', 'danger')
+        flash(f'Erro na geração: {str(e)}', 'danger')
 
     return redirect(url_for('dashboard.ideas', site_id=site.id))
 
@@ -167,6 +159,11 @@ def manage_sites():
 @dashboard_bp.route('/add-site', methods=['POST'])
 @login_required
 def add_site():
+    # TRAVA DEMO: Impedir que adicionem novos sites na conta demo
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Você não pode adicionar novos sites nesta conta.', 'warning')
+        return redirect(url_for('dashboard.manage_sites'))
+
     if not current_user.can_add_site():
         flash('Limite de sites atingido.', 'error')
         return redirect(url_for('dashboard.pricing'))
@@ -186,6 +183,11 @@ def add_site():
 @dashboard_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def delete_idea(idea_id):
+    # TRAVA DEMO: Não deixar apagar as ideias da demo
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: A exclusão de ideias está desabilitada.', 'warning')
+        return redirect(url_for('dashboard.ideas'))
+
     idea = ContentIdea.query.join(Blog).filter(ContentIdea.id == idea_id, Blog.user_id == current_user.id).first_or_404()
     db.session.delete(idea)
     db.session.commit()
@@ -195,6 +197,11 @@ def delete_idea(idea_id):
 @dashboard_bp.route('/delete-site/<int:site_id>', methods=['POST'])
 @login_required
 def delete_site(site_id):
+    # TRAVA DEMO: Crucial - Não deixar deletar o site de demonstração
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Você não pode remover o site de demonstração.', 'danger')
+        return redirect(url_for('dashboard.manage_sites'))
+
     site = Blog.query.get_or_404(site_id)
     if site.user_id == current_user.id:
         db.session.delete(site)
@@ -218,6 +225,11 @@ def test_post(site_id):
 @dashboard_bp.route('/update-prompt/<int:site_id>', methods=['POST'])
 @login_required
 def update_prompt(site_id):
+    # TRAVA DEMO: Impedir mudança de temas/prompt que alteram o comportamento da demo
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Alteração de prompt e temas desabilitada.', 'warning')
+        return redirect(url_for('dashboard.manage_sites'))
+
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     site.master_prompt = request.form.get('master_prompt')
     site.macro_themes = request.form.get('macro_themes') 
@@ -236,241 +248,140 @@ def pricing():
     return render_template('pricing.html', user=current_user, planos=PLANOS)
 
 PLANOS = {
-    'trial': {
-        'nome': 'Plano Trial',
-        'preco': 'Grátis',
-        'sites': '1',
-        'posts': '1',
-        'espiao': False
-    },
-    'pro': {
-        'nome': 'Plano Pro',
-        'preco': 'R$ 59',
-        'sites': '2',
-        'posts': '5',
-        'espiao': True
-    },
-    'vip': {
-        'nome': 'Plano VIP',
-        'preco': 'R$ 249',
-        'sites': 'Ilimitados',
-        'posts': 'Ilimitadas',
-        'espiao': True
-    }
+    'trial': {'nome': 'Plano Trial', 'preco': 'Grátis', 'sites': '1', 'posts': '1', 'espiao': False},
+    'pro': {'nome': 'Plano Pro', 'preco': 'R$ 59', 'sites': '2', 'posts': '5', 'espiao': True},
+    'vip': {'nome': 'Plano VIP', 'preco': 'R$ 249', 'sites': 'Ilimitados', 'posts': 'Ilimitadas', 'espiao': True}
 }
 
 @dashboard_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
     if request.method == 'POST':
+        # TRAVA DEMO: Limitar postagens manuais para não poluir o site demo
+        if current_user.email == DEMO_EMAIL:
+            flash('Modo Demo: Utilize a geração automática para testar a ferramenta.', 'info')
+            return redirect(url_for('dashboard.post_report'))
+
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
-        
         site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
 
         try:
-            # Envio para WordPress
             wp_api_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
-            response = requests.post(
-                wp_api_url,
-                json={"title": title, "content": content, "status": "publish"},
-                auth=HTTPBasicAuth(site.wp_user, site.wp_app_password),
-                timeout=30
-            )
+            response = requests.post(wp_api_url, json={"title": title, "content": content, "status": "publish"},
+                auth=HTTPBasicAuth(site.wp_user, site.wp_app_password), timeout=30)
 
             if response.status_code == 201:
                 data = response.json()
-                # Registra no log para aparecer no Dashboard/Relatórios
-                novo_log = PostLog(
-                    blog_id=site.id,
-                    title=title,
-                    content=content,
-                    wp_post_id=data.get('id'),
-                    post_url=data.get('link'),
-                    status='Publicado'
-                )
+                novo_log = PostLog(blog_id=site.id, title=title, content=content, wp_post_id=data.get('id'), post_url=data.get('link'), status='Publicado')
                 db.session.add(novo_log)
                 db.session.commit()
-                flash('Postagem manual realizada com sucesso!', 'success')
+                flash('Postagem manual realizada!', 'success')
                 return redirect(url_for('dashboard.post_report'))
             else:
                 flash(f'Erro no WordPress: {response.status_code}', 'danger')
-
         except Exception as e:
-            flash(f'Erro ao conectar com o site: {str(e)}', 'danger')
+            flash(f'Erro: {str(e)}', 'danger')
             
     return render_template('manual_post.html', user=current_user)
 
 @dashboard_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required
 def spy_writer():
-    """
-    Rota responsável por receber uma URL, extrair seu conteúdo real
-    e utilizar IA para transformar em um post de blog formatado.
-    """
     processed_content = None
-    
     if request.method == 'POST':
         url = request.form.get('url')
-        
-        # 1. Chamada ao módulo de extração (Scraper)
-        # Esta função deve estar definida no mesmo arquivo ou importada
         conteudo_bruto = extrair_texto_da_url(url)
-        
-        # 2. Lógica de Fallback Modular:
-        # Se o scraper falhar (ex: erro 403), enviamos apenas a URL para a IA
-        if conteudo_bruto:
-            contexto_ia = f"CONTEÚDO REAL DA PÁGINA: {conteudo_bruto}"
-            print(f"Sucesso na raspagem: {len(conteudo_bruto)} caracteres extraídos.")
-        else:
-            contexto_ia = f"URL DE REFERÊNCIA (Acesso direto bloqueado): {url}"
-            flash("O site bloqueou a leitura automática, a IA usará apenas a URL como base.", "warning")
+        contexto_ia = f"CONTEÚDO REAL: {conteudo_bruto}" if conteudo_bruto else f"URL: {url}"
 
         try:
-            # 3. Processamento com a Inteligência Artificial
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {
-                        "role": "system", 
-                        "content": (
-                            "Você é um Especialista em SEO e Copywriting. "
-                            "Sua tarefa é criar um artigo original em HTML (h2, p, ul). "
-                            "Se eu fornecer o CONTEÚDO REAL, use-o como base fiel. "
-                            "Se eu fornecer apenas a URL, imagine o conteúdo baseado no tema do link. "
-                            "Saída apenas em HTML, sem tags body ou head."
-                        )
-                    },
-                    {"role": "user", "content": f"Referência para processar: {contexto_ia}"}
+                    {"role": "system", "content": "Você é um Especialista em SEO. Crie um artigo original em HTML."},
+                    {"role": "user", "content": f"Referência: {contexto_ia}"}
                 ],
-                temperature=0.6 # Equilíbrio entre criatividade e fidelidade aos fatos
+                temperature=0.6
             )
-            
-            conteudo_gerado = response.choices[0].message.content
-            
-            # 4. Estruturação Modular do Resultado para o Template
-            # O título é gerado de forma simples via Python para garantir estabilidade
-            processed_content = {
-                'title': f"Insight: {url.split('/')[-1].replace('-', ' ').replace('/', '').title()}",
-                'text': conteudo_gerado
-            }
-            
+            processed_content = {'title': "Nova Ideia", 'text': response.choices[0].message.content}
         except Exception as e:
-            print(f"Erro na API de IA: {e}")
-            flash("Ocorreu um erro ao gerar o conteúdo com a IA.", "danger")
+            flash("Erro ao gerar conteúdo.", "danger")
 
-    # Retorna sempre para o mesmo template, com ou sem conteúdo processado
-    return render_template(
-        'spy_writer.html', 
-        user=current_user, 
-        processed_content=processed_content
-    )
+    return render_template('spy_writer.html', user=current_user, processed_content=processed_content)
 
 @dashboard_bp.route('/radar')
 @login_required
 def radar():
-    site_id = request.args.get('site_id')
-    
-    # Busca fontes vinculadas aos blogs do utilizador logado
     query = ContentSource.query.join(Blog).filter(Blog.user_id == current_user.id)
-    
+    site_id = request.args.get('site_id')
     if site_id and site_id.isdigit():
         query = query.filter(ContentSource.blog_id == int(site_id))
-    
     fontes = query.order_by(ContentSource.created_at.desc()).all()
-    
     return render_template('radar.html', user=current_user, fontes=fontes)
 
-# Rota adicional para apagar fontes do Radar
 @dashboard_bp.route('/delete-source/<int:source_id>', methods=['POST'])
 @login_required
 def delete_source(source_id):
-    fonte = ContentSource.query.join(Blog).filter(
-        ContentSource.id == source_id, 
-        Blog.user_id == current_user.id
-    ).first_or_404()
-    
+    # TRAVA DEMO: Não deixar apagar as fontes do radar na demo
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Exclusão de fontes desabilitada.', 'warning')
+        return redirect(url_for('dashboard.radar'))
+
+    fonte = ContentSource.query.join(Blog).filter(ContentSource.id == source_id, Blog.user_id == current_user.id).first_or_404()
     db.session.delete(fonte)
     db.session.commit()
-    flash('Fonte removida do radar.', 'info')
+    flash('Fonte removida.', 'info')
     return redirect(url_for('dashboard.radar'))
 
 @dashboard_bp.route('/add-source', methods=['POST'])
 @login_required
 def add_source():
+    # TRAVA DEMO: Evitar poluição do radar demo
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Adição de novas fontes desabilitada.', 'warning')
+        return redirect(url_for('dashboard.radar'))
+
     url = request.form.get('url').strip()
     site_id = request.form.get('site_id')
-    
-    # 1. Validação de Segurança
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
+    source_type = 'youtube' if "youtube.com" in url or "youtu.be" in url else 'blog'
 
-    # 2. Lógica de Identificação Automática
-    if "youtube.com" in url or "youtu.be" in url:
-        source_type = 'youtube'
-    else:
-        source_type = 'blog' # Padroniza como blog para qualquer outra URL
-
-    try:
-        # 3. Salvar no Banco
-        nova_fonte = ContentSource(
-            blog_id=site.id,
-            source_url=url,
-            source_type=source_type,
-            is_active=True
-        )
-        db.session.add(nova_fonte)
-        db.session.commit()
-        
-        flash(f'Fonte adicionada ao Radar com sucesso! Tipo identificado: {source_type.capitalize()}', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao salvar fonte: {str(e)}', 'danger')
-
-    return redirect(url_for('dashboard.radar', site_id=site.id))
+    nova_fonte = ContentSource(blog_id=site.id, source_url=url, source_type=source_type, is_active=True)
+    db.session.add(nova_fonte)
+    db.session.commit()
+    flash('Fonte adicionada ao Radar!', 'success')
+    return redirect(url_for('dashboard.radar'))
 
 @dashboard_bp.route('/sync-radar')
 @login_required
 def sync_radar():
-    from models import ContentSource, CapturedContent # Certifique-se de que os nomes estão corretos
-    
-    # 1. Busca todas as fontes do utilizador logado
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Sincronização automática desativada para demonstração.', 'info')
+        return redirect(url_for('dashboard.radar'))
+
     fontes = ContentSource.query.join(Blog).filter(Blog.user_id == current_user.id).all()
-    
     if not fontes:
-        flash("Nenhuma fonte encontrada no Radar. Cadastre uma primeiro!", "warning")
+        flash("Nenhuma fonte encontrada.", "warning")
         return redirect(url_for('dashboard.radar'))
 
     contador = 0
     for fonte in fontes:
-        # 2. Chama o nosso Scraper (que já configurámos com BeautifulSoup)
         texto_real = extrair_texto_da_url(fonte.source_url)
-        
         if texto_real:
             try:
-                # 3. IA gera um resumo para a "Memória"
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "Resume este post em 3 pontos-chave para SEO."},
+                        {"role": "system", "content": "Resume este post em 3 pontos SEO."},
                         {"role": "user", "content": texto_real[:4000]}
                     ]
                 )
-                resumo = response.choices[0].message.content
-                
-                # 4. Salva na tabela CapturedContent
-                nova_captura = CapturedContent(
-                    source_id=fonte.id,
-                    site_id=fonte.blog_id, # Assumindo que a fonte está ligada a um site
-                    url=fonte.source_url,
-                    title=f"Insight de {fonte.source_url.split('/')[-2]}",
-                    summary=resumo
-                )
+                nova_captura = CapturedContent(source_id=fonte.id, site_id=fonte.blog_id, url=fonte.source_url, title="Insight", summary=response.choices[0].message.content)
                 db.session.add(nova_captura)
                 contador += 1
-            except Exception as e:
-                print(f"Erro ao processar fonte {fonte.source_url}: {e}")
+            except: continue
 
     db.session.commit()
-    flash(f"Sucesso! {contador} fontes do Radar foram lidas e resumidas.", "success")
+    flash(f"Sucesso! {contador} fontes resumidas.", "success")
     return redirect(url_for('dashboard.radar'))
