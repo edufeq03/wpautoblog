@@ -24,6 +24,7 @@ DEMO_EMAIL = 'demo@wpautoblog.com.br'
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard_view():
+    limites = current_user.get_plan_limits()
     saldo_atual = current_user.credits if hasattr(current_user, 'credits') else 0
     
     logs_recentes = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id)\
@@ -38,6 +39,7 @@ def dashboard_view():
 
     return render_template('dashboard.html', 
                            user=current_user, 
+                           limite_posts=limites['posts_por_dia'],
                            saldo=saldo_atual, 
                            logs=logs_recentes,
                            posts_hoje=posts_hoje)

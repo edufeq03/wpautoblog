@@ -2,6 +2,7 @@ from flask import Flask, render_template
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
+from routes.payments import payments_bp # Importe o novo arquivo
 from flask_apscheduler import APScheduler
 from werkzeug.security import generate_password_hash
 import os
@@ -79,6 +80,7 @@ def scheduled_radar_sync():
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(payments_bp) # Registre o blueprint
 
 @app.route('/')
 def index():
