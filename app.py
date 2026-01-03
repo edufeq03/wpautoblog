@@ -41,10 +41,33 @@ def scheduled_radar_sync():
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 
-# --- ROTA DA LANDING PAGE ---
+PLANOS = {
+    'trial': {
+        'nome': 'Plano Trial',
+        'preco': 'Grátis',
+        'sites': '1',
+        'posts': '1',
+        'espiao': False
+    },
+    'pro': {
+        'nome': 'Plano Pro',
+        'preco': 'R$ 59',
+        'sites': '2',
+        'posts': '5',
+        'espiao': True
+    },
+    'vip': {
+        'nome': 'Plano VIP',
+        'preco': 'R$ 249',
+        'sites': 'Ilimitados',
+        'posts': 'Ilimitadas',
+        'espiao': True
+    }
+}
+
 @app.route('/')
 def index():
-    return render_template('landing.html')
+    return render_template('landing.html', planos=PLANOS)
 
 if __name__ == '__main__':
     with app.app_context():

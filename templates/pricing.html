@@ -11,10 +11,10 @@
         
         <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm relative flex flex-col h-full">
             <h3 class="text-xl font-bold mb-2 text-gray-700">Plano Trial</h3>
-            <div class="text-4xl font-black mb-6">Grátis</div>
+            <div class="text-4xl font-black mb-6">{{ planos.trial.preco }}</div>
             <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site WordPress</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Postagem por dia</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i> {{ planos.trial.sites }} Site WordPress</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i> {{ planos.trial.posts }} Postagem por dia</li>
                 <li><i class="fas fa-times text-red-400 mr-2"></i> Redator Espião Bloqueado</li>
                 <li><i class="fas fa-times text-red-400 mr-2"></i> Fila de Ideias Limitada</li>
             </ul>
@@ -22,11 +22,11 @@
         </div>
 
         <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg relative flex flex-col h-full border-t-4 border-t-blue-400">
-            <h3 class="text-xl font-bold mb-2 text-gray-700">Plano Pro</h3>
-            <div class="text-4xl font-black mb-6">R$ 59<span class="text-lg text-gray-400 font-normal">/mês</span></div>
+            <h3 class="text-xl font-bold mb-2 text-gray-700">{{ planos.pro.nome }}</h3>
+            <div class="text-4xl font-black mb-6">{{ planos.pro.preco }}<span class="text-lg text-gray-400 font-normal">/mês</span></div>
             <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Até 2 Sites WordPress</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Postagens por dia</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i> Até {{ planos.pro.sites }} Sites WordPress</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i> {{ planos.pro.posts }} Postagens por dia</li>
                 <li><i class="fas fa-check text-green-500 mr-2"></i> Acesso ao Redator Espião</li>
                 <li><i class="fas fa-check text-green-500 mr-2"></i> Fila de Ideias Estendida</li>
             </ul>
@@ -36,7 +36,7 @@
         <div class="bg-white p-8 rounded-2xl border-2 border-blue-500 shadow-xl relative transform lg:scale-105 flex flex-col h-full">
             <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Mais Popular</div>
             <h3 class="text-xl font-bold mb-2 text-blue-600">Plano VIP</h3>
-            <div class="text-4xl font-black mb-6">R$ 249<span class="text-lg text-gray-400 font-normal">/mês</span></div>
+            <div class="text-4xl font-black mb-6">{{ planos.vip.preco }}<span class="text-lg text-gray-400 font-normal">/mês</span></div>
             <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
                 <li><i class="fas fa-check text-green-500 mr-2"></i> Sites Ilimitados</li>
                 <li><i class="fas fa-check text-green-500 mr-2"></i> Postagens Ilimitadas</li>

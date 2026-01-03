@@ -233,7 +233,31 @@ def general_config():
 @dashboard_bp.route('/pricing')
 @login_required
 def pricing():
-    return render_template('pricing.html', user=current_user)
+    return render_template('pricing.html', user=current_user, planos=PLANOS)
+
+PLANOS = {
+    'trial': {
+        'nome': 'Plano Trial',
+        'preco': 'Grátis',
+        'sites': '1',
+        'posts': '1',
+        'espiao': False
+    },
+    'pro': {
+        'nome': 'Plano Pro',
+        'preco': 'R$ 59',
+        'sites': '2',
+        'posts': '5',
+        'espiao': True
+    },
+    'vip': {
+        'nome': 'Plano VIP',
+        'preco': 'R$ 249',
+        'sites': 'Ilimitados',
+        'posts': 'Ilimitadas',
+        'espiao': True
+    }
+}
 
 @dashboard_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required

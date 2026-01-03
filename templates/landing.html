@@ -56,5 +56,54 @@
             </div>
         </div>
     </section>
+
+    <section class="py-20 bg-slate-50 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-black text-slate-900 mb-4">Planos que cabem no seu bolso</h2>
+                <p class="text-slate-500">Escolha a melhor opção para escalar seu império de blogs.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+                    <h3 class="text-xl font-bold text-slate-700 mb-2">Plano Trial</h3>
+                    <div class="text-4xl font-black text-slate-900 mb-6">Grátis</div>
+                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site WordPress</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Postagem por dia</li>
+                        <li><i class="fas fa-times text-red-400 mr-2"></i> Redator Espião Bloqueado</li>
+                    </ul>
+                    <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition">Começar Grátis</a>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl border-2 border-blue-100 shadow-xl flex flex-col relative transform md:scale-105 z-10">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Recomendado</div>
+                    <h3 class="text-xl font-bold text-slate-700 mb-2">Plano Pro</h3>
+                    <div class="text-4xl font-black text-slate-900 mb-6">R$ 59<span class="text-lg text-slate-400 font-normal">/mês</span></div>
+                    <ul class="space-y-4 mb-8 text-slate-600 flex-grow">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i> Até 2 Sites WordPress</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Postagens por dia</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i> Acesso ao Redator Espião</li>
+                    </ul>
+                    <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition">Assinar Pro</a>
+                </div>
+
+                <div class="bg-slate-900 p-8 rounded-3xl shadow-sm flex flex-col text-white">
+                    <h3 class="text-xl font-bold mb-2">Plano VIP</h3>
+                    <div class="text-4xl font-black mb-6">R$ 249<span class="text-lg text-slate-500 font-normal">/mês</span></div>
+                    <ul class="space-y-4 mb-8 text-slate-300 flex-grow">
+                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Sites Ilimitados</li>
+                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Postagens Ilimitadas</li>
+                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Suporte Prioritário</li>
+                    </ul>
+                    <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-4 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-100 transition">Seja VIP</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-10 text-center text-slate-400 text-sm border-t border-slate-200">
+        &copy; 2026 WP AutoBlog - Todos os direitos reservados.
+    </footer>
 </body>
 </html>
