@@ -14,9 +14,7 @@
             color: #60a5fa;
             box-shadow: inset 10px 0 15px -10px rgba(59, 130, 246, 0.5);
         }
-        .flash-message {
-            transition: all 0.5s ease-in-out;
-        }
+        .flash-message { transition: all 0.5s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-200 text-gray-900"> 
@@ -34,76 +32,69 @@
         {% endwith %}
     </div>
 
-    {% if current_user.is_authenticated and current_user.email == 'demo@wpautoblog.com.br' %}
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 shadow-lg sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-            <div class="flex items-center gap-2">
-                <span class="flex h-2 w-2 rounded-full bg-green-400 animate-ping"></span>
-                <p class="font-medium text-sm md:text-base">Você está no <strong>Modo Demonstração</strong>.</p>
-            </div>
-            <a href="{{ url_for('auth.register') }}" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm">
-                Criar Minha Conta Real
-            </a>
-        </div>
-    </div>
-    {% endif %}
-
     <div class="flex min-h-screen overflow-x-hidden">
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 md:static md:inset-0 transition-transform duration-300 ease-in-out shadow-xl">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 md:static md:inset-0 transition-transform duration-300 ease-in-out shadow-xl flex flex-col">
             <div class="p-6">
                 <h1 class="text-xl font-black tracking-tighter text-blue-400">WP <span class="text-white">AutoBlog</span></h1>
             </div>
             
-            <nav class="mt-6">
+            <nav class="mt-6 flex-1">
                 {% set active_page = request.endpoint %}
-                <a href="{{ url_for('dashboard.dashboard_view') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.dashboard_view' else 'text-gray-400' }}">
+                {% set setup_status = current_user.get_setup_status() if current_user.is_authenticated else 'no_site' %}
+
+                <a href="{{ url_for('dashboard_hub') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.dashboard_view' else 'text-gray-400' }}">
                     <i class="fas fa-chart-line w-5"></i> Dashboard
                 </a>
-                <a href="{{ url_for('content.ideas') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'content.ideas' else 'text-gray-400' }}">
-                    <i class="fas fa-lightbulb w-5"></i> Fila de Ideias
+
+                {% set menu_items = [
+                    {'ep': 'content.ideas', 'icon': 'fa-lightbulb', 'label': 'Fila de Ideias'},
+                    {'ep': 'content.manual_post', 'icon': 'fa-pen-fancy', 'label': 'Postagem Manual'},
+                    {'ep': 'content.post_report', 'icon': 'fa-file-alt', 'label': 'Relatórios'},
+                    {'ep': 'content.spy_writer', 'icon': 'fa-user-secret', 'label': 'Redator Espião'},
+                    {'ep': 'radar.radar', 'icon': 'fa-satellite-dish', 'label': 'Radar de Fontes'}
+                ] %}
+
+                {% for item in menu_items %}
+                <a href="{% if setup_status == 'complete' %}{{ url_for(item.ep) }}{% else %}#{% endif %}" 
+                   class="flex items-center gap-3 px-6 py-3 transition-all duration-200 {{ 'nav-active' if active_page == item.ep else 'text-gray-400' }} {% if setup_status != 'complete' %}opacity-40 cursor-not-allowed{% else %}hover:bg-gray-800{% endif %}"
+                   {% if setup_status != 'complete' %}title="Conclua a configuração primeiro"{% endif %}>
+                    <i class="fas {{ item.icon }} w-5"></i>
+                    <span>{{ item.label }}</span>
+                    {% if setup_status != 'complete' %}<i class="fas fa-lock ml-auto text-[10px]"></i>{% endif %}
                 </a>
-                <a href="{{ url_for('content.manual_post') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'content.manual_post' else 'text-gray-400' }}">
-                    <i class="fas fa-pen-fancy w-5"></i> Postagem Manual
-                </a>
-                <a href="{{ url_for('content.post_report') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'content.post_report' else 'text-gray-400' }}">
-                    <i class="fas fa-file-alt w-5"></i> Relatório de Posts
-                </a>
-                <a href="{{ url_for('content.spy_writer') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'content.spy_writer' else 'text-gray-400' }}">
-                    <i class="fas fa-user-secret w-5"></i> Redator Espião
-                </a>
-                <a href="{{ url_for('radar.radar') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'radar.radar' else 'text-gray-400' }}">
-                    <i class="fas fa-satellite-dish w-5"></i> Radar de Fontes
-                </a>
-                <a href="{{ url_for('sites.manage_sites') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 border-b border-gray-800 mt-2 pt-2 {{ 'nav-active' if active_page == 'sites.manage_sites' else 'text-gray-400' }}">
+                {% endfor %}
+
+                <a href="{{ url_for('sites.manage_sites') }}" class="flex items-center gap-3 px-6 py-3 border-t border-gray-800 mt-4 pt-4 {{ 'nav-active' if active_page == 'sites.manage_sites' else 'text-gray-400 hover:bg-gray-800' }}">
                     <i class="fas fa-cog w-5"></i> Gerenciar Sites
                 </a>
-                <a href="{{ url_for('dashboard.pricing') }}" class="flex items-center gap-3 px-6 py-3 text-yellow-500 hover:bg-gray-800 font-bold transition-all duration-200 {{ 'nav-active' if active_page == 'dashboard.pricing' else '' }}">
-                    <i class="fas fa-crown w-5"></i> Upgrade para VIP
-                </a>
-                <div class="mt-10">
-                    <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-6 py-3 text-red-400 hover:bg-gray-800 transition-colors">
-                        <i class="fas fa-sign-out-alt w-5"></i> Sair
-                    </a>
-                </div>
             </nav>
+
+            {% if current_user.is_authenticated %}
+            <div class="p-4 border-t border-gray-800 mt-auto">
+                <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-6 py-3 text-red-400 hover:bg-red-900/20 rounded-xl transition-all w-full">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="font-bold">Sair do Sistema</span>
+                </a>
+            </div>
+            {% endif %}
         </aside>
 
         <main class="flex-1 flex flex-col min-w-0">
             <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
                 <div class="flex items-center gap-3">
-                    <button id="mobile-menu-button" class="md:hidden text-gray-600 focus:outline-none p-2">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
-                    <span class="font-medium text-gray-500 italic hidden sm:inline">Área de Trabalho</span>
+                    <button id="mobile-menu-button" class="md:hidden text-gray-600 p-2"><i class="fas fa-bars text-xl"></i></button>
+                    <span class="font-medium text-gray-500 italic hidden sm:inline">Painel de Controle</span>
                 </div>
                 <div class="flex items-center gap-4">
+                    {% if current_user.is_authenticated %}
                     <div class="text-right mr-2 hidden xs:block">
-                        <p class="text-xs font-bold text-gray-800">{{ current_user.email if current_user.is_authenticated else 'Usuário' }}</p>
-                        <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_type if current_user.is_authenticated else 'Trial' }} Account</p>
+                        <p class="text-xs font-bold text-gray-800">{{ current_user.email }}</p>
+                        <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_type }} Account</p>
                     </div>
                     <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        {{ current_user.email[0].upper() if current_user.is_authenticated else 'U' }}
+                        {{ current_user.email[0].upper() }}
                     </div>
+                    {% endif %}
                 </div>
             </header>
 
@@ -116,31 +107,19 @@
     </div>
 
     <script>
+        // Lógica de Flash e Menu Mobile (conforme seu original)
         document.addEventListener('DOMContentLoaded', function() {
-            function setupFlashDismissal() {
-                setTimeout(function() {
-                    const messages = document.querySelectorAll('.flash-message');
-                    messages.forEach(function(msg) {
-                        msg.style.opacity = '0';
-                        msg.style.transform = 'translateY(-10px)';
-                        setTimeout(() => msg.remove(), 500); 
-                    });
-                }, 5000);
-            }
-            setupFlashDismissal();
+            setTimeout(() => {
+                document.querySelectorAll('.flash-message').forEach(msg => {
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.remove(), 500);
+                });
+            }, 5000);
 
             const btn = document.getElementById('mobile-menu-button');
             const sidebar = document.getElementById('sidebar');
             if(btn && sidebar) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    sidebar.classList.toggle('-translate-x-full');
-                });
-                document.addEventListener('click', (e) => {
-                    if (!sidebar.contains(e.target) && !btn.contains(e.target) && window.innerWidth < 768) {
-                        sidebar.classList.add('-translate-x-full');
-                    }
-                });
+                btn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
             }
         });
     </script>

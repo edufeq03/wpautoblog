@@ -37,6 +37,17 @@ def dashboard_view():
                            logs=logs_recentes,
                            posts_hoje=posts_hoje)
 
+@dashboard_bp.route('/index')
+@login_required
+def index():
+    status = current_user.get_setup_status()
+    
+    if status == 'complete':
+        return render_template('dashboard.html') # A sua dashboard real com gráficos
+    else:
+        # Se estiver incompleto, enviamos para a página de onboarding
+        return render_template('onboarding.html', status=status)
+    
 @dashboard_bp.route('/pricing')
 @login_required
 def pricing():

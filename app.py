@@ -1,12 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for, request
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
-from routes.payments import payments_bp # Importe o novo arquivo
-from routes.content import content_bp # Importe o novo arquivo
-from routes.sites import sites_bp # Importe o novo arquivo
-from routes.radar import radar_bp # Importe o novo arquivo
+from routes.payments import payments_bp 
+from routes.content import content_bp 
+from routes.sites import sites_bp 
+from routes.radar import radar_bp 
 from flask_apscheduler import APScheduler
+from flask_login import login_required, current_user # Importado para o funcionamento do hub
 from werkzeug.security import generate_password_hash
 import os
 from utils.ai_logic import processar_radar_automatico 
@@ -16,7 +17,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
 
-# Configuração de banco para suportar PostgreSQL (Easypanel) ou SQLite local
+# Configuração de banco
 basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
@@ -29,26 +30,53 @@ db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
-def garantir_usuario_demo():
-    """Cria o usuário demo caso ele não exista no banco de dados."""
-    from models import User, Blog  # Import local para evitar importação circular
-    
-    demo_email = 'demo@wpautoblog.com.br'
-    user_demo = User.query.filter_by(email=demo_email).first()
+# Registro de Blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(dashboard_bp)
+app.register_blueprint(sites_bp, url_prefix='/sites')
+app.register_blueprint(content_bp, url_prefix='/content')
+app.register_blueprint(radar_bp, url_prefix='/radar')
+app.register_blueprint(payments_bp, url_prefix='/billing')
 
-    if not user_demo:
-        print(">>> Criando usuário demo pela primeira vez...")
-        # Cria o usuário com plano VIP para a demonstração ser completa
+# --- ROTAS DE FLUXO PRINCIPAL ---
+
+@app.route('/')
+def index():
+    # Se logado, manda para o hub decidir se vai para onboarding ou dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard_hub'))
+    return render_template('landing.html')
+
+@app.route('/dashboard-hub')
+@login_required
+def dashboard_hub():
+    status = current_user.get_setup_status()
+    
+    # Se o usuário acabou de completar o setup, mas queremos que ele veja a página de onboarding
+    # adicionamos um parâmetro 'finished=true' na URL
+    finished = request.args.get('finished') == 'true'
+    
+    if status == 'complete' and not finished:
+        return redirect(url_for('dashboard.dashboard_view'))
+    
+    # Se o status for incompleto OU se ele acabou de terminar (finished=true), mostra onboarding
+    return render_template('onboarding.html', status=status)
+
+# --- CONFIGURAÇÕES DE SCHEDULER E DEMO ---
+
+def garantir_usuario_demo():
+    from models import User, Blog
+    demo_email = 'demo@wpautoblog.com.br'
+    if not User.query.filter_by(email=demo_email).first():
         novo_demo = User(
             email=demo_email,
             password=generate_password_hash('demo123', method='pbkdf2:sha256'),
             plan_type='vip',
-            credits=100  # Saldo generoso para a demo
+            credits=100
         )
         db.session.add(novo_demo)
         db.session.commit()
         
-        # Opcional: Já conectar um site de teste ao demo
         site_teste = Blog(
             user_id=novo_demo.id,
             site_name="Blog de Teste Demo",
@@ -59,11 +87,7 @@ def garantir_usuario_demo():
         )
         db.session.add(site_teste)
         db.session.commit()
-        print(">>> Usuário demo e site de teste criados com sucesso.")
-    else:
-        print(">>> Usuário demo já existe.")
 
-# Tenta criar as colunas novas ao iniciar
 with app.app_context():
     db.create_all()
     garantir_usuario_demo()
@@ -81,50 +105,7 @@ def scheduled_radar_sync():
         except Exception as e:
             print(f"Erro no scheduler: {e}")
 
-app.register_blueprint(auth_bp)
-app.register_blueprint(dashboard_bp)
-app.register_blueprint(sites_bp, url_prefix='/sites')
-app.register_blueprint(content_bp, url_prefix='/content')
-app.register_blueprint(radar_bp, url_prefix='/radar')
-app.register_blueprint(payments_bp, url_prefix='/billing')
-
-@app.route('/')
-def index():
-    return render_template('landing.html')
-
-# Tarefa para resetar contadores diários (se você salvar posts_hoje no banco)
-# Se você calcula os posts_hoje por consulta (como está no dashboard.py), 
-# o reset é "automático" porque a data muda.
-@scheduler.task('cron', id='reset_daily_limits', hour=0, minute=1)
-def reset_daily_limits():
-    with app.app_context():
-        # Se você tiver uma coluna 'posts_realizados_hoje' no User:
-        # User.query.update({User.posts_hoje: 0})
-        # db.session.commit()
-        print("Fim do dia: Contadores virtuais resetados pela mudança de data.")
-
 if __name__ == '__main__':
-    with app.app_context():
-        # 1. Garante que as tabelas existam
-        db.create_all()
-        
-        # 2. Executa a lógica de semente (Cria o usuário demo se não existir)
-        from werkzeug.security import generate_password_hash
-        from models import User
-        
-        demo_email = 'demo@wpautoblog.com.br'
-        if not User.query.filter_by(email=demo_email).first():
-            print(">>> Criando ambiente de demonstração...")
-            demo_user = User(
-                email=demo_email,
-                password=generate_password_hash('demo123'),
-                plan_type='vip',
-                credits=100
-            )
-            db.session.add(demo_user)
-            db.session.commit()
-            print(">>> Usuário demo pronto!")
-
     # 3. Inicialização completa do servidor
     app.run(
         host='0.0.0.0', # Permite acesso externo (essencial para Docker/Easypanel)

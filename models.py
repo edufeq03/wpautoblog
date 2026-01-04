@@ -32,6 +32,31 @@ class User(db.Model, UserMixin):
         """Verifica se o utilizador pode adicionar mais um site baseado no seu plano."""
         limite = self.get_plan_limits()['max_sites']
         return len(self.sites) < limite
+    
+    # No seu arquivo models.py, dentro da classe User
+    def is_setup_complete(self):
+        """Verifica se o usuário tem pelo menos um site e se esse site tem prompt definido."""
+        if not self.sites:
+            return False
+        # Verifica se o primeiro site já tem as configurações básicas
+        primeiro_site = self.sites[0]
+        return bool(primeiro_site.wp_url and primeiro_site.master_prompt)
+    
+    # No models.py, dentro da classe User
+    def get_setup_status(self):
+        """
+        Retorna o status do onboarding do utilizador para controlar o acesso às ferramentas.
+        """
+        if not self.sites:
+            return 'no_site'
+        
+        # Pega o primeiro site para validar as configurações básicas
+        site = self.sites[0]
+        if not site.master_prompt or not site.macro_themes:
+            return 'no_config'
+            
+        return 'complete'
+
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
