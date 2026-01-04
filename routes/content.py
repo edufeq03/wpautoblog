@@ -35,6 +35,18 @@ def ideas():
 @content_bp.route('/generate-ideas', methods=['POST'])
 @login_required
 def generate_ideas():
+    # 1. Verificação de segurança: O usuário tem sites?
+    if not current_user.sites:
+        flash('Você precisa cadastrar pelo menos um site antes de gerar ideias.', 'info')
+        return redirect(url_for('sites.manage_sites'))
+
+    site_id = request.form.get('site_id')
+    
+    # 2. Se não veio site_id no formulário (ex: clicou no botão geral), 
+    # pega o primeiro site do usuário como padrão
+    if not site_id:
+        site_id = current_user.sites[0].id
+        
     if current_user.email == DEMO_EMAIL:
         ideias_existentes = ContentIdea.query.join(Blog).filter(Blog.user_id == current_user.id).count()
         if ideias_existentes > 20:
@@ -154,7 +166,24 @@ def manual_post():
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
-        site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
+        
+        # --- CORREÇÃO AQUI ---
+        if not site_id:
+            flash('Erro: Você precisa selecionar um site antes de postar.', 'error')
+            return redirect(url_for('content.manual_post'))
+        
+        try:
+            # Garante que o ID seja um número válido antes de consultar o banco
+            site_id_int = int(site_id)
+            site = Blog.query.filter_by(id=site_id_int, user_id=current_user.id).first()
+        except (ValueError, TypeError):
+            flash('Erro: ID do site inválido.', 'error')
+            return redirect(url_for('content.manual_post'))
+        # ----------------------
+
+        if not site:
+            flash('Site não encontrado.', 'danger')
+            return redirect(url_for('content.manual_post'))
 
         try:
             wp_api_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"

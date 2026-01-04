@@ -9,10 +9,16 @@
             <p class="text-sm text-slate-500">Transforme sugestões da IA em artigos com um clique.</p>
         </div>
         <form action="{{ url_for('content.generate_ideas') }}" method="POST">
-            <input type="hidden" name="site_id" value="{{ request.args.get('site_id', '') }}">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
-                <i class="fas fa-magic text-sm"></i> Gerar Novas Ideias
-            </button>
+            {% if current_user.sites %}
+                <input type="hidden" name="site_id" value="{{ request.args.get('site_id', current_user.sites[0].id) }}">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+                    <i class="fas fa-magic text-sm"></i> Gerar Novas Ideias
+                </button>
+            {% else %}
+                <a href="{{ url_for('sites.manage_sites') }}" class="bg-slate-200 text-slate-500 px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 border border-slate-300">
+                    <i class="fas fa-plus-circle text-sm"></i> Conecte um site para gerar ideias
+                </a>
+            {% endif %}
         </form>
     </div>
 
