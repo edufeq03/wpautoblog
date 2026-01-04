@@ -88,9 +88,9 @@ def garantir_usuario_demo():
         db.session.add(site_teste)
         db.session.commit()
 
-with app.app_context():
-    db.create_all()
-    garantir_usuario_demo()
+#with app.app_context():
+    #db.create_all()
+    #garantir_usuario_demo()
 
 scheduler = APScheduler()
 app.config['SCHEDULER_API_ENABLED'] = True

@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, date
 from flask_login import UserMixin, LoginManager
 
 db = SQLAlchemy()
@@ -15,6 +15,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(200), nullable=False)
     plan_type = db.Column(db.String(20), default='trial') 
     credits = db.Column(db.Integer, default=5)
+    last_post_date = db.Column(db.Date, nullable=True)
     
     # Relação com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)
@@ -56,7 +57,32 @@ class User(db.Model, UserMixin):
             return 'no_config'
             
         return 'complete'
-
+    
+    def pode_postar_automatico(self):
+        """
+        Verifica se o usuário tem tudo o que precisa para o sistema rodar sozinho.
+        """
+        # 1. Verifica se o setup está completo (Site + IA)
+        if self.get_setup_status() != 'complete':
+            return False
+            
+        # 2. Verifica se o usuário tem créditos (se o seu sistema usa créditos)
+        if self.credits is not None and self.credits <= 0:
+            return False
+            
+        return True
+    
+    def pode_postar_hoje(self):
+        """
+        Verifica se o usuário Trial já postou hoje.
+        """
+        if self.plan_type == 'trial':
+            hoje = date.today()
+            if self.last_post_date == hoje:
+                return False
+        
+        # Para planos VIP, a trava pode ser apenas o saldo de créditos
+        return self.credits > 0
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
