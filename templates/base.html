@@ -15,7 +15,7 @@
             box-shadow: inset 10px 0 15px -10px rgba(59, 130, 246, 0.5);
         }
         .flash-message {
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            transition: all 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -25,7 +25,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="flash-message bg-white border-l-4 {% if category == 'success' %}border-green-500 text-green-700{% else %}border-red-500 text-red-700{% endif %} p-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px] animate-bounce-subtle">
+                    <div class="flash-message bg-white border-l-4 {% if category == 'success' %}border-green-500 text-green-700{% elif category == 'error' or category == 'danger' %}border-red-500 text-red-700{% else %}border-blue-500 text-blue-700{% endif %} p-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px]">
                         <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
                         <span class="font-bold text-sm">{{ message }}</span>
                     </div>
@@ -34,17 +34,15 @@
         {% endwith %}
     </div>
 
-    {% if current_user.email == 'demo@wpautoblog.com.br' %}
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 shadow-lg">
+    {% if current_user.is_authenticated and current_user.email == 'demo@wpautoblog.com.br' %}
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 shadow-lg sticky top-0 z-40">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
             <div class="flex items-center gap-2">
                 <span class="flex h-2 w-2 rounded-full bg-green-400 animate-ping"></span>
-                <p class="font-medium text-sm md:text-base">
-                    Você está no <strong>Modo Demonstração</strong>. Gostou da facilidade?
-                </p>
+                <p class="font-medium text-sm md:text-base">Você está no <strong>Modo Demonstração</strong>.</p>
             </div>
-            <a href="{{ url_for('auth.register') }}" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm">
-                Criar Minha Conta Agora
+            <a href="{{ url_for('auth.register') }}" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm">
+                Criar Minha Conta Real
             </a>
         </div>
     </div>
