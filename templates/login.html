@@ -7,6 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-6">
+    <div id="flash-container" class="fixed top-4 right-4 z-[9999] space-y-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message bg-white border-l-4 {% if category == 'success' %}border-green-500 text-green-700{% else %}border-red-500 text-red-700{% endif %} p-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px] transition-all duration-500">
+                        <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                        <span class="font-bold text-sm">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
     <div class="bg-white max-w-md w-full rounded-3xl shadow-xl overflow-hidden">
         <div class="p-8 md:p-12">
             <div class="text-center mb-10">
@@ -31,4 +43,15 @@
         </div>
     </div>
 </body>
+<script>
+    // Auto-dismiss das mensagens
+    setTimeout(function() {
+        const messages = document.querySelectorAll('.flash-message');
+        messages.forEach(function(msg) {
+            msg.style.opacity = '0';
+            msg.style.transform = 'translateY(-10px)';
+            setTimeout(() => msg.remove(), 500); 
+        });
+    }, 5000);
+</script>
 </html>

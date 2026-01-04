@@ -23,7 +23,8 @@ def register():
         new_user = User(email=email, password=generate_password_hash(password, method='scrypt'))
         db.session.add(new_user)
         db.session.commit()
-        flash('Conta criada! Faça login.', 'success')
+        # O PULO DO GATO:
+        flash('Conta criada com sucesso! Faça seu login para começar.', 'success')
         return redirect(url_for('auth.login'))
         
     return render_template('register.html')
