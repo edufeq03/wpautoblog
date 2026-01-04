@@ -9,7 +9,7 @@
     </div>
 
     <div class="grid gap-6">
-        <div class="bg-white p-6 rounded-3xl border-2 transition-all duration-500 {% if status == 'no_site' %}border-blue-500 shadow-xl scale-[1.02]{% else %}border-slate-100 opacity-60{% endif %} flex items-center gap-6">
+        <div class="bg-white p-6 rounded-3xl border-2 transition-all duration-500 {% if status == 'no_site' %}border-blue-500 shadow-xl scale-[1.01]{% else %}border-slate-100 opacity-60{% endif %} flex items-center gap-6">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center {% if status != 'no_site' %}bg-green-100 text-green-600{% else %}bg-blue-100 text-blue-600{% endif %}">
                 <i class="fas {% if status != 'no_site' %}fa-check{% else %}fa-plug{% endif %} text-2xl"></i>
             </div>
@@ -22,11 +22,11 @@
                 Conectar Agora
             </button>
             {% else %}
-            <span class="text-green-600 font-black text-sm uppercase">Concluído</span>
+            <span class="text-green-600 font-black text-sm uppercase mr-4">Concluído</span>
             {% endif %}
         </div>
 
-        <div class="bg-white p-6 rounded-3xl border-2 transition-all duration-500 {% if status == 'no_config' %}border-blue-500 shadow-xl scale-[1.02]{% else %}border-slate-100 opacity-60{% endif %} flex items-center gap-6">
+        <div class="bg-white p-6 rounded-3xl border-2 transition-all duration-500 {% if status == 'no_config' %}border-blue-500 shadow-xl scale-[1.01]{% else %}border-slate-100 opacity-60{% endif %} flex items-center gap-6">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center {% if status == 'complete' %}bg-green-100 text-green-600{% else %}bg-slate-100 text-slate-400{% endif %}">
                 <i class="fas {% if status == 'complete' %}fa-check{% else %}fa-robot{% endif %} text-2xl"></i>
             </div>
@@ -39,51 +39,70 @@
                 Configurar Estilo
             </button>
             {% elif status == 'no_site' %}
-            <i class="fas fa-lock text-slate-300 mr-4"></i>
+            <i class="fas fa-lock text-slate-300 mr-8"></i>
             {% else %}
-            <span class="text-green-600 font-black text-sm uppercase">Concluído</span>
+            <span class="text-green-600 font-black text-sm uppercase mr-4">Concluído</span>
             {% endif %}
         </div>
 
-        <div class="bg-white p-8 rounded-[32px] border-2 transition-all duration-500 {% if status == 'complete' %}border-green-500 shadow-2xl scale-[1.05] animate-bounce-subtle{% else %}border-slate-100 opacity-40{% endif %} flex flex-col items-center text-center gap-4">
-            <div class="w-20 h-20 rounded-full flex items-center justify-center {% if status == 'complete' %}bg-green-100 text-green-600{% else %}bg-slate-100 text-slate-400{% endif %}">
-                <i class="fas fa-rocket text-3xl"></i>
+        <div class="bg-white p-6 rounded-3xl border-2 transition-all duration-500 {% if status == 'complete' %}border-green-500 shadow-xl scale-[1.01] animate-bounce-subtle{% else %}border-slate-100 opacity-40{% endif %} flex items-center gap-6">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center {% if status == 'complete' %}bg-green-100 text-green-600{% else %}bg-slate-100 text-slate-400{% endif %}">
+                <i class="fas fa-rocket text-2xl"></i>
             </div>
-            
             <div class="flex-1">
-                <h3 class="font-black text-slate-800 text-xl">🚀 Tudo Pronto!</h3>
-                <p class="text-sm text-slate-500 max-w-xs mx-auto">Sua máquina de conteúdos foi configurada com sucesso. Agora é só colher os resultados.</p>
+                <h3 class="font-bold text-slate-800 text-lg">3. Começar a Gerar</h3>
+                <p class="text-sm text-slate-500">Sua máquina está pronta! Vamos criar o seu primeiro post?</p>
             </div>
-
             {% if status == 'complete' %}
-            <div class="pt-4 w-full">
-                <a href="{{ url_for('dashboard.dashboard_view') }}" class="block w-full bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-green-500/30 transition-all text-lg tracking-tight">
-                    OK, Vamos Começar!
-                </a>
-            </div>
+            <a href="{{ url_for('dashboard.dashboard_view') }}" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-green-500/20 transition-all">
+                Acessar o Painel
+            </a>
+            {% else %}
+            <i class="fas fa-lock text-slate-200 mr-8"></i>
             {% endif %}
         </div>
     </div>
 
-    <div id="modal-site" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl animate-pop-in">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fab fa-wordpress text-3xl"></i>
+    <div class="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200">
+        <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-graduation-cap text-blue-500"></i> Precisa de ajuda com a configuração?
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="https://youtube.com/seu-tutorial-aqui" target="_blank" class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 hover:border-blue-300 hover:shadow-md transition-all group">
+                <div class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors">
+                    <i class="fab fa-youtube"></i>
                 </div>
-                <h2 class="text-2xl font-black text-slate-800">Conectar Site</h2>
-                <p class="text-sm text-slate-500">Insira os dados do seu WordPress</p>
-            </div>
+                <div>
+                    <span class="block text-sm font-black text-slate-700 tracking-tight text-left">Senha de Aplicativo WP</span>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold">Tutorial em Vídeo</span>
+                </div>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 hover:border-blue-300 hover:shadow-md transition-all group">
+                <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div>
+                    <span class="block text-sm font-black text-slate-700 tracking-tight text-left">Guia de Prompts SEO</span>
+                    <span class="text-[10px] text-slate-400 uppercase font-bold">Documentação em PDF</span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div id="modal-site" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl animate-pop-in text-left">
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Conectar Site</h2>
+            <p class="text-sm text-slate-500 mb-6">Insira os dados do seu WordPress</p>
             <form action="{{ url_for('sites.add_site') }}" method="POST" class="space-y-4">
-                <input type="text" name="site_name" required placeholder="Nome do Blog (ex: Meu Tech Blog)" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-                <input type="url" name="wp_url" required placeholder="https://seu-site.com" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                <input type="text" name="site_name" required placeholder="Nome do Blog" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="url" name="wp_url" required placeholder="https://seu-site.com" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" name="wp_user" required placeholder="Utilizador WP" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm">
-                    <input type="text" name="wp_app_password" required placeholder="Senha de App" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm">
+                    <input type="text" name="wp_user" required placeholder="Utilizador WP" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <input type="text" name="wp_app_password" required placeholder="Senha de App" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                 </div>
                 <div class="flex gap-3 pt-6">
-                    <button type="button" onclick="closeModal('modal-site')" class="flex-1 py-4 text-slate-400 font-black uppercase text-xs tracking-widest">Cancelar</button>
-                    <button type="submit" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-500/30">Guardar Site</button>
+                    <button type="button" onclick="closeModal('modal-site')" class="flex-1 py-4 text-slate-400 font-black uppercase text-xs">Cancelar</button>
+                    <button type="submit" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black">Guardar Site</button>
                 </div>
             </form>
         </div>
@@ -91,28 +110,27 @@
 
     {% if current_user.sites %}
     <div id="modal-config" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[32px] p-8 max-w-2xl w-full shadow-2xl animate-pop-in">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-black text-slate-800">Cérebro da IA</h2>
-                <p class="text-sm text-slate-500">Defina como a IA deve escrever para si</p>
-            </div>
+        <div class="bg-white rounded-[32px] p-8 max-w-2xl w-full shadow-2xl animate-pop-in text-left">
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Cérebro da IA</h2>
+            <p class="text-sm text-slate-500 mb-6">Defina como a IA deve escrever para si</p>
             <form action="{{ url_for('sites.update_site', site_id=current_user.sites[0].id) }}" method="POST" class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Macro Temas (separados por vírgula)</label>
-                    <input type="text" name="macro_themes" value="{{ current_user.sites[0].macro_themes or '' }}" required placeholder="ex: Marketing, IA, Tecnologia" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Macro Temas</label>
+                    <input type="text" name="macro_themes" value="{{ current_user.sites[0].macro_themes or '' }}" required placeholder="ex: Marketing, IA, Tecnologia" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Master Prompt (Instrução de Estilo)</label>
-                    <textarea name="master_prompt" rows="6" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm">{{ current_user.sites[0].master_prompt or 'Escreva artigos informativos, com tom amigável e foco em SEO...' }}</textarea>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Master Prompt</label>
+                    <textarea name="master_prompt" rows="5" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-sm">{{ current_user.sites[0].master_prompt or 'Escreva artigos informativos e foco em SEO...' }}</textarea>
                 </div>
+                
                 <input type="hidden" name="site_name" value="{{ current_user.sites[0].site_name }}">
                 <input type="hidden" name="wp_url" value="{{ current_user.sites[0].wp_url }}">
                 <input type="hidden" name="wp_user" value="{{ current_user.sites[0].wp_user }}">
                 <input type="hidden" name="wp_app_password" value="{{ current_user.sites[0].wp_app_password }}">
 
                 <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeModal('modal-config')" class="flex-1 py-4 text-slate-400 font-black uppercase text-xs tracking-widest">Depois</button>
-                    <button type="submit" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-500/30">Ativar IA</button>
+                    <button type="button" onclick="closeModal('modal-config')" class="flex-1 py-4 text-slate-400 font-black uppercase text-xs">Depois</button>
+                    <button type="submit" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black">Ativar IA</button>
                 </div>
             </form>
         </div>
@@ -121,16 +139,40 @@
 </div>
 
 <style>
+    @keyframes bounce-subtle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    .animate-bounce-subtle { animation: bounce-subtle 3s infinite ease-in-out; }
+    
     @keyframes popIn {
         0% { opacity: 0; transform: scale(0.9) translateY(20px); }
         100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
     .animate-fade-in { animation: fadeIn 0.5s ease-out; }
 </style>
 
 <script>
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openModal(id) { 
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('hidden'); 
+    }
+    function closeModal(id) { 
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add('hidden'); 
+    }
+
+    // Fechar modal ao clicar fora dele
+    window.onclick = function(event) {
+        if (event.target.classList.contains('fixed')) {
+            event.target.classList.add('hidden');
+        }
+    }
 </script>
 {% endblock %}
