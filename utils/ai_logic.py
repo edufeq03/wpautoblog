@@ -40,7 +40,7 @@ def processar_radar_automatico():
                 # IA processa o resumo
                 groq_client = get_groq_client()
                 completion = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="llama-3.1-70b-specdec",
                     messages=[
                         {"role": "system", "content": "Você é um analista de conteúdo. Resuma o texto em 3 tópicos curtos e identifique se é Educativo, Notícia ou Venda."},
                         {"role": "user", "content": conteudo_bruto[:4000]}

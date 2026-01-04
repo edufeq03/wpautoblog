@@ -14,10 +14,15 @@ load_dotenv()
 
 content_bp = Blueprint('content', __name__)
 
+# --- CENTRALIZAÇÃO DOS MODELOS ---
+# Se precisar trocar o modelo, altere apenas estas duas linhas ou o seu .env
+MODEL_POST = os.environ.get("GROQ_MODEL_MAIN", "llama-3.3-70b-versatile")
+MODEL_IDEAS = os.environ.get("GROQ_MODEL_IDEAS", "llama-3.3-70b-versatile")
+
 def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# --- CONSTANTE PARA O USUÁRIO DEMO ---
+
 DEMO_EMAIL = 'demo@wpautoblog.com.br'
 
 @content_bp.route('/ideas')
@@ -35,53 +40,40 @@ def ideas():
 @content_bp.route('/generate-ideas', methods=['POST'])
 @login_required
 def generate_ideas():
-    # Proteção: Se não houver sites, redireciona para cadastro
     if not current_user.sites:
         flash('Você precisa cadastrar um site antes de gerar ideias.', 'info')
         return redirect(url_for('sites.manage_sites'))
 
     site_id = request.form.get('site_id')
-    
-    # Se o ID vier vazio (erro que corrigimos no HTML), tenta pegar o primeiro site do user
     if not site_id:
         site_id = current_user.sites[0].id
     
     try:
         site_id = int(site_id)
         site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first()
-    except (ValueError, TypeError):
-        flash('ID do site inválido.', 'danger')
-        return redirect(url_for('content.ideas'))
-
-    if not site:
-        flash('Site não encontrado.', 'danger')
-        return redirect(url_for('content.ideas'))
-
-    try:
+        
         client = get_groq_client()
         contexto = preparar_contexto_brainstorm(site)
         
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "Você é um especialista em SEO e marketing de conteúdo. Gere 5 ideias de títulos de blog baseados no contexto do usuário. Retorne apenas os títulos, um por linha."},
+                {"role": "system", "content": "Você é um especialista em SEO. Gere 5 títulos de blog. Retorne um por linha."},
                 {"role": "user", "content": contexto}
             ],
-            model="llama-3.1-70b-versatile",
+            model=MODEL_IDEAS, # Usando a constante centralizada
         )
 
         titulos = chat_completion.choices[0].message.content.strip().split('\n')
-        
         for t in titulos:
             if t.strip():
-                # Remove numerações automáticas da IA (ex: "1. Título")
                 titulo_limpo = t.split('. ', 1)[-1] if '. ' in t[:4] else t
-                nova_ideia = ContentIdea(blog_id=site.id, title=titulo_limpo.strip())
-                db.session.add(nova_ideia)
+                db.session.add(ContentIdea(blog_id=site.id, title=titulo_limpo.strip()))
         
         db.session.commit()
-        flash(f'{len(titulos)} novas ideias geradas para {site.site_name}!', 'success')
+        flash(f'Novas ideias geradas com sucesso!', 'success')
         
     except Exception as e:
+        print(f"Erro no modelo {MODEL_IDEAS}: {e}") # Log no terminal para debug
         flash(f'Erro na IA: {str(e)}', 'danger')
 
     return redirect(url_for('content.ideas', site_id=site_id))
@@ -92,34 +84,31 @@ def publish_idea(idea_id):
     idea = ContentIdea.query.get_or_404(idea_id)
     site = idea.blog
     
-    # Verifica se o site pertence ao usuário
     if site.user_id != current_user.id:
         flash('Acesso negado.', 'danger')
         return redirect(url_for('content.ideas'))
 
     try:
         client = get_groq_client()
-        prompt_sistema = site.master_prompt or "Você é um redator profissional. Escreva um artigo de blog otimizado para SEO."
+        prompt_sistema = site.master_prompt or "Escreva um artigo de blog otimizado para SEO."
         
         chat_completion = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": f"Escreva um artigo completo sobre: {idea.title}. Use formatação HTML (h2, p, strong)."}
+                {"role": "user", "content": f"Escreva um artigo sobre: {idea.title}. Use HTML."}
             ],
-            model="llama-3.1-70b-versatile",
+            model=MODEL_POST, # Usando a constante centralizada
         )
 
         content = chat_completion.choices[0].message.content
         
-        # Publicar no WordPress
         wp_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
         response = requests.post(
             wp_url,
             json={
                 "title": idea.title,
                 "content": content,
-                "status": site.post_status or "publish",
-                "categories": [site.default_category] if site.default_category else []
+                "status": site.post_status or "publish"
             },
             auth=HTTPBasicAuth(site.wp_user, site.wp_app_password),
             timeout=30
@@ -127,9 +116,6 @@ def publish_idea(idea_id):
 
         if response.status_code == 201:
             data = response.json()
-            
-            # --- AJUSTE PARA EVITAR O INTEGRITY ERROR ---
-            # Forçamos a captura do ID do blog antes do log
             blog_id_fix = site.id 
             
             novo_log = PostLog(
@@ -144,13 +130,11 @@ def publish_idea(idea_id):
             idea.is_posted = True
             db.session.add(novo_log)
             db.session.commit()
-            
             flash('Conteúdo publicado com sucesso!', 'success')
             return redirect(url_for('content.post_report'))
-        else:
-            flash(f'Erro WordPress ({response.status_code}): {response.text}', 'danger')
             
     except Exception as e:
+        print(f"Erro no modelo {MODEL_POST}: {e}") # Log no terminal
         flash(f'Erro no processo: {str(e)}', 'danger')
 
     return redirect(url_for('content.ideas'))
