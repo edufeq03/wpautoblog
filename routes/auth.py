@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
+from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User
@@ -48,6 +49,89 @@ def login():
         flash('Dados inválidos. Verifique seu e-mail e senha.', 'error')
         
     return render_template('login.html')
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Rota para solicitar a recuperação de senha."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.dashboard_view'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Gera o token de recuperação
+            token = user.get_reset_token()
+            
+            # Constrói a URL de reset
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            try:
+                # Importa Mail do app para enviar o email
+                from app import mail
+                
+                msg = Message(
+                    subject='Recuperacao de Senha - WP AutoBlog',
+                    recipients=[user.email],
+                    body=f'''Para recuperar sua senha, clique no link abaixo:
+{reset_url}
+
+Este link expira em 30 minutos.
+
+Se voce nao solicitou a recuperacao de senha, ignore este email.'''
+                )
+                mail.send(msg)
+            except Exception as e:
+                print(f"Erro ao enviar email: {e}")
+                flash('Erro ao enviar email de recuperacao. Tente novamente mais tarde.', 'danger')
+                return redirect(url_for('auth.forgot_password'))
+        
+        # Sempre mostra a mesma mensagem por segurança (não revela se o email existe)
+        flash('Se o email existe em nossa base de dados, voce recebera um link de recuperacao.', 'info')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('forgot_password.html')
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Rota para resetar a senha usando o token."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.dashboard_view'))
+    
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('Token invalido ou expirado.', 'warning')
+        return redirect(url_for('auth.forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
+        
+        if not password or not password_confirm:
+            flash('Preencha todos os campos.', 'danger')
+            return redirect(url_for('auth.reset_password', token=token))
+        
+        if password != password_confirm:
+            flash('As senhas nao coincidem.', 'danger')
+            return redirect(url_for('auth.reset_password', token=token))
+        
+        if len(password) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'danger')
+            return redirect(url_for('auth.reset_password', token=token))
+        
+        try:
+            user.password = generate_password_hash(password, method='scrypt')
+            db.session.commit()
+            flash('Sua senha foi alterada com sucesso! Faca login com a nova senha.', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao resetar senha: {e}")
+            flash('Erro ao alterar a senha. Tente novamente.', 'danger')
+            return redirect(url_for('auth.reset_password', token=token))
+    
+    return render_template('reset_password.html', token=token)
 
 @auth_bp.route('/demo-access')
 def demo_access():

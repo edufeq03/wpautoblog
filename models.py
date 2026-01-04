@@ -1,6 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from flask_login import UserMixin, LoginManager
+from itsdangerous import URLSafeTimedSerializer as Serializer
+from flask import current_app
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -16,6 +18,19 @@ class User(db.Model, UserMixin):
     plan_type = db.Column(db.String(20), default='trial') 
     credits = db.Column(db.Integer, default=5)
     last_post_date = db.Column(db.Date, nullable=True)
+
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
     
     # Relação com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)
@@ -83,6 +98,17 @@ class User(db.Model, UserMixin):
         
         # Para planos VIP, a trava pode ser apenas o saldo de créditos
         return self.credits > 0
+
+    def deduct_credit(self, amount=1):
+        """
+        Dedução segura de créditos.
+        Retorna True se a dedução for bem-sucedida, False caso contrário.
+        A função chamadora é responsável pelo db.session.commit().
+        """
+        if self.credits < amount:
+            return False
+        self.credits -= amount
+        return True
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

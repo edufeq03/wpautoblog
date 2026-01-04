@@ -119,9 +119,13 @@ def publish_idea(idea_id):
         flash(f'Erro na automação: {str(e)}', 'danger')
     
     if postagem_sucesso:
-        current_user.credits -= 1
-        db.session.commit()
-        flash(f"Publicado! Créditos restantes: {current_user.credits}", "success")
+        if current_user.deduct_credit(amount=1):
+            db.session.commit()
+            flash(f"Publicado! Créditos restantes: {current_user.credits}", "success")
+        else:
+            # Isso não deve acontecer se a verificação inicial for correta, mas é uma segurança
+            db.session.rollback()
+            flash("Erro: Créditos insuficientes no momento da dedução.", "danger")
     else:
         db.session.rollback()
 

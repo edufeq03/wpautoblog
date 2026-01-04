@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request
+from flask_mail import Mail
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
@@ -16,6 +17,16 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
+
+# Configuração do Flask-Mail (Necessário para Recuperação de Senha)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.googlemail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', True)
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'seu_email@gmail.com') # Substituir pelo email real
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'sua_senha_app') # Substituir pela senha de app real
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'seu_email@gmail.com')
+
+mail = Mail(app)
 
 # Configuração de banco
 basedir = os.path.abspath(os.path.dirname(__file__))
