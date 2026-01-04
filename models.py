@@ -3,52 +3,35 @@ from datetime import datetime
 from flask_login import UserMixin, LoginManager
 
 db = SQLAlchemy()
-login_manager = LoginManager() # Instância necessária para o app.py
+login_manager = LoginManager()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     plan_type = db.Column(db.String(20), default='trial') 
+    credits = db.Column(db.Integer, default=5)
+    
+    # Relação com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)
-    credits = db.Column(db.Integer, default=5)  # <-- ESSA LINHA É A QUE FALTA
 
     def get_plan_limits(self):
-        """Retorna as configurações e limites baseados no plano atual."""
         planos = {
             'trial': {'max_sites': 1, 'posts_por_dia': 1},
             'pro':   {'max_sites': 2, 'posts_por_dia': 5},
-            'vip':   {'max_sites': 999, 'posts_por_dia': 999} # 'Ilimitado'
+            'vip':   {'max_sites': 999, 'posts_por_dia': 999}
         }
         return planos.get(self.plan_type, planos['trial'])
 
+    # --- MÉTODO RESTAURADO AQUI ---
     def can_add_site(self):
-        """Verifica se o utilizador pode adicionar mais um site."""
+        """Verifica se o utilizador pode adicionar mais um site baseado no seu plano."""
         limite = self.get_plan_limits()['max_sites']
-        contagem_atual = Blog.query.filter_by(user_id=self.id).count()
-        return contagem_atual < limite
-        
-    def pode_postar_automatico(self):
-        """Valida créditos e limite diário de postagens."""
-        # 1. Verifica se tem créditos de IA
-        if self.credits <= 0:
-            return False
-
-        # 2. Verifica o limite diário de posts do plano
-        limite_diario = self.get_plan_limits()['posts_por_dia']
-        
-        hoje = datetime.utcnow().date()
-        posts_hoje = PostLog.query.join(Blog).filter(
-            Blog.user_id == self.id,
-            db.func.date(PostLog.posted_at) == hoje
-        ).count()
-
-        return posts_hoje < limite_diario
-
-# ESSA FUNÇÃO É VITAL PARA O LOGIN FUNCIONAR
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+        return len(self.sites) < limite
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,32 +40,33 @@ class Blog(db.Model):
     wp_url = db.Column(db.String(200), nullable=False)
     wp_user = db.Column(db.String(100), nullable=False)
     wp_app_password = db.Column(db.String(100), nullable=False)
-    master_prompt = db.Column(db.Text, nullable=True)
-    macro_themes = db.Column(db.String(500), nullable=True) 
-    post_status = db.Column(db.String(20), default='publish') 
+    
+    master_prompt = db.Column(db.Text)
+    macro_themes = db.Column(db.Text)
+    post_status = db.Column(db.String(20), default='publish')
     frequency_hours = db.Column(db.Integer, default=24)
-    tracked_channels = db.Column(db.Text, nullable=True)
-    ideas = db.relationship('ContentIdea', backref='blog', lazy=True)
-    logs = db.relationship('PostLog', backref='blog', lazy=True)
-    # NOVAS COLUNAS:
     posts_per_day = db.Column(db.Integer, default=1)
-    schedule_time = db.Column(db.String(5), default="08:00") # Armazena como "HH:MM"
-    post_status = db.Column(db.String(20), default="draft")  # 'draft' ou 'publish'
-    default_category = db.Column(db.String(100))
+    schedule_time = db.Column(db.String(5), default="08:00")
+    default_category = db.Column(db.Integer)
+    
+    # Cascade para deleção segura
+    ideas = db.relationship('ContentIdea', backref='blog', lazy=True, cascade="all, delete-orphan")
+    logs = db.relationship('PostLog', backref='blog', lazy=True, cascade="all, delete-orphan")
+    sources = db.relationship('ContentSource', backref='blog', lazy=True, cascade="all, delete-orphan")
 
 class ContentIdea(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False)
-    title = db.Column(db.String(250), nullable=False)
-    source_url = db.Column(db.String(500), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    title = db.Column(db.String(200), nullable=False)
     is_posted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class PostLog(db.Model):
+    __tablename__ = 'post_log'
     id = db.Column(db.Integer, primary_key=True)
     blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False)
-    title = db.Column(db.String(250), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text)
     wp_post_id = db.Column(db.Integer)
     post_url = db.Column(db.String(500))
     status = db.Column(db.String(20))
@@ -98,20 +82,13 @@ class ContentSource(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_scraped = db.Column(db.DateTime, nullable=True)
-    blog = db.relationship('Blog', backref=db.backref('sources', lazy=True))  
 
 class CapturedContent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # Link com a fonte (Radar)
-    source_id = db.Column(db.Integer, db.ForeignKey('content_source.id'))
-    # Link direto com o Blog (para facilitar a consulta na geração de ideias)
-    site_id = db.Column(db.Integer, db.ForeignKey('blog.id')) 
-    url = db.Column(db.String(500))
-    title = db.Column(db.String(500))
-    summary = db.Column(db.Text)  # O "suco" para a IA
+    source_id = db.Column(db.Integer, db.ForeignKey('content_source.id'), nullable=False)
+    site_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False)
+    title = db.Column(db.String(200))
+    content_summary = db.Column(db.Text)
+    original_url = db.Column(db.String(500))
+    is_processed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relacionamentos para facilitar buscas
-    source = db.relationship('ContentSource', backref='captures')
-    site = db.relationship('Blog', backref='radar_captures')
-    

@@ -40,7 +40,7 @@
         <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 hover:border-blue-300 transition-all group">
             <div class="flex justify-between items-start mb-4">
                 <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <i class="fas fa-globe text-xl"></i>
+                    <i class="fab fa-wordpress text-xl"></i>
                 </div>
                 <div class="flex gap-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                     <a href="{{ url_for('sites.test_post', site_id=site.id) }}" class="p-2 text-slate-400 hover:text-green-500 transition" title="Testar Postagem">
@@ -55,7 +55,7 @@
                     <button onclick="openAuthModal('{{ site.id }}', '{{ site.wp_url }}', '{{ site.wp_user }}')" class="p-2 text-slate-400 hover:text-orange-500 transition" title="Editar Credenciais">
                         <i class="fas fa-key text-xs"></i>
                     </button>
-                    <form action="{{ url_for('site.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Remover este site permanentemente?');" class="inline">
+                    <form action="{{ url_for('sites.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Remover este site permanentemente?');" class="inline">
                         <button type="submit" class="p-2 text-slate-300 hover:text-red-600 transition">
                             <i class="fas fa-trash text-xs"></i>
                         </button>

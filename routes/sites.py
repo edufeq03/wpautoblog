@@ -45,10 +45,24 @@ def delete_site(site_id):
         flash('Modo Demo: Você não pode remover o site de demonstração.', 'danger')
         return redirect(url_for('sites.manage_sites'))
 
+    # 1. Busca o site garantindo que pertence ao usuário
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
-    db.session.delete(site)
-    db.session.commit()
-    flash('Site removido com sucesso.', 'success')
+
+    try:
+        # 2. Se você NÃO quiser usar o 'cascade' no models.py, 
+        # você teria que deletar os filhos manualmente aqui:
+        # PostLog.query.filter_by(blog_id=site_id).delete()
+        # ContentIdea.query.filter_by(blog_id=site_id).delete()
+        
+        # 3. Deleta o site (com o cascade do Passo 1, ele apagará logs e ideias automaticamente)
+        db.session.delete(site)
+        db.session.commit()
+        
+        flash(f'O site "{site.site_name}" e todos os dados relacionados foram removidos.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao remover site: {str(e)}', 'danger')
+        
     return redirect(url_for('sites.manage_sites'))
 
 @sites_bp.route('/test-post/<int:site_id>')

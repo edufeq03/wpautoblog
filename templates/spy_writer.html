@@ -4,51 +4,64 @@
 {% block content %}
 <div class="p-6 max-w-5xl mx-auto">
     <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <i class="fas fa-user-secret text-blue-600"></i> Redator Espião
         </h1>
-        <p class="text-sm text-gray-500">Transforme links em posts prontos instantaneamente.</p>
+        <p class="text-sm text-slate-500">Transforme links em posts prontos instantaneamente.</p>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <form action="{{ url_for('content.spy_writer') }}" method="POST" class="flex gap-4">
-            <div class="flex-1">
-                <input type="url" name="url" required placeholder="Cole a URL do vídeo ou artigo aqui para processar agora..." class="w-full bg-gray-50 border border-gray-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20">
-                Analisar
-            </button>
-        </form>
-    </div>
+    {% if current_user.sites %}
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-8">
+            <form action="{{ url_for('content.spy_writer') }}" method="POST" class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="url" name="url" required placeholder="Cole a URL do vídeo ou artigo aqui..." 
+                        class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all font-medium">
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3.5 rounded-2xl font-black transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                    <i class="fas fa-search text-xs"></i> Analisar Link
+                </button>
+            </form>
+        </div>
 
-    {% if processed_content %}
-    <form action="{{ url_for('content.manual_post') }}" method="POST" class="space-y-6 animate-fade-in">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Título Sugerido pela IA</label>
-                    <input type="text" name="title" value="{{ processed_content.title }}" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+        {% if processed_content %}
+            <form action="{{ url_for('content.manual_post') }}" method="POST" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6 animate-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Título Gerado</label>
+                        <input type="text" name="title" value="{{ processed_content.title }}" class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Postar no Site</label>
+                        <select name="site_id" class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-600 appearance-none cursor-pointer">
+                            {% for site in current_user.sites %}
+                                <option value="{{ site.id }}">{{ site.site_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Postar no Site</label>
-                    <select name="site_id" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                        {% for site in current_user.sites %}
-                            <option value="{{ site.id }}">{{ site.site_name }}</option>
-                        {% endfor %}
-                    </select>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Conteúdo Otimizado</label>
+                    <textarea name="content" rows="12" class="w-full bg-slate-50 border border-slate-200 py-4 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm leading-relaxed text-slate-600">{{ processed_content.text }}</textarea>
                 </div>
+                <div class="flex justify-end pt-4">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-2xl font-black shadow-lg shadow-green-500/20 transition-all flex items-center gap-3">
+                        <i class="fas fa-check-circle"></i> Publicar Agora
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+
+    {% else %}
+        <div class="bg-white p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
+            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-user-secret text-blue-300 text-3xl"></i>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Conteúdo Gerado</label>
-                <textarea name="content" rows="12" class="w-full bg-white border border-gray-200 py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ processed_content.text }}</textarea>
-            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Redator Espião Bloqueado</h2>
+            <p class="text-slate-500 mb-8 max-w-sm mx-auto">Para transformar links em artigos, você precisa ter um site destino configurado.</p>
+            <a href="{{ url_for('sites.manage_sites') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-blue-500/20 transition-all">
+                <i class="fas fa-plus-circle"></i> Configurar Meu Site
+            </a>
         </div>
-        <div class="flex justify-end">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-xl font-bold shadow-lg transition-all">
-                <i class="fas fa-paper-plane mr-2"></i> Publicar Agora no WordPress
-            </button>
-        </div>
-    </form>
     {% endif %}
 </div>
 {% endblock %}
