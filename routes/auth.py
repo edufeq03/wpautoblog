@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User
+from models import db, User, Plan
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -20,7 +20,13 @@ def register():
             flash('E-mail já cadastrado.', 'error')
             return redirect(url_for('auth.register'))
             
-        new_user = User(email=email, password=generate_password_hash(password, method='scrypt'))
+        free_plan = Plan.query.filter_by(name='Free').first()
+        new_user = User(
+            email=email, 
+            password=generate_password_hash(password, method='scrypt'),
+            plan_id=free_plan.id if free_plan else None, # Atribui o ID do Free
+            credits=5 # Dá os créditos iniciais de presente
+            )
         db.session.add(new_user)
         db.session.commit()
 

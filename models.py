@@ -46,6 +46,25 @@ class User(db.Model, UserMixin):
             db.session.commit()
             return True
         return False
+    
+    def can_post_today(self):
+        """Verifica se o usuário atingiu o limite de posts do plano hoje"""
+        # Se for admin, não tem trava diária
+        if self.is_admin:
+            return True
+            
+        limites = self.get_plan_limits()
+        posts_permitidos = limites.get('posts_por_dia', 1)
+        
+        # Conta quantos logs de sucesso existem para hoje
+        hoje = date.today()
+        posts_feitos_hoje = PostLog.query.join(Blog).filter(
+            Blog.user_id == self.id,
+            db.func.date(PostLog.posted_at) == hoje,
+            PostLog.status == 'Publicado'
+        ).count()
+        
+        return posts_feitos_hoje < posts_permitidos
 
     def can_add_site(self):
         limites = self.get_plan_limits()

@@ -78,6 +78,11 @@ def publish_idea(idea_id):
         flash("Você não possui créditos suficientes. Recarregue seu plano.", "warning")
         return redirect(url_for('payments.pricing'))
     
+    # 2. NOVA TRAVA: Verifica limite diário do plano
+    if not current_user.can_post_today():
+        flash(f"Seu plano ({current_user.plan_name}) permite apenas {current_user.get_plan_limits()['posts_por_dia']} post(s) por dia. Faça upgrade para postar mais!", "info")
+        return redirect(url_for('payments.pricing'))
+    
     idea = ContentIdea.query.get_or_404(idea_id)
     site = Blog.query.get_or_404(idea.blog_id)
     postagem_sucesso = False 
