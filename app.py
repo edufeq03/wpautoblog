@@ -29,7 +29,8 @@ mail = Mail(app)
 
 # Banco de Dados
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or \
+    'sqlite:///' + os.path.join(basedir, 'database.db')
 
 db.init_app(app)
 login_manager.init_app(app)
