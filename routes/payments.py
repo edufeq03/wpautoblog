@@ -5,84 +5,86 @@ import os
 
 payments_bp = Blueprint('payments', __name__)
 
-# Configuração Centralizada dos Planos (Preços e Créditos)
+# Configuração que espelha o marketing e o banco
 PLANS_CONFIG = {
-    'free': {
-        'id': 1,
-        'nome': 'Free',
-        'preco': 'R$ 0',
+    'starter': {
+        'nome': 'Starter',
+        'preco': '0',
         'sites': 1,
         'posts': 1,
-        'credits': 5
+        'credits': 5,
+        'interno': False  # Não aparece no pricing interno
+    },
+    'lite': {
+        'nome': 'Lite',
+        'preco': '47',
+        'sites': 3,
+        'posts': 5,
+        'credits': 15,
+        'interno': True
     },
     'pro': {
-        'id': 2,
         'nome': 'Pro',
-        'preco': 'R$ 97',
+        'preco': '97',
         'sites': 5,
         'posts': 10,
-        'credits': 30
+        'credits': 30,
+        'interno': True
     },
     'vip': {
-        'id': 3,
         'nome': 'VIP',
-        'preco': 'R$ 197',
+        'preco': '197',
         'sites': 15,
         'posts': 50,
-        'credits': 100
+        'credits': 100,
+        'interno': True
     }
 }
 
 @payments_bp.route('/pricing')
+@login_required
 def pricing():
-    """Exibe a página de preços enviando a variável 'planos' exigida pelo HTML."""
-    return render_template('pricing.html', planos=PLANS_CONFIG)
+    """
+    Exibe a página de preços filtrando apenas os planos para upgrade.
+    """
+    # Filtra apenas planos marcados como 'interno'
+    planos_upgrade = {k: v for k, v in PLANS_CONFIG.items() if v.get('interno')}
+    
+    # Se você quiser que a Landing Page pegue do banco, 
+    # aqui poderíamos fazer: planos_banco = Plan.query.all()
+    
+    return render_template('pricing.html', planos=planos_upgrade)
 
 @payments_bp.route('/checkout/<string:plano_alvo>')
 @login_required
 def checkout(plano_alvo):
     """
-    Simulação de checkout. 
-    Por enquanto, realiza o upgrade direto para testes.
+    Realiza o upgrade de plano associando o ID correto do banco.
     """
+    plano_alvo = plano_alvo.lower()
     if plano_alvo not in PLANS_CONFIG:
-        flash("Plano inválido.", "danger")
+        flash("Plano selecionado é inválido.", "danger")
         return redirect(url_for('payments.pricing'))
 
     try:
-        # Busca o plano no banco de dados pelo nome
-        novo_plano = Plan.query.filter_by(name=plano_alvo.capitalize()).first()
+        # Busca o plano no banco pelo nome capitalizado (Lite, Pro, VIP)
+        nome_db = plano_alvo.capitalize()
+        novo_plano_db = Plan.query.filter_by(name=nome_db).first()
         
-        if novo_plano:
-            current_user.plan_id = novo_plano.id
-            # Adiciona os créditos do pacote
-            creditos_pacote = PLANS_CONFIG[plano_alvo]['credits']
-            current_user.credits += creditos_pacote
-            
-            db.session.commit()
-            flash(f"🎉 Upgrade para o plano {novo_plano.name} realizado com sucesso! +{creditos_pacote} créditos adicionados.", "success")
-        else:
-            flash("Erro: Plano não encontrado no banco de dados. Rode o reset_db.py.", "warning")
+        if not novo_plano_db:
+            flash("Erro crítico: Configuração de plano não encontrada no banco.", "danger")
+            return redirect(url_for('payments.pricing'))
+
+        # Atualiza o plano e adiciona créditos
+        current_user.plan_id = novo_plano_db.id
+        creditos_adicionais = PLANS_CONFIG[plano_alvo]['credits']
+        current_user.credits += creditos_adicionais
+        
+        db.session.commit()
+        flash(f"🚀 Upgrade concluído! Você agora é {nome_db} e recebeu {creditos_adicionais} créditos.", "success")
 
     except Exception as e:
         db.session.rollback()
         flash(f"Erro ao processar upgrade: {str(e)}", "danger")
 
     return redirect(url_for('dashboard.dashboard_view'))
-
-# ============================================================
-# BLOCO DE PAGAMENTOS REAIS (COMENTADO PARA EVITAR ERROS)
-# ============================================================
-"""
-@payments_bp.route('/stripe/create-session/<string:plano_alvo>', methods=['POST'])
-@login_required
-def create_stripe_session(plano_alvo):
-    # Implementar quando tiver as chaves do Stripe em .env
-    pass
-
-@payments_bp.route('/mercadopago/create-preference/<string:plano_alvo>', methods=['POST'])
-@login_required
-def create_mp_preference(plano_alvo):
-    # Implementar quando tiver o Access Token do MP
-    pass
-"""

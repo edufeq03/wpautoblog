@@ -8,208 +8,234 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --premium-blue: #2563eb;
+            --premium-purple: #7c3aed;
+        }
+        body { background-color: #f8fafc; }
         .gradient-text {
-            background: linear-gradient(90deg, #2563eb, #7c3aed);
+            background: linear-gradient(135deg, var(--premium-blue), var(--premium-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* Efeito de flutuar no hover */
         .price-card {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.5s cubic-bezier(0.15, 0.83, 0.66, 1);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
         .price-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-15px);
+            box-shadow: 0 40px 80px -20px rgba(37, 99, 235, 0.15);
+        }
+        .btn-premium {
+            background: linear-gradient(135deg, var(--premium-blue), var(--premium-purple));
+            transition: all 0.3s ease;
+        }
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 100;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .whatsapp-float:hover { transform: scale(1.1); background-color: #128c7e; }
+        
+        /* Estilo Carrossel Simples */
+        .testimonial-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 20px;
+            padding: 20px 0;
+            scrollbar-width: none;
+        }
+        .testimonial-card {
+            min-width: 300px;
+            scroll-snap-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans">
+<body class="font-sans antialiased text-slate-900">
 
-    <nav class="p-6 flex flex-wrap justify-between items-center max-w-7xl mx-auto gap-4">
-        <div class="text-2xl font-black text-blue-600">
-            WP <span class="text-slate-800">AutoBlog</span>
-        </div>
-        
-        <div class="flex items-center gap-2 sm:gap-4">
-            <a href="/login" class="font-bold text-sm sm:text-base text-slate-600 hover:text-blue-600 px-2 transition">
-                Entrar
-            </a>
-            <a href="/register" class="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-full font-bold text-sm sm:text-base hover:bg-blue-700 transition whitespace-nowrap shadow-lg shadow-blue-500/20">
-                Começar Agora
-            </a>
+    <a href="https://wa.me/5511999999999" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <nav class="fixed w-full z-50 bg-white/60 backdrop-blur-xl border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <span class="text-xl font-black tracking-tight text-slate-900">WP <span class="text-blue-600">AutoBlog</span></span>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-8">
+                <div class="relative group">
+                    <button class="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-blue-600 transition py-2">
+                        <img id="current-lang-flag" src="https://flagcdn.com/w20/br.png" alt="PT-BR" class="w-5 h-auto rounded-sm">
+                        <span id="current-lang-text">PT</span>
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </button>
+                    
+                    <div class="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                        <a href="?lang=pt" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 first:rounded-t-xl transition">
+                            <img src="https://flagcdn.com/w20/br.png" class="w-5 h-auto rounded-sm">
+                            <span class="text-xs font-bold">Português</span>
+                        </a>
+                        <a href="?lang=en" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 last:rounded-b-xl transition">
+                            <img src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-sm">
+                            <span class="text-xs font-bold">English</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a href="#precos" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Preços</a>
+                <a href="{{ url_for('auth.login') }}" class="text-sm font-bold text-slate-900">Entrar</a>
+                <a href="{{ url_for('auth.register') }}" class="btn-premium px-8 py-3 text-white text-sm font-bold rounded-2xl shadow-xl">
+                    Começar Agora
+                </a>
+            </div>
         </div>
     </nav>
 
-    <header class="py-20 px-6 text-center max-w-4xl mx-auto">
-        <h1 class="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
-            Seu Blog WordPress no <span class="text-blue-600">Piloto Automático</span> com IA
+    <header class="pt-48 pb-32 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
+        <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight tracking-tighter">
+            Blogs que rendem<br>
+            <span class="gradient-text">em piloto automático.</span>
         </h1>
-        <p class="text-xl text-slate-600 mb-10 leading-relaxed">
-            Gere conteúdo de alta qualidade, espione concorrentes e poste automaticamente. 
-            Tudo isso enquanto você foca no que realmente importa.
+        <p class="text-xl text-slate-500 max-w-2xl mx-auto mb-16 font-medium">
+            Sua produção de conteúdo escalada por Inteligência Artificial de elite.
         </p>
-        <div class="flex flex-col md:flex-row gap-4 justify-center">
-            <a href="/register" class="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:scale-105 transition text-center">
-                Teste Grátis 7 Dias
-            </a>
-            <a href="/demo-access" class="bg-white text-slate-800 border border-slate-200 px-10 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition text-center">
-                Ver Demonstração
-            </a>
-        </div>
+        <a href="{{ url_for('auth.register') }}" class="btn-premium px-12 py-6 text-white font-black rounded-3xl text-xl shadow-2xl inline-block">
+            Teste Gratuitamente
+        </a>
     </header>
 
-    <section class="py-12 bg-slate-100 border-y border-slate-200">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-blue-600 mb-3 uppercase text-xs tracking-widest">Tecnologia</h4>
-                    <p class="text-slate-600 leading-relaxed text-sm">
-                        Mantenha seus blogs WordPress sempre atualizados com artigos de alta qualidade gerados por IA. Pare de gastar horas pesquisando e escrevendo; nossa tecnologia cuida de todo o processo criativo.
-                    </p>
+    <section id="precos" class="py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-24">
+                <h2 class="text-4xl md:text-5xl font-black mb-6">Investimento para o seu Sucesso</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {% for chave, plano in planos.items() %}
+                <div class="price-card p-10 rounded-[2.5rem] shadow-2xl relative flex flex-col h-full">
+                    
+                    <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">{{ plano.nome }}</h3>
+                    
+                    <div class="flex items-baseline gap-1 mb-8">
+                        {% if plano.nome == 'VIP' %}
+                            <span class="text-2xl font-black text-slate-900 italic">Sob Consulta</span>
+                        {% else %}
+                            <span class="text-5xl font-black text-slate-900">R$ {{ plano.preco }}</span>
+                            <span class="text-slate-400 font-bold text-sm">/mês</span>
+                        {% endif %}
+                    </div>
+
+                    <ul class="space-y-5 mb-12 flex-grow">
+                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.sites }} Site(s) WordPress
+                        </li>
+                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.posts }} Postagens/dia
+                        </li>
+                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                            <i class="fas fa-bolt text-blue-500"></i> {{ plano.credits }} Créditos
+                        </li>
+                    </ul>
+
+                    {% if plano.nome == 'VIP' %}
+                        <a href="https://wa.me/5511999999999" class="block text-center w-full py-5 rounded-[1.5rem] font-black bg-blue-600 text-white hover:bg-blue-700 transition-all">
+                            Falar com Consultor
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-900 text-white hover:bg-black">
+                            Selecionar Plano
+                        </a>
+                    {% endif %}
                 </div>
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-green-600 mb-3 uppercase text-xs tracking-widest">Economia</h4>
-                    <p class="text-slate-600 leading-relaxed text-sm">
-                        Economize em média <strong>R$ 1.500/mês</strong> que seriam gastos com redatores freelancers. O WP AutoBlog oferece a mesma qualidade por uma fração mínima do custo tradicional.
-                    </p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 bg-slate-50">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-black text-center mb-16">O que nossos clientes dizem</h2>
+            <div class="testimonial-container">
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-600 italic">"Consegui automatizar 15 blogs e meu tráfego subiu 300% em dois meses."</p>
+                    <p class="mt-6 font-bold text-slate-900">— Ricardo M., Afiliado</p>
                 </div>
-                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-purple-600 mb-3 uppercase text-xs tracking-widest">Resultados</h4>
-                    <p class="text-slate-600 leading-relaxed text-sm">
-                        Domine as buscas do Google no piloto automático. Ao manter uma frequência de postagem constante, você aumenta drasticamente suas chances de indexação e tráfego orgânico.
-                    </p>
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-600 italic">"A qualidade dos textos da IA é impressionante, economizo 4h de trabalho por dia."</p>
+                    <p class="mt-6 font-bold text-slate-900">— Julia L., Agência de SEO</p>
+                </div>
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-600 italic">"O melhor investimento que fiz este ano para meus sites de nicho."</p>
+                    <p class="mt-6 font-bold text-slate-900">— Paulo S., Blogueiro</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-24 bg-white">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-16 text-center">
-                <div>
-                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-sm">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-4 text-slate-800">IA de Elite</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Conteúdos exclusivos baseados em prompts estruturados. IA que aprende o seu tom de voz.</p>
-                </div>
-                <div>
-                    <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-sm">
-                        <i class="fas fa-user-secret"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-4 text-slate-800">Redator Espião</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Transforme vídeos do YouTube ou blogs concorrentes em artigos originais para o seu site em segundos.</p>
-                </div>
-                <div>
-                    <div class="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-sm">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-4 text-slate-800">Agendamento</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Defina a frequência e esqueça. Nossa automação posta no seu WordPress 24h por dia.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="precos" class="py-24 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-black text-slate-800 mb-4">Escolha seu plano</h2>
-                <p class="text-slate-500 font-medium italic">Faça o upgrade conforme sua rede de blogs cresce.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
-                
-                <div class="price-card bg-white p-8 rounded-3xl border border-slate-200 flex flex-col">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-bold text-slate-700">Starter</h3>
-                        <div class="text-3xl font-black mt-2">Grátis</div>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Vitalício</p>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-slate-500 flex-grow text-xs">
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Créditos /mês</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> Radar de Fontes</li>
-                        <li class="opacity-40 line-through"><i class="fas fa-times mr-2"></i> Redator Espião</li>
-                    </ul>
-                    <a href="/register" class="block text-center py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition text-sm">Começar Agora</a>
-                </div>
-
-                <div class="price-card bg-white p-8 rounded-3xl border-2 border-blue-600 shadow-xl flex flex-col relative scale-105 z-10">
-                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-tighter">Mais Popular</div>
-                    <div class="mb-6">
-                        <h3 class="text-lg font-bold text-blue-600">Lite</h3>
-                        <div class="text-3xl font-black mt-2 text-slate-800">R$ 39,90<span class="text-xs text-slate-400 font-normal">/mês</span></div>
-                        <p class="text-[10px] text-blue-400 font-bold uppercase mt-1 tracking-widest">Iniciante</p>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-slate-500 flex-grow text-xs">
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 20 Créditos /mês</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> Radar de Fontes</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> Agendamento Básico</li>
-                    </ul>
-                    <a href="/register" class="block text-center py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition text-sm shadow-lg shadow-blue-200">Escolher Lite</a>
-                </div>
-
-                <div class="price-card bg-white p-8 rounded-3xl border border-slate-200 flex flex-col">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-bold text-slate-700">Pro</h3>
-                        <div class="text-3xl font-black mt-2 text-slate-800">R$ 149<span class="text-xs text-slate-400 font-normal">/mês</span></div>
-                        <p class="text-[10px] text-purple-500 font-bold uppercase mt-1 tracking-widest">Performance</p>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-slate-500 flex-grow text-xs">
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Sites</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> 500 Créditos /mês</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> Radar Profissional</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i> <strong>Redator Espião</strong></li>
-                    </ul>
-                    <a href="/register" class="block text-center py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition text-sm shadow-lg">Assinar Pro</a>
-                </div>
-
-                <div class="price-card bg-slate-900 p-8 rounded-3xl flex flex-col text-white">
-                    <div class="mb-6">
-                        <h3 class="text-lg font-bold">VIP / Agência</h3>
-                        <div class="text-3xl font-black mt-2">R$ 390<span class="text-xs text-slate-500 font-normal">/mês</span></div>
-                        <p class="text-[10px] text-blue-400 font-bold uppercase mt-1 tracking-widest">Escala Total</p>
-                    </div>
-                    <ul class="space-y-4 mb-8 text-slate-400 flex-grow text-xs">
-                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Sites Ilimitados</li>
-                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Créditos Ilimitados</li>
-                        <li><i class="fas fa-check text-blue-400 mr-2"></i> Suporte Prioritário</li>
-                        <li><i class="fas fa-check text-blue-400 mr-2"></i> IA Premium (Llama 405B)</li>
-                    </ul>
-                    <a href="/register" class="block text-center py-3 bg-white text-slate-900 rounded-xl font-bold hover:bg-slate-100 transition text-sm">Falar no WhatsApp</a>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <section class="py-24 bg-white">
-        <div class="max-w-3xl mx-auto px-6">
-            <h2 class="text-3xl font-black text-center mb-12 text-slate-800">Dúvidas Frequentes</h2>
-            <div class="space-y-6">
-                <details class="group bg-slate-50 p-6 rounded-2xl cursor-pointer transition">
-                    <summary class="font-bold text-slate-800 list-none flex justify-between items-center">
+    <section class="py-24 px-6 bg-white">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="text-3xl font-black text-center mb-16">Dúvidas Frequentes</h2>
+            <div class="space-y-4">
+                <details class="group bg-slate-50 p-6 rounded-2xl cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
                         O Google pune conteúdo gerado por IA?
-                        <span class="group-open:rotate-180 transition-transform"><i class="fas fa-chevron-down text-xs"></i></span>
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                     </summary>
-                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Não. O Google foca na qualidade e utilidade do conteúdo. Nossos prompts são desenhados para gerar valor real, seguindo as diretrizes de SEO mais modernas.</p>
+                    <p class="text-slate-500 text-sm mt-4">Não. O Google foca na qualidade. Nossos prompts geram valor real e seguem as melhores práticas de SEO.</p>
                 </details>
-                <details class="group bg-slate-50 p-6 rounded-2xl cursor-pointer transition">
-                    <summary class="font-bold text-slate-800 list-none flex justify-between items-center">
+                <details class="group bg-slate-50 p-6 rounded-2xl cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
                         Preciso instalar algum plugin?
-                        <span class="group-open:rotate-180 transition-transform"><i class="fas fa-chevron-down text-xs"></i></span>
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                     </summary>
-                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Não! Utilizamos a API nativa do WordPress via "Application Passwords". É simples, seguro e não deixa seu site pesado.</p>
+                    <p class="text-slate-500 text-sm mt-4">Não! Utilizamos a API nativa do WordPress via Application Passwords. É seguro e leve.</p>
                 </details>
             </div>
         </div>
     </section>
 
-    <footer class="py-12 border-t border-slate-200 text-center text-slate-400 text-xs">
-        <p>&copy; 2024 WP AutoBlog. Todos os direitos reservados.</p>
+    <footer class="py-20 border-t border-slate-100 text-center">
+        <p class="text-slate-400 font-bold text-xs uppercase">&copy; 2026 WP AutoBlog. Design de Elite.</p>
     </footer>
+
+    <script>
+        // Lógica simples para trocar a bandeira no topo baseado na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang');
+        
+        if (lang === 'en') {
+            document.getElementById('current-lang-flag').src = "https://flagcdn.com/w20/us.png";
+            document.getElementById('current-lang-text').innerText = "EN";
+            // Aqui você poderia disparar a tradução dos textos via JS ou deixar para o Flask
+        }
+    </script>
 
 </body>
 </html>

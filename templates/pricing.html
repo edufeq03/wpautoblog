@@ -3,89 +3,36 @@
 {% block content %}
 <div class="p-6 max-w-7xl mx-auto">
     <div class="text-center mb-12">
-        <h1 class="text-3xl font-extrabold text-gray-800">Escolha o seu Plano</h1>
-        <p class="text-gray-500">Aumente sua produtividade com automação ilimitada.</p>
+        <h1 class="text-3xl font-extrabold text-gray-800">Faça o Upgrade da sua Operação</h1>
+        <p class="text-gray-500">Escolha o plano ideal para escalar seus resultados.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        
-        <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm relative flex flex-col h-full {% if current_user.plan_name == 'Free' %}ring-2 ring-gray-400{% endif %}">
-            <h3 class="text-xl font-bold mb-2 text-gray-700">Plano Free</h3>
-            <div class="text-4xl font-black mb-6">R$ 0<span class="text-lg text-gray-400 font-normal">/mês</span></div>
-            <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Site WordPress</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 1 Postagem por dia</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 5 Créditos Iniciais</li>
-                <li><i class="fas fa-times text-red-400 mr-2"></i> Redator Espião Bloqueado</li>
-            </ul>
-            {% if current_user.plan_name == 'Free' %}
-                <button disabled class="w-full py-3 bg-gray-100 text-gray-400 rounded-xl font-bold cursor-not-allowed">Seu Plano Atual</button>
-            {% else %}
-                <button disabled class="w-full py-3 bg-gray-50 text-gray-300 rounded-xl font-bold">Indisponível</button>
+        {% for chave, plano in planos.items() %}
+            {% if plano.interno %}
+            <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg relative flex flex-col h-full {% if plano.nome == 'VIP' %}border-2 border-blue-500 transform lg:scale-105{% endif %}">
+                
+                {% if plano.nome == 'VIP' %}
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Mais Popular</div>
+                {% endif %}
+
+                <h3 class="text-xl font-bold mb-2 {% if plano.nome == 'VIP' %}text-blue-600{% else %}text-gray-700{% endif %}">Plano {{ plano.nome }}</h3>
+                <div class="text-4xl font-black mb-6">R$ {{ plano.preco }}<span class="text-lg text-gray-400 font-normal">/mês</span></div>
+                
+                <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.sites }} Sites WordPress</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.posts }} Postagens por dia</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.credits }} Créditos Mensais</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> Redator Espião Liberado</li>
+                </ul>
+
+                <a href="{{ url_for('payments.checkout', plano_alvo=chave) }}" 
+                   class="block text-center w-full py-3 {% if plano.nome == 'VIP' %}bg-blue-600 hover:bg-blue-700{% else %}bg-slate-800 hover:bg-slate-900{% endif %} text-white rounded-xl font-bold transition-all">
+                    {% if current_user.plan_name == plano.nome %}Plano Atual / Renovar{% else %}Selecionar {{ plano.nome }}{% endif %}
+                </a>
+            </div>
             {% endif %}
-        </div>
-
-        <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg relative flex flex-col h-full border-t-4 border-t-blue-400 {% if current_user.plan_name == 'Pro' %}ring-2 ring-blue-400{% endif %}">
-            <h3 class="text-xl font-bold mb-2 text-gray-700">Plano Pro</h3>
-            <div class="text-4xl font-black mb-6">R$ 97<span class="text-lg text-gray-400 font-normal">/mês</span></div>
-            <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Até 5 Sites WordPress</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 10 Postagens por dia</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Acesso ao Redator Espião</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Créditos Mensais</li>
-            </ul>
-            <a href="{{ url_for('payments.checkout', plano_alvo='pro') }}" class="block text-center w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition-all">
-                {% if current_user.plan_name == 'Pro' %}Renovar Plano{% else %}Selecionar Pro{% endif %}
-            </a>
-        </div>
-
-        <div class="bg-white p-8 rounded-2xl border-2 border-blue-500 shadow-xl relative transform lg:scale-105 flex flex-col h-full {% if current_user.plan_name == 'VIP' %}ring-2 ring-blue-600{% endif %}">
-            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Mais Popular</div>
-            <h3 class="text-xl font-bold mb-2 text-blue-600">Plano VIP</h3>
-            <div class="text-4xl font-black mb-6">R$ 197<span class="text-lg text-gray-400 font-normal">/mês</span></div>
-            <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Sites Ilimitados (15+)</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> 50 Postagens por dia</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Redator Espião Liberado</li>
-                <li><i class="fas fa-check text-green-500 mr-2"></i> Suporte Prioritário</li>
-            </ul>
-            <a href="{{ url_for('payments.checkout', plano_alvo='vip') }}" class="block text-center w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">
-                {% if current_user.plan_name == 'VIP' %}Renovar Plano{% else %}Assinar VIP{% endif %}
-            </a>
-        </div>
-    </div>
-
-    <div class="mt-16 overflow-hidden rounded-2xl border border-gray-200 bg-white hidden lg:block">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-50">
-                    <th class="p-4 font-bold text-gray-700 border-b">Recurso</th>
-                    <th class="p-4 font-bold text-gray-700 border-b text-center">Free</th>
-                    <th class="p-4 font-bold text-gray-700 border-b text-center">Pro</th>
-                    <th class="p-4 font-bold text-gray-700 border-b text-center text-blue-600">VIP</th>
-                </tr>
-            </thead>
-            <tbody class="text-sm">
-                <tr>
-                    <td class="p-4 border-b">Limite de Sites</td>
-                    <td class="p-4 border-b text-center">1</td>
-                    <td class="p-4 border-b text-center">5</td>
-                    <td class="p-4 border-b text-center font-bold text-green-600">Até 15</td>
-                </tr>
-                <tr>
-                    <td class="p-4 border-b">Posts por Dia</td>
-                    <td class="p-4 border-b text-center">1</td>
-                    <td class="p-4 border-b text-center">10</td>
-                    <td class="p-4 border-b text-center font-bold text-green-600">50</td>
-                </tr>
-                <tr>
-                    <td class="p-4 border-b">Redator Espião</td>
-                    <td class="p-4 border-b text-center text-red-500"><i class="fas fa-times"></i></td>
-                    <td class="p-4 border-b text-center text-green-500"><i class="fas fa-check"></i></td>
-                    <td class="p-4 border-b text-center text-green-500 font-bold"><i class="fas fa-check"></i></td>
-                </tr>
-            </tbody>
-        </table>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -12,10 +12,12 @@ def force_db_reset():
         db.create_all()
         
         print("3. Criando Planos Base...")
-        free = Plan(name='Free', max_sites=1, posts_per_day=1, price=0.0)
-        pro = Plan(name='Pro', max_sites=5, posts_per_day=10, price=97.0)
-        vip = Plan(name='VIP', max_sites=15, posts_per_day=50, price=197.0)
-        db.session.add_all([free, pro, vip])
+        print("3. Criando Planos...")
+        starter = Plan(name='Starter', max_sites=1, posts_per_day=1, price=0.0)
+        lite    = Plan(name='Lite',    max_sites=3, posts_per_day=5, price=47.0)
+        pro     = Plan(name='Pro',     max_sites=5, posts_per_day=10, price=97.0)
+        vip     = Plan(name='VIP',     max_sites=15, posts_per_day=50, price=197.0)
+        db.session.add_all([starter, lite, pro, vip])
         db.session.commit()
         
         print("4. Criando Super Admin (Acesso Total)...")

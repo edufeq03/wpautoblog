@@ -3,7 +3,7 @@ from flask_mail import Mail
 from models import db, login_manager
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
-from routes.payments import payments_bp 
+from routes.payments import payments_bp, PLANS_CONFIG
 from routes.content import content_bp 
 from routes.sites import sites_bp 
 from routes.radar import radar_bp
@@ -53,7 +53,7 @@ app.register_blueprint(admin_bp, url_prefix='/admin')
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard_hub'))
-    return render_template('landing.html')
+    return render_template('landing.html', planos=PLANS_CONFIG)
 
 @app.route('/dashboard-hub')
 @login_required
