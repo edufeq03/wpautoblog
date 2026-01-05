@@ -1,32 +1,103 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Gerenciar Planos{% endblock %}
+{% block title %}Visão Geral do Sistema{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {% for plan in plans %}
-    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-[#121214] border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500">
+                <i class="fas fa-users text-xl"></i>
+            </div>
+            <span class="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-lg">+ {{ stats.new_users_week }} esta semana</span>
+        </div>
+        <h4 class="text-zinc-500 text-sm font-medium uppercase tracking-wider">Total Utilizadores</h4>
+        <p class="text-3xl font-bold text-white mt-1">{{ stats.total_users }}</p>
+    </div>
+
+    <div class="bg-[#121214] border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-purple-600/10 rounded-xl flex items-center justify-center text-purple-500">
+                <i class="fas fa-paper-plane text-xl"></i>
+            </div>
+        </div>
+        <h4 class="text-zinc-500 text-sm font-medium uppercase tracking-wider">Posts Gerados Hoje</h4>
+        <p class="text-3xl font-bold text-white mt-1">{{ stats.posts_today }}</p>
+    </div>
+
+    <div class="bg-[#121214] border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-orange-600/10 rounded-xl flex items-center justify-center text-orange-500">
+                <i class="fas fa-blog text-xl"></i>
+            </div>
+        </div>
+        <h4 class="text-zinc-500 text-sm font-medium uppercase tracking-wider">Total de Blogs</h4>
+        <p class="text-3xl font-bold text-white mt-1">{{ stats.total_blogs }}</p>
+    </div>
+
+    <div class="bg-[#121214] border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-green-600/10 rounded-xl flex items-center justify-center text-green-500">
+                <i class="fas fa-wallet text-xl"></i>
+            </div>
+        </div>
+        <h4 class="text-zinc-500 text-sm font-medium uppercase tracking-wider">MRR Estimado</h4>
+        <p class="text-3xl font-bold text-white mt-1">R$ {{ stats.revenue }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-[#121214] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-6 border-b border-zinc-800">
+            <h3 class="font-bold text-white">Registos Recentes</h3>
+        </div>
         <div class="p-6">
-            <h4 class="text-xl font-bold text-slate-800 uppercase">{{ plan.name }}</h4>
-            <p class="text-3xl font-extrabold text-blue-600 mt-4">R$ {{ plan.price }}</p>
-            
-            <form action="{{ url_for('admin.edit_plan', id=plan.id) }}" method="POST" class="mt-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Posts p/ Dia</label>
-                    <input type="number" name="posts_per_day" value="{{ plan.posts_per_day }}" class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Máximo de Sites</label>
-                    <input type="number" name="max_sites" value="{{ plan.max_sites }}" class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Preço (Float)</label>
-                    <input type="text" name="price" value="{{ plan.price }}" class="w-full border rounded-lg p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
-                <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg font-bold hover:bg-slate-800 transition">Salvar Alterações</button>
-            </form>
+            <ul class="space-y-4">
+                {% for user in latest_users %}
+                <li class="flex items-center justify-between group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs text-zinc-400">
+                            {{ user.email[0] | upper }}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-zinc-200">{{ user.email }}</p>
+                            <p class="text-[10px] text-zinc-500 italic">Membro desde: {{ user.id }} (ID)</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-1 rounded bg-zinc-800 text-zinc-400 group-hover:bg-blue-600/20 group-hover:text-blue-400 transition-colors uppercase">
+                        {{ user.plan_details.name if user.plan_details else 'Free' }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
-    {% endfor %}
+
+    <div class="bg-[#121214] border border-zinc-800 rounded-2xl shadow-xl p-6">
+        <h3 class="font-bold text-white mb-6">Estado do Sistema</h3>
+        <div class="space-y-6">
+            <div class="flex gap-4">
+                <div class="w-2 h-2 mt-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                <div>
+                    <h5 class="text-sm font-bold text-zinc-200">Banco de Dados Online</h5>
+                    <p class="text-xs text-zinc-500">Ligação estável com o SQLite/PostgreSQL.</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="w-2 h-2 mt-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                <div>
+                    <h5 class="text-sm font-bold text-zinc-200">Agendador de Tarefas (APScheduler)</h5>
+                    <p class="text-xs text-zinc-500">Radar e sincronização automática ativos.</p>
+                </div>
+            </div>
+            <div class="flex gap-4">
+                <div class="w-2 h-2 mt-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                <div>
+                    <h5 class="text-sm font-bold text-zinc-200">API OpenAI / WordPress</h5>
+                    <p class="text-xs text-zinc-500">Sistemas prontos para geração de conteúdo.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

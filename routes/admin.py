@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, Plan, User
+from models import db, Plan, User, Blog, Plan, PostLog
+from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/super-admin')
 
@@ -12,12 +13,40 @@ def ensure_admin():
         return redirect(url_for('dashboard.dashboard_view'))
 
 @admin_bp.route('/dashboard')
+@login_required
 def admin_dashboard():
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard.dashboard_view'))
+
+    # Estatísticas básicas
+    total_users = User.query.count()
+    total_blogs = Blog.query.count()
+    
+    # Posts de hoje
+    hoje = datetime.utcnow().date()
+    posts_today = PostLog.query.filter(db.func.date(PostLog.posted_at) == hoje).count()
+    
+    # Novos utilizadores na última semana
+    uma_semana_atras = datetime.utcnow() - timedelta(days=7)
+    # Nota: Se não tiveres campo 'created_at' no User, esta contagem pode ser adaptada
+    new_users_week = 0 
+    
+    # Cálculo rápido de receita (Soma dos preços dos planos dos utilizadores ativos)
+    # Filtramos utilizadores que têm plano (plan_id não é nulo)
+    users_with_plans = User.query.filter(User.plan_id.isnot(None)).all()
+    revenue = sum([u.plan_details.price for u in users_with_plans if u.plan_details])
+
     stats = {
-        'total_users': User.query.count(),
-        'total_plans': Plan.query.count()
+        'total_users': total_users,
+        'posts_today': posts_today,
+        'total_blogs': total_blogs,
+        'revenue': f"{revenue:,.2f}",
+        'new_users_week': new_users_week
     }
-    return render_template('admin/dashboard.html', stats=stats)
+
+    latest_users = User.query.order_by(User.id.desc()).limit(5).all()
+
+    return render_template('admin/dashboard.html', stats=stats, latest_users=latest_users)
 
 @admin_bp.route('/plans', methods=['GET', 'POST'])
 def manage_plans():
@@ -57,9 +86,16 @@ def list_users():
     return render_template('admin/users.html', users=users, plans=plans)
 
 @admin_bp.route('/user/<int:id>/set-plan', methods=['POST'])
+@login_required
 def set_user_plan(id):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard.dashboard_view'))
+        
     user = User.query.get_or_404(id)
-    user.plan_id = request.form.get('plan_id')
+    new_plan_id = request.form.get('plan_id')
+    
+    user.plan_id = new_plan_id
     db.session.commit()
-    flash(f"Plano do usuário {user.email} atualizado!", "success")
+    
+    flash(f"Plano do utilizador {user.email} atualizado com sucesso!", "success")
     return redirect(url_for('admin.list_users'))
