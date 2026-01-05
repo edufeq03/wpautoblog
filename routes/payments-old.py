@@ -19,7 +19,7 @@ def upgrade_plano(plano_alvo):
 
     try:
         # Atualiza o plano e soma os créditos
-        current_user.plan_type = plano_alvo
+        current_user.plan_details.name = plano_alvo
         novos_creditos = config_planos[plano_alvo]['credits']
         current_user.credits += novos_creditos
         

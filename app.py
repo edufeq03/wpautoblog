@@ -6,7 +6,8 @@ from routes.dashboard import dashboard_bp
 from routes.payments import payments_bp 
 from routes.content import content_bp 
 from routes.sites import sites_bp 
-from routes.radar import radar_bp # Importe o novo arquivo que criamos
+from routes.radar import radar_bp
+from routes.admin import admin_bp
 from flask_login import login_required, current_user
 import os
 
@@ -41,6 +42,7 @@ app.register_blueprint(sites_bp, url_prefix='/sites')
 app.register_blueprint(radar_bp, url_prefix='/radar')
 app.register_blueprint(content_bp, url_prefix='/content')
 app.register_blueprint(payments_bp, url_prefix='/billing')
+app.register_blueprint(admin_bp, url_prefix='/admin')
 
 @app.route('/')
 def index():

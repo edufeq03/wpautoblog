@@ -5,18 +5,19 @@ from datetime import datetime
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
-# --- CONFIGURAÇÃO DE PLANOS (Pode ser movido para um arquivo de config futuro) ---
-PLANOS = {
-    'trial': {'nome': 'Plano Trial', 'preco': 'Grátis', 'sites': '1', 'posts': '1', 'espiao': False},
-    'pro': {'nome': 'Plano Pro', 'preco': 'R$ 59', 'sites': '2', 'posts': '5', 'espiao': True},
-    'vip': {'nome': 'Plano VIP', 'preco': 'R$ 249', 'sites': 'Ilimitados', 'posts': 'Ilimitadas', 'espiao': True}
-}
-
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard_view():
     """Página principal do painel com resumo estatístico."""
-    limites = current_user.get_plan_limits()
+    # Agora buscamos os limites direto do relacionamento com a tabela Plan
+    # Usamos valores padrão caso o plano não esteja definido (prevenção de erro)
+    plan = current_user.plan_details
+    limites = {
+        'posts_por_dia': plan.posts_per_day if plan else 1,
+        'max_sites': plan.max_sites if plan else 1,
+        'nome': plan.name if plan else 'Nenhum'
+    }
+    
     saldo_atual = current_user.credits if hasattr(current_user, 'credits') else 0
     
     # Busca logs recentes de todos os sites do usuário
@@ -37,25 +38,10 @@ def dashboard_view():
                            logs=logs_recentes,
                            posts_hoje=posts_hoje)
 
-@dashboard_bp.route('/index')
-@login_required
-def index():
-    status = current_user.get_setup_status()
-    
-    if status == 'complete':
-        return render_template('dashboard.html') # A sua dashboard real com gráficos
-    else:
-        # Se estiver incompleto, enviamos para a página de onboarding
-        return render_template('onboarding.html', status=status)
-    
 @dashboard_bp.route('/pricing')
 @login_required
 def pricing():
     """Página de listagem de planos e upgrades."""
-    return render_template('pricing.html', user=current_user, planos=PLANOS)
-
-@dashboard_bp.route('/general-config')
-@login_required
-def general_config():
-    """Configurações gerais da conta do usuário."""
-    return render_template('general_config.html', user=current_user)
+    from models import Plan
+    planos = Plan.query.all()
+    return render_template('pricing.html', user=current_user, planos=planos)

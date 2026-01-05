@@ -89,7 +89,7 @@
                     {% if current_user.is_authenticated %}
                     <div class="text-right mr-2 hidden xs:block">
                         <p class="text-xs font-bold text-gray-800">{{ current_user.email }}</p>
-                        <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_type }} Account</p>
+                        <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_details.name }} Account</p>
                     </div>
                     <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
                         {{ current_user.email[0].upper() }}

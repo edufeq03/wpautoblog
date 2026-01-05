@@ -43,7 +43,7 @@ def upgrade_plano(plano_alvo):
 
     try:
         config_plano = PLANS_CONFIG[plano_alvo]
-        current_user.plan_type = plano_alvo
+        current_user.plan_details.name = plano_alvo
         
         # Usa o método seguro de dedução de créditos
         if current_user.deduct_credit(-config_plano['credits']):  # Negativo para adicionar
@@ -122,7 +122,7 @@ def payment_success():
         
         if session.payment_status == 'paid':
             config_plano = PLANS_CONFIG[plano_alvo]
-            current_user.plan_type = plano_alvo
+            current_user.plan_details.name = plano_alvo
             
             # Adiciona créditos usando o método seguro
             current_user.credits += config_plano['credits']
@@ -178,7 +178,7 @@ def stripe_webhook():
             user = User.query.get(int(user_id))
             if user and plano_alvo in PLANS_CONFIG:
                 config_plano = PLANS_CONFIG[plano_alvo]
-                user.plan_type = plano_alvo
+                current_user.plan_details.name = plano_alvo
                 user.credits += config_plano['credits']
                 db.session.commit()
                 print(f"Pagamento confirmado para usuário {user_id}. Créditos adicionados.")
@@ -256,7 +256,7 @@ def mercadopago_success():
         
         if payment_info['response']['status'] == 'approved':
             config_plano = PLANS_CONFIG[plano_alvo]
-            current_user.plan_type = plano_alvo
+            current_user.plan_details.name = plano_alvo
             current_user.credits += config_plano['credits']
             db.session.commit()
             

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - WP AutoBlog</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Personalização do Scrollbar para combinar com o Dark Mode */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+    </style>
+</head>
+<body class="bg-[#09090b] text-zinc-200 font-sans min-h-screen">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="bg-[#121214] border-r border-zinc-800 w-full md:w-64 flex-shrink-0">
+            <div class="p-6 border-b border-zinc-800 flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shield-halved text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm uppercase tracking-widest text-white">Painel Admin</h1>
+                    <p class="text-[10px] text-zinc-500 uppercase">Sistema de Gestão</p>
+                </div>
+            </div>
+
+            <nav class="mt-6 px-4 space-y-2">
+                <a href="{{ url_for('admin.admin_dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'admin.admin_dashboard' %} bg-zinc-800 text-blue-400 {% else %} text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 {% endif %}">
+                    <i class="fas fa-chart-pie w-5"></i>
+                    <span class="font-medium">Visão Geral</span>
+                </a>
+                
+                <a href="{{ url_for('admin.manage_plans') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'admin.manage_plans' %} bg-zinc-800 text-blue-400 {% else %} text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 {% endif %}">
+                    <i class="fas fa-gem w-5"></i>
+                    <span class="font-medium">Planos e Preços</span>
+                </a>
+
+                <a href="{{ url_for('admin.list_users') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'admin.list_users' %} bg-zinc-800 text-blue-400 {% else %} text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 {% endif %}">
+                    <i class="fas fa-user-group w-5"></i>
+                    <span class="font-medium">Usuários</span>
+                </a>
+
+                <div class="pt-6 mt-6 border-t border-zinc-800">
+                    <a href="{{ url_for('dashboard.dashboard_view') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:text-orange-400 hover:bg-orange-400/5 transition-all">
+                        <i class="fas fa-right-from-bracket w-5"></i>
+                        <span class="font-medium">Sair do Admin</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8">
+            <header class="mb-8">
+                <h2 class="text-2xl font-bold text-white">{% block title %}Dashboard{% endblock %}</h2>
+                <p class="text-zinc-500 text-sm">Bem-vindo ao centro de comando da plataforma.</p>
+            </header>
+
+            <section class="animate-fade-in">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <div id="flash-container" class="fixed bottom-6 right-6 z-50 space-y-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-4 transition-all duration-500 transform translate-y-0 {% if category == 'success' %} bg-zinc-900 border-green-500/50 text-green-400 {% else %} bg-zinc-900 border-red-500/50 text-red-400 {% endif %}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-triangle-exclamation{% endif %}"></i>
+                    <span class="font-medium text-sm">{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+</body>
+</html>

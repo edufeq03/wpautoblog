@@ -15,9 +15,20 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    plan_type = db.Column(db.String(20), default='trial') 
     credits = db.Column(db.Integer, default=5)
     last_post_date = db.Column(db.Date, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=True)
+
+    # DICA: Crie uma propriedade para evitar erros se o plano for None
+    @property
+    def current_plan_name(self):
+        return self.plan_details.name if self.plan_details else "Sem Plano"
+    
+    @property
+    def plan_type(self):
+        """Atalho para não quebrar códigos antigos que ainda buscam por plan_type"""
+        return self.plan_details.name.lower() if self.plan_details else 'free'
 
     def get_reset_token(self):
         # O Serializer recebe apenas a chave secreta aqui
@@ -45,13 +56,11 @@ class User(db.Model, UserMixin):
             'pro':   {'max_sites': 2, 'posts_por_dia': 5},
             'vip':   {'max_sites': 999, 'posts_por_dia': 999}
         }
-        return planos.get(self.plan_type, planos['trial'])
+        return planos.get(self.current_user.plan_details.name, planos['trial'])
 
-    # --- MÉTODO RESTAURADO AQUI ---
     def can_add_site(self):
-        """Verifica se o utilizador pode adicionar mais um site baseado no seu plano."""
-        limite = self.get_plan_limits()['max_sites']
-        return len(self.sites) < limite
+        if not self.plan_details: return False
+        return len(self.sites) < self.plan_details.max_sites
     
     # No seu arquivo models.py, dentro da classe User
     def is_setup_complete(self):
@@ -95,7 +104,7 @@ class User(db.Model, UserMixin):
         """
         Verifica se o usuário Trial já postou hoje.
         """
-        if self.plan_type == 'trial':
+        if self.current_user.plan_details.name == 'trial':
             hoje = date.today()
             if self.last_post_date == hoje:
                 return False
@@ -121,7 +130,6 @@ class Blog(db.Model):
     wp_url = db.Column(db.String(200), nullable=False)
     wp_user = db.Column(db.String(100), nullable=False)
     wp_app_password = db.Column(db.String(100), nullable=False)
-    
     master_prompt = db.Column(db.Text)
     macro_themes = db.Column(db.Text)
     post_status = db.Column(db.String(20), default='publish')
@@ -129,8 +137,6 @@ class Blog(db.Model):
     posts_per_day = db.Column(db.Integer, default=1)
     schedule_time = db.Column(db.String(5), default="08:00")
     default_category = db.Column(db.Integer)
-    
-    # Cascade para deleção segura
     ideas = db.relationship('ContentIdea', backref='blog', lazy=True, cascade="all, delete-orphan")
     logs = db.relationship('PostLog', backref='blog', lazy=True, cascade="all, delete-orphan")
     sources = db.relationship('ContentSource', backref='blog', lazy=True, cascade="all, delete-orphan")
@@ -173,3 +179,15 @@ class CapturedContent(db.Model):
     original_url = db.Column(db.String(500))
     is_processed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Plan(db.Model):
+    __tablename__ = 'plans'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False) # Free, Pro, VIP
+    max_sites = db.Column(db.Integer, default=1)
+    posts_per_day = db.Column(db.Integer, default=1)
+    credits_monthly = db.Column(db.Integer, default=5)
+    price = db.Column(db.Float, default=0.0)
+    has_radar = db.Column(db.Boolean, default=False)
+    has_spy = db.Column(db.Boolean, default=False)
+    users = db.relationship('User', backref='plan_details', lazy=True)
