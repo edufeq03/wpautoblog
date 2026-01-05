@@ -62,7 +62,7 @@ def manage_plans():
         db.session.commit()
         flash("Plano criado com sucesso!", "success")
         
-    plans = Plan.query.all()
+    plans = Plan.query.order_by(Plan.id.asc()).all()
     return render_template('admin/plans.html', plans=plans)
 
 @admin_bp.route('/plan/edit/<int:id>', methods=['POST'])
