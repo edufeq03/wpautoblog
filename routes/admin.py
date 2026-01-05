@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from models import db, Plan, User, Blog, Plan, PostLog
 from datetime import datetime, timedelta
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/super-admin')
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @admin_bp.before_request
 @login_required
