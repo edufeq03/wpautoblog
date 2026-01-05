@@ -6,15 +6,12 @@ from requests.auth import HTTPBasicAuth
 import os
 from datetime import datetime
 
-# Importando as funções centralizadas do seu novo serviço de IA
+# Importando as funções centralizadas do seu serviço de IA e utilitários
 from services.ai_service import generate_text, generate_image
 from utils.scrapers import extrair_texto_da_url
 from utils.ai_logic import preparar_contexto_brainstorm
 
 content_bp = Blueprint('content', __name__)
-
-# --- CONSTANTE PARA O USUÁRIO DEMO ---
-DEMO_EMAIL = 'demo@wpautoblog.com.br'
 
 @content_bp.route('/ideas')
 @login_required
@@ -48,7 +45,7 @@ def generate_ideas():
     contexto = preparar_contexto_brainstorm(site)
 
     try:
-        # Usando a função centralizada para gerar títulos (quick=True para o modelo 8b)
+        # Gerar 10 títulos usando o modelo rápido (Llama 8b)
         resposta = generate_text(
             prompt=f"CONTEXTO: {contexto}\n\nGere 10 títulos de artigos otimizados para SEO.",
             system_prompt="Você é um especialista em SEO. Gere apenas os títulos, um por linha, sem números ou aspas.",
@@ -59,7 +56,6 @@ def generate_ideas():
             titulos = resposta.strip().split('\n')
             for t in titulos:
                 if t.strip():
-                    # Limpeza simples caso a IA coloque números no início
                     titulo_limpo = t.split('. ', 1)[-1] if '. ' in t[:4] else t
                     db.session.add(ContentIdea(blog_id=site.id, title=titulo_limpo.strip()[:250]))
             
@@ -70,17 +66,17 @@ def generate_ideas():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Erro ao gerar ideias: {e}")
-        flash(f'Erro: {str(e)}', 'danger')
+        flash(f'Erro ao gerar ideias: {str(e)}', 'danger')
 
     return redirect(url_for('content.ideas', site_id=site.id))
 
 @content_bp.route('/publish-idea/<int:idea_id>')
 @login_required
 def publish_idea(idea_id):
-    if not current_user.pode_postar_automatico():
-        flash("Limite atingido. Verifique seus créditos ou plano.", "warning")
-        return redirect(url_for('content.ideas'))
+    # 1. Verificação centralizada de créditos antes de iniciar a IA
+    if not current_user.has_credits():
+        flash("Você não possui créditos suficientes. Recarregue seu plano.", "warning")
+        return redirect(url_for('payments.pricing'))
     
     idea = ContentIdea.query.get_or_404(idea_id)
     site = Blog.query.get_or_404(idea.blog_id)
@@ -89,7 +85,7 @@ def publish_idea(idea_id):
     try:
         master_prompt = site.master_prompt or "Você é um redator especialista em SEO."
         
-        # Gerando o artigo completo usando o modelo mais potente (quick=False)
+        # 2. Gerando o artigo completo (Modelo 70b)
         artigo_html = generate_text(
             prompt=f"Escreva um artigo completo em HTML sobre: '{idea.title}'.",
             system_prompt=master_prompt,
@@ -107,25 +103,28 @@ def publish_idea(idea_id):
 
             if response.status_code == 201:
                 data = response.json()
-                db.session.add(PostLog(blog_id=site.id, title=idea.title, content=artigo_html, 
-                                       wp_post_id=data.get('id'), post_url=data.get('link'), status='Publicado'))
+                db.session.add(PostLog(
+                    blog_id=site.id, 
+                    title=idea.title, 
+                    content=artigo_html, 
+                    wp_post_id=data.get('id'), 
+                    post_url=data.get('link'), 
+                    status='Publicado'
+                ))
                 idea.is_posted = True
                 postagem_sucesso = True 
         else:
             raise Exception("Falha ao gerar conteúdo com a IA.")
 
     except Exception as e:
-        print(f"Erro na publicação automática: {e}")
         flash(f'Erro na automação: {str(e)}', 'danger')
     
+    # 3. Consumo de crédito apenas se a postagem no WP funcionou
     if postagem_sucesso:
-        if current_user.deduct_credit(amount=1):
-            db.session.commit()
+        if current_user.consume_credit(amount=1):
             flash(f"Publicado! Créditos restantes: {current_user.credits}", "success")
         else:
-            # Isso não deve acontecer se a verificação inicial for correta, mas é uma segurança
-            db.session.rollback()
-            flash("Erro: Créditos insuficientes no momento da dedução.", "danger")
+            flash("Erro ao processar créditos.", "danger")
     else:
         db.session.rollback()
 
@@ -136,6 +135,11 @@ def publish_idea(idea_id):
 def spy_writer():
     processed_content = None
     if request.method == 'POST':
+        # Verificação de crédito para a ferramenta Spy
+        if not current_user.has_credits():
+            flash("Créditos insuficientes para usar o Spy Writer.", "warning")
+            return redirect(url_for('payments.pricing'))
+
         url = request.form.get('url')
         try:
             texto_extraido = extrair_texto_da_url(url)
@@ -144,7 +148,6 @@ def spy_writer():
                 flash("Não foi possível extrair conteúdo desta URL.", "warning")
                 return render_template('spy_writer.html', processed_content=None)
 
-            # Usando a função centralizada com correção de aspas na mensagem de flash
             novo_texto = generate_text(
                 prompt=f"Reescreva este conteúdo em um novo artigo original e SEO: {texto_extraido[:12000]}",
                 system_prompt="Você é um redator espião. Transforme o conteúdo em um artigo de blog profissional usando HTML.",
@@ -152,57 +155,16 @@ def spy_writer():
             )
 
             if novo_texto:
-                processed_content = {
-                    "title": "Novo Artigo Inspirado",
-                    "text": novo_texto
-                }
-                flash('Conteúdo "espiado" e reescrito com sucesso!', 'success')
+                processed_content = {"title": "Novo Artigo Inspirado", "text": novo_texto}
+                # Opcional: descontar crédito aqui ou na publicação final
+                flash('Conteúdo reescrito com sucesso!', 'success')
             else:
                 flash("A IA falhou ao processar o texto.", "danger")
 
         except Exception as e:
-            print(f"Erro no Spy Writer: {e}")
             flash(f"Erro ao processar URL: {str(e)}", "danger")
 
     return render_template('spy_writer.html', processed_content=processed_content)
-
-@content_bp.route('/manual-post', methods=['GET', 'POST'])
-@login_required
-def manual_post():
-    if request.method == 'POST':
-        site_id = request.form.get('site_id')
-        title = request.form.get('title')
-        content = request.form.get('content')
-        
-        if not site_id:
-            flash('Selecione um site antes de postar.', 'error')
-            return redirect(url_for('content.manual_post'))
-        
-        try:
-            site = Blog.query.filter_by(id=int(site_id), user_id=current_user.id).first()
-            if not site:
-                flash('Site não encontrado.', 'danger')
-                return redirect(url_for('content.manual_post'))
-
-            wp_api_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
-            response = requests.post(wp_api_url, 
-                json={"title": title, "content": content, "status": "publish"},
-                auth=HTTPBasicAuth(site.wp_user, site.wp_app_password), 
-                timeout=30)
-
-            if response.status_code == 201:
-                data = response.json()
-                db.session.add(PostLog(blog_id=site.id, title=title, content=content, 
-                                   wp_post_id=data.get('id'), post_url=data.get('link'), status='Publicado'))
-                db.session.commit()
-                flash('Postagem manual realizada!', 'success')
-                return redirect(url_for('content.post_report'))
-            else:
-                flash(f'Erro no WordPress: {response.status_code}', 'danger')
-        except Exception as e:
-            flash(f'Erro: {str(e)}', 'danger')
-            
-    return render_template('manual_post.html')
 
 @content_bp.route('/post-report')
 @login_required
@@ -228,3 +190,12 @@ def delete_idea(idea_id):
     
     flash('Ideia removida.', 'info')
     return redirect(url_for('content.ideas', site_id=blog_id))
+
+@content_bp.route('/manual-post', methods=['GET', 'POST'])
+@login_required
+def manual_post():
+    if request.method == 'POST':
+        # Lógica simplificada de postagem manual
+        flash("Funcionalidade em manutenção. Use a geração por ideias.", "info")
+        return redirect(url_for('content.ideas'))
+    return render_template('manual_post.html')
