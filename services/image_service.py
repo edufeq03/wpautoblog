@@ -1,26 +1,27 @@
 import requests
 from openai import OpenAI
 import os
+from services.ai_service import criar_prompt_visual
 
 def processar_imagem_featured(titulo_post, wp_url, auth_wp):
+    print(f"\n--- [SERVICE DEBUG] Iniciando processamento ---")
+    # Limpeza de ambiente para evitar erro de proxies
+    for key in list(os.environ.keys()):
+        if "PROXY" in key.upper():
+            print(f"DEBUG: Removendo variável de ambiente: {key}")
+            os.environ.pop(key)
+
     api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        print("Erro: OPENAI_API_KEY não encontrada.")
-        return None
-        
-    # Inicialização simples para evitar erro de 'proxies'
-    client = OpenAI(api_key=api_key)
-    wp_url = wp_url.rstrip('/') 
-
+    print(f"DEBUG: OpenAI Key detectada? {'Sim' if api_key else 'Não'}")
+    
     try:
-        # 1. Gerar o Prompt Visual
-        prompt_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": f"Crie um prompt para o DALL-E 3 gerar uma imagem profissional para: {titulo_post}"}]
-        )
-        visual_prompt = prompt_response.choices[0].message.content
+        client = OpenAI(api_key=api_key)
+        
+        print(f"DEBUG: Solicitando prompt visual ao ai_service...")
+        visual_prompt = criar_prompt_visual(titulo_post)
+        print(f"DEBUG: Prompt gerado: {visual_prompt[:50]}...")
 
-        # 2. Gerar a Imagem
+        print("DEBUG: Chamando API DALL-E 3...")
         image_gen = client.images.generate(
             model="dall-e-3",
             prompt=visual_prompt,
@@ -28,31 +29,34 @@ def processar_imagem_featured(titulo_post, wp_url, auth_wp):
             size="1024x1024"
         )
         image_url = image_gen.data[0].url
+        print(f"DEBUG: URL da imagem recebida com sucesso.")
 
-        # 3. Download com Timeout
-        img_res = requests.get(image_url, timeout=30) # Adicionado timeout
-        if img_res.status_code != 200:
-            return None
-        img_data = img_res.content
+        print(f"DEBUG: Fazendo download da imagem...")
+        img_res = requests.get(image_url, timeout=30)
+        print(f"DEBUG: Status download: {img_res.status_code}")
 
-        # 4. Upload para o WordPress
+        print(f"DEBUG: Fazendo upload para WordPress em: {wp_url}")
         headers = {
-            'Content-Disposition': f'attachment; filename="featured_{os.urandom(2).hex()}.jpg"',
+            'Content-Disposition': f'attachment; filename="f_{os.urandom(2).hex()}.jpg"',
             'Content-Type': 'image/jpeg'
         }
-        
         response = requests.post(
-            f"{wp_url}/wp-json/wp/v2/media",
+            f"{wp_url.rstrip('/')}/wp-json/wp/v2/media",
             auth=auth_wp,
             headers=headers,
-            data=img_data,
-            timeout=60 # Adicionado timeout
+            data=img_res.content,
+            timeout=60
         )
+        print(f"DEBUG: Resposta WP Media Status: {response.status_code}")
         
         if response.status_code == 201:
-            return response.json().get('id')
+            media_id = response.json().get('id')
+            print(f"DEBUG: Sucesso total! ID gerado: {media_id}")
+            return media_id
         
+        print(f"DEBUG: Falha no WP. Resposta: {response.text}")
         return None
+
     except Exception as e:
-        print(f"Erro no serviço de imagem: {str(e)}")
+        print(f"DEBUG: EXCEÇÃO NO SERVICE: {str(e)}")
         return None

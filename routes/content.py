@@ -78,11 +78,21 @@ def publish_idea(idea_id):
         
         # B. Gera e faz upload da imagem (se o serviço estiver disponível)
         id_imagem = None
+        print(f"DEBUG: Iniciando fluxo de imagem para '{idea.title}'")
+        print(f"DEBUG: Serviço carregado? {processar_imagem_featured is not None}")
+        print(f"DEBUG: Usuário tem plano? {current_user.plan_details is not None}")
+
+        if current_user.plan_details:
+            print(f"DEBUG: Plano permite imagens (has_images)? {current_user.plan_details.has_images}")
+
         if processar_imagem_featured and current_user.plan_details and current_user.plan_details.has_images:
-            print(f"🎨 Iniciando geração de imagem para WP...")
-            # Usa wp_user e wp_app_password conforme o models.py
+            print("DEBUG: Condições aceitas. Chamando processar_imagem_featured...")
             auth_wp = (blog.wp_user, blog.wp_app_password)
             id_imagem = processar_imagem_featured(idea.title, blog.wp_url, auth_wp)
+            print(f"DEBUG: Resultado do serviço de imagem (ID): {id_imagem}")
+        else:
+            print("DEBUG: Fluxo de imagem ignorado (verifique as condições acima)")
+        # --- FIM DO DEBUG ---
             
             if id_imagem:
                 print(f"📸 Imagem vinculada com sucesso! ID: {id_imagem}")
