@@ -117,14 +117,14 @@
 
     <header class="pt-48 pb-32 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
         <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight tracking-tighter">
-            Blogs que rendem<br>
-            <span class="gradient-text">em piloto automático.</span>
+            {{ t.hero_title }}<br>
+            <span class="gradient-text">{{ t.hero_subtitle }}</span>
         </h1>
         <p class="text-xl text-slate-500 max-w-2xl mx-auto mb-16 font-medium">
-            Sua produção de conteúdo escalada por Inteligência Artificial de elite.
+            {{ t.hero_line }}
         </p>
         <a href="{{ url_for('auth.register') }}" class="btn-premium px-12 py-6 text-white font-black rounded-3xl text-xl shadow-2xl inline-block">
-            Teste Gratuitamente
+            {{ t.hero_button }}
         </a>
     </header>
 
