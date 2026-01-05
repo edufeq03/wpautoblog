@@ -19,7 +19,9 @@ class User(db.Model, UserMixin):
     credits = db.Column(db.Integer, default=5)
     last_post_date = db.Column(db.Date, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
-    plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False, default=1)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    #plan_details = db.relationship('Plan', backref='users')
 
     # Relacionamento com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)

@@ -6,8 +6,14 @@ from requests.auth import HTTPBasicAuth
 import os
 from datetime import datetime
 
-# Importando as funções dos seus serviços
+# Importando serviços
 from services.ai_service import generate_text
+try:
+    from services.image_service import processar_imagem_featured
+except ImportError:
+    processar_imagem_featured = None
+
+# Importando as funções dos seus serviços
 from utils.scrapers import extrair_texto_da_url
 from utils.ai_logic import preparar_contexto_brainstorm
 
@@ -25,6 +31,28 @@ except Exception as e:
 
 content_bp = Blueprint('content', __name__)
 
+def enviar_para_wordpress(conteudo, titulo, id_imagem, blog):
+    """Função centralizada para enviar conteúdo ao WordPress via REST API."""
+    wp_payload = {
+        'title': titulo,
+        'content': conteudo,
+        'status': blog.post_status or 'publish'
+    }
+    if id_imagem:
+        wp_payload['featured_media'] = id_imagem
+
+    try:
+        response = requests.post(
+            f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
+            auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
+            json=wp_payload,
+            timeout=30
+        )
+        return response
+    except Exception as e:
+        print(f"Erro na conexão com WordPress: {e}")
+        return None
+    
 # --- 1. FILA DE IDEIAS ---
 @content_bp.route('/ideas')
 @login_required
@@ -68,58 +96,34 @@ def generate_ideas():
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
+    # 1. Bloqueio por falta de créditos
+    if current_user.credits <= 0:
+        flash("Saldo de créditos insuficiente.", "warning")
+        return redirect(url_for('content.ideas'))
+    
     idea = ContentIdea.query.get_or_404(idea_id)
     blog = idea.blog
 
     try:
-        # A. Gera o texto do artigo
-        print(f"🤖 Gerando texto para: {idea.title}...")
-        texto_final = generate_text(f"Escreva um artigo detalhado e otimizado para SEO sobre: {idea.title}")
+        # A. Gera texto via IA
+        texto_final = generate_text(f"Escreva um artigo detalhado sobre: {idea.title}")
         
-        # B. Gera e faz upload da imagem (se o serviço estiver disponível)
+        # B. Tenta gerar imagem
         id_imagem = None
-        print(f"DEBUG: Iniciando fluxo de imagem para '{idea.title}'")
-        print(f"DEBUG: Serviço carregado? {processar_imagem_featured is not None}")
-        print(f"DEBUG: Usuário tem plano? {current_user.plan_details is not None}")
-
-        if current_user.plan_details:
-            print(f"DEBUG: Plano permite imagens (has_images)? {current_user.plan_details.has_images}")
-
         if processar_imagem_featured and current_user.plan_details and current_user.plan_details.has_images:
-            print("DEBUG: Condições aceitas. Chamando processar_imagem_featured...")
             auth_wp = (blog.wp_user, blog.wp_app_password)
             id_imagem = processar_imagem_featured(idea.title, blog.wp_url, auth_wp)
-            print(f"DEBUG: Resultado do serviço de imagem (ID): {id_imagem}")
-        else:
-            print("DEBUG: Fluxo de imagem ignorado (verifique as condições acima)")
-        # --- FIM DO DEBUG ---
-            
-            if id_imagem:
-                print(f"📸 Imagem vinculada com sucesso! ID: {id_imagem}")
-            else:
-                print("⚠️ A imagem não pôde ser gerada, continuando apenas com o texto.")
 
-        # C. Monta o pacote para o WordPress
-        wp_payload = {
-            'title': idea.title,
-            'content': texto_final,
-            'status': blog.post_status or 'publish'
-        }
-        if id_imagem:
-            wp_payload['featured_media'] = id_imagem
+        # C. Envia ao WordPress usando a nova função
+        response = enviar_para_wordpress(texto_final, idea.title, id_imagem, blog)
 
-        # D. Envia para a API do WordPress
-        response = requests.post(
-            f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
-            auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
-            json=wp_payload
-        )
-
-        if response.status_code in [200, 201]:
-            # Sucesso: Marcar ideia como postada e registrar log
+        # D. Valida sucesso e debita créditos
+        if response and response.status_code in [200, 201]:
+            # DÉBITO DE CRÉDITO SÓ EM CASO DE SUCESSO
+            current_user.credits -= 1
             idea.is_posted = True
-            res_data = response.json()
             
+            res_data = response.json()
             novo_log = PostLog(
                 blog_id=blog.id,
                 title=idea.title,
@@ -128,16 +132,15 @@ def publish_idea(idea_id):
                 post_url=res_data.get('link')
             )
             db.session.add(novo_log)
-            db.session.commit()
+            db.session.commit() # Salva o log e o débito de crédito
             
-            flash(f"Artigo '{idea.title}' publicado com sucesso!", "success")
+            flash(f"Artigo publicado! 1 crédito debitado (Saldo: {current_user.credits})", "success")
         else:
-            flash(f"Erro no WordPress ({response.status_code}): {response.text}", "danger")
+            flash(f"Erro ao publicar no WordPress. Nenhum crédito foi debitado.", "danger")
 
     except Exception as e:
         db.session.rollback()
-        print(f"💥 Erro na publicação: {str(e)}")
-        flash(f"Erro ao publicar: {str(e)}", "danger")
+        flash(f"Erro técnico na publicação: {str(e)}", "danger")
 
     return redirect(url_for('content.ideas'))
 
@@ -145,10 +148,31 @@ def publish_idea(idea_id):
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
+    if current_user.credits <= 0:
+        flash("Você não possui créditos para um post manual.", "warning")
+        return redirect(url_for('content.dashboard'))
+
+    # Pega os blogs do usuário para o select do formulário
+    blogs = Blog.query.filter_by(user_id=current_user.id).all()
+
     if request.method == 'POST':
-        flash("Funcionalidade de post manual recebida!", "info")
-        return redirect(url_for('content.post_report'))
-    return render_template('manual_post.html')
+        blog_id = request.form.get('blog_id')
+        titulo = request.form.get('title')
+        conteudo = request.form.get('content')
+        blog = Blog.query.get(blog_id)
+
+        if blog and blog.user_id == current_user.id:
+            res = enviar_para_wordpress(conteudo, titulo, None, blog)
+            
+            if res and res.status_code in [200, 201]:
+                current_user.credits -= 1
+                db.session.commit()
+                flash("Post manual publicado com sucesso!", "success")
+                return redirect(url_for('content.post_report'))
+            else:
+                flash("Falha ao enviar para o WordPress.", "danger")
+                
+    return render_template('manual_post.html', blogs=blogs)
 
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required

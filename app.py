@@ -40,7 +40,7 @@ app.register_blueprint(dashboard_bp)
 app.register_blueprint(sites_bp, url_prefix='/sites')
 app.register_blueprint(radar_bp, url_prefix='/radar')
 app.register_blueprint(content_bp, url_prefix='/content')
-app.register_blueprint(payments_bp, url_prefix='/billing')
+app.register_blueprint(payments_bp, url_prefix='/payments')
 app.register_blueprint(admin_bp, url_prefix='/admin')
 
 @app.route('/')

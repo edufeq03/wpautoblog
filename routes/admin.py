@@ -25,11 +25,26 @@ def admin_dashboard():
     
     # Novos utilizadores na última semana (se houver campo created_at)
     new_users_week = 0 
+
+    # Se você não for admin, bloqueie o acesso (recomendado)
+    if not current_user.is_admin: # Ajuste conforme seu campo de admin
+        return redirect(url_for('content.ideas'))
+    # 1. Calculando as estatísticas para o template
+    uma_semana_atras = datetime.utcnow() - timedelta(days=7)
+    
+    stats = {
+        'total_users': User.query.count(),
+        'new_users_week': User.query.filter(User.created_at >= uma_semana_atras).count(),
+        'total_blogs': Blog.query.count(),
+        'total_posts': PostLog.query.count()
+    }
     
     return render_template('admin/dashboard.html', 
                          total_users=total_users, 
                          total_blogs=total_blogs, 
-                         posts_today=posts_today)
+                         stats=stats,
+                         posts_today=posts_today,
+                         current_user=current_user)
 
 @admin_bp.route('/plans', methods=['GET', 'POST'])
 @login_required
