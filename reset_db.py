@@ -4,31 +4,43 @@ from werkzeug.security import generate_password_hash
 
 def force_db_reset():
     with app.app_context():
+        # O timeout pode acontecer aqui se a conexão estiver lenta ou bloqueada
         print("1. Removendo todas as tabelas no Postgres...")
-        db.drop_all()
+        db.drop_all() 
         
         print("2. Criando novas tabelas...")
         db.create_all()
         
-        print("3. Criando Planos...")
+        print("3. Criando Planos Base...")
         free = Plan(name='Free', max_sites=1, posts_per_day=1, price=0.0)
         pro = Plan(name='Pro', max_sites=5, posts_per_day=10, price=97.0)
         vip = Plan(name='VIP', max_sites=15, posts_per_day=50, price=197.0)
         db.session.add_all([free, pro, vip])
-        db.session.commit() # Salva para gerar IDs
+        db.session.commit()
         
-        print("4. Criando usuário demo...")
+        print("4. Criando Super Admin (Acesso Total)...")
+        # Criando o seu usuário administrador principal
+        admin_master = User(
+            email='admin@admin.com',
+            password=generate_password_hash('123456', method='scrypt'),
+            plan_id=vip.id,
+            credits=9999,
+            is_admin=True
+        )
+        db.session.add(admin_master)
+        
+        print("5. Criando usuário demo...")
         demo_user = User(
             email='demo@wpautoblog.com.br',
             password=generate_password_hash('demo123', method='scrypt'),
-            plan_id=vip.id, # Usando ID real
+            plan_id=vip.id,
             credits=100,
-            is_admin=True # Definindo como admin para você testar
+            is_admin=True # Definido como admin para facilitar seus testes
         )
         db.session.add(demo_user)
         db.session.commit()
         
-        print("5. Criando blog para o demo...")
+        print("6. Criando blog para o demo...")
         site_demo = Blog(
             user_id=demo_user.id,
             site_name="Blog Demo",
@@ -40,7 +52,9 @@ def force_db_reset():
         )
         db.session.add(site_demo)
         db.session.commit()
-        print("\n✅ BANCO POSTGRES ONLINE RESETADO COM SUCESSO!")
+        
+        print("\n✅ SUCESSO: Banco resetado e Admin criado!")
+        print("Login Admin: admin@admin.com | Senha: 123456")
 
 if __name__ == "__main__":
     force_db_reset()
