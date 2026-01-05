@@ -11,11 +11,17 @@ from services.ai_service import generate_text
 from utils.scrapers import extrair_texto_da_url
 from utils.ai_logic import preparar_contexto_brainstorm
 
-# Importação do serviço de imagem da pasta services
+# --- VERIFICAÇÃO DO SERVIÇO DE IMAGEM ---
 try:
     from services.image_service import processar_imagem_featured
-except ImportError:
+    # Este print aparecerá no terminal assim que o Flask carregar o módulo
+    print("✅ Sucesso: OpenAI detectada e serviço de imagem carregado corretamente!")
+except ImportError as e:
     processar_imagem_featured = None
+    print(f"⚠️ ALERTA: Serviço de imagem não foi carregado! Erro: {e}")
+except Exception as e:
+    processar_imagem_featured = None
+    print(f"❌ Erro inesperado ao carregar image_service: {e}")
 
 content_bp = Blueprint('content', __name__)
 
@@ -42,7 +48,7 @@ def generate_ideas():
         return redirect(url_for('content.ideas'))
 
     try:
-        # CORREÇÃO: Usando 'site_name' conforme o seu models.py
+        # Gera 10 títulos baseados no nome do site configurado no models.py
         prompt = f"Gere 10 títulos de artigos para um blog sobre {blog.site_name}. Retorne um por linha."
         resultado = generate_text(prompt)
         
@@ -55,10 +61,10 @@ def generate_ideas():
             flash(f'{len(novas_ideias)} ideias geradas para {blog.site_name}!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro: {str(e)}', 'danger')
+        flash(f'Erro ao gerar ideias: {str(e)}', 'danger')
     return redirect(url_for('content.ideas'))
 
-# --- 3. PUBLICAR IDEIA (IA + IMAGEM) ---
+# --- 3. PUBLICAR IDEIA (GERAR CONTEÚDO + IMAGEM + WP) ---
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
@@ -66,17 +72,24 @@ def publish_idea(idea_id):
     blog = idea.blog
 
     try:
-        # 1. Gera o conteúdo
-        texto_final = generate_text(f"Escreva um artigo detalhado sobre: {idea.title}")
+        # A. Gera o texto do artigo
+        print(f"🤖 Gerando texto para: {idea.title}...")
+        texto_final = generate_text(f"Escreva um artigo detalhado e otimizado para SEO sobre: {idea.title}")
         
-        # 2. Lógica de Imagem (ajustado para seus modelos)
+        # B. Gera e faz upload da imagem (se o serviço estiver disponível)
         id_imagem = None
-        # Verifica se o plano do usuário permite imagens
         if processar_imagem_featured and current_user.plan_details and current_user.plan_details.has_images:
+            print(f"🎨 Iniciando geração de imagem para WP...")
+            # Usa wp_user e wp_app_password conforme o models.py
             auth_wp = (blog.wp_user, blog.wp_app_password)
             id_imagem = processar_imagem_featured(idea.title, blog.wp_url, auth_wp)
+            
+            if id_imagem:
+                print(f"📸 Imagem vinculada com sucesso! ID: {id_imagem}")
+            else:
+                print("⚠️ A imagem não pôde ser gerada, continuando apenas com o texto.")
 
-        # 3. Payload para o WordPress
+        # C. Monta o pacote para o WordPress
         wp_payload = {
             'title': idea.title,
             'content': texto_final,
@@ -85,7 +98,7 @@ def publish_idea(idea_id):
         if id_imagem:
             wp_payload['featured_media'] = id_imagem
 
-        # 4. Envio para o WordPress
+        # D. Envia para a API do WordPress
         response = requests.post(
             f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
             auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
@@ -93,16 +106,16 @@ def publish_idea(idea_id):
         )
 
         if response.status_code in [200, 201]:
-            # MARCA COMO POSTADO
+            # Sucesso: Marcar ideia como postada e registrar log
             idea.is_posted = True
+            res_data = response.json()
             
-            # CRIA O LOG NO BANCO DE DADOS (Importante!)
             novo_log = PostLog(
                 blog_id=blog.id,
                 title=idea.title,
                 status="Publicado",
-                wp_post_id=response.json().get('id'),
-                post_url=response.json().get('link')
+                wp_post_id=res_data.get('id'),
+                post_url=res_data.get('link')
             )
             db.session.add(novo_log)
             db.session.commit()
@@ -113,20 +126,19 @@ def publish_idea(idea_id):
 
     except Exception as e:
         db.session.rollback()
+        print(f"💥 Erro na publicação: {str(e)}")
         flash(f"Erro ao publicar: {str(e)}", "danger")
 
     return redirect(url_for('content.ideas'))
 
-# --- 4. POSTAGEM MANUAL (O que estava faltando) ---
+# --- 4. RELATÓRIOS E OUTRAS FUNÇÕES ---
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
     if request.method == 'POST':
-        # Aqui você implementaria a lógica de receber o formulário do utilizador
-        # e enviar para o WordPress sem usar a IA para o texto.
         flash("Funcionalidade de post manual recebida!", "info")
         return redirect(url_for('content.post_report'))
-    return render_template('manual_post.html') # Você precisará criar este HTML
+    return render_template('manual_post.html')
 
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required
@@ -142,7 +154,6 @@ def spy_writer():
                 flash("Não foi possível extrair texto desta URL.", "warning")
         except Exception as e:
             flash(f"Erro ao processar URL: {str(e)}", "danger")
-
     return render_template('spy_writer.html', processed_content=processed_content)
 
 @content_bp.route('/post-report')
@@ -165,6 +176,5 @@ def delete_idea(idea_id):
     
     db.session.delete(idea)
     db.session.commit()
-    
     flash('Ideia removida.', 'info')
     return redirect(url_for('content.ideas'))

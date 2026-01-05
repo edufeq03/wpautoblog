@@ -12,12 +12,6 @@ from flask_login import login_required, current_user
 import os
 from dotenv import load_dotenv # Adicionado
 
-# Carrega o .env explicitamente
-load_dotenv()
-print("--- DEBUG DE CONEXÃO ---")
-print(f"DATABASE_URL carregada: {os.environ.get('DATABASE_URL')[:20]}...") 
-print("------------------------")
-
 app = Flask(__name__)
 
 # Configurações básicas
