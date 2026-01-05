@@ -57,10 +57,10 @@ def index():
     # Dicionário de traduções simples
     translations = {
         'pt': {
-            'hero_title': 'Blogs que rendem',
-            'hero_subtitle': 'em piloto automático',
+            'hero_title': 'Blogs Lucrativos',
+            'hero_subtitle': 'no piloto automático',
             'hero_line': 'Sua produção de conteúdo escalada por Inteligência Artificial de elite.',
-            'hero_button': 'Teste Grátis',
+            'hero_button': 'Testar Gratuitamente',
         },
         'en': {
             'hero_title': 'Blogs that earn ',
