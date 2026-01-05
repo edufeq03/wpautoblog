@@ -135,37 +135,34 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {% for chave, plano in planos.items() %}
+                {% for plano in planos %}
                 <div class="price-card p-10 rounded-[2.5rem] shadow-2xl relative flex flex-col h-full">
                     
-                    <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">{{ plano.nome }}</h3>
+                    <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">{{ plano.name }}</h3>
                     
                     <div class="flex items-baseline gap-1 mb-8">
-                        {% if plano.nome == 'VIP' %}
+                        {% if plano.name == 'VIP' %}
                             <span class="text-2xl font-black text-slate-900 italic">Sob Consulta</span>
                         {% else %}
-                            <span class="text-5xl font-black text-slate-900">R$ {{ plano.preco }}</span>
+                            <span class="text-5xl font-black text-slate-900">R$ {{ plano.price }}</span>
                             <span class="text-slate-400 font-bold text-sm">/mês</span>
                         {% endif %}
                     </div>
 
                     <ul class="space-y-5 mb-12 flex-grow">
                         <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.sites }} Site(s) WordPress
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.max_sites }} Site(s) WordPress
                         </li>
                         <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.posts }} Postagens/dia
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.posts_per_day }} Postagens/dia
                         </li>
-                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
-                            <i class="fas fa-bolt text-blue-500"></i> {{ plano.credits }} Créditos
-                        </li>
-                    </ul>
+                        </ul>
 
-                    {% if plano.nome == 'VIP' %}
+                    {% if plano.name == 'VIP' %}
                         <a href="https://wa.me/5519981119287?text=Lead_VIP_AutoBlog" 
-                    class="block text-center w-full py-5 rounded-[1.5rem] font-black bg-blue-600 text-white hover:bg-blue-700 transition-all">
-                        Falar com Consultor
-                    </a>
+                        class="block text-center w-full py-5 rounded-[1.5rem] font-black bg-blue-600 text-white hover:bg-blue-700 transition-all">
+                            Falar com Consultor
+                        </a>
                     {% else %}
                         <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-900 text-white hover:bg-black">
                             Selecionar Plano

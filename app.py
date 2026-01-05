@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request
 from flask_mail import Mail
-from models import db, login_manager
+from models import db, login_manager, Plan
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from routes.payments import payments_bp, PLANS_CONFIG
@@ -51,6 +51,9 @@ app.register_blueprint(admin_bp, url_prefix='/admin')
 
 @app.route('/')
 def index():
+    # 1. Busca os planos diretamente do banco de dados para refletir as edições do admin
+    # Ordenamos por ID para garantir a ordem Starter, Lite, Pro, VIP que você definiu
+    planos_db = Plan.query.order_by(Plan.id.asc()).all()
     # Captura o idioma da URL (ex: ?lang=en). O padrão é 'pt'
     lang = request.args.get('lang', 'pt')
     
@@ -74,7 +77,7 @@ def index():
     texts = translations.get(lang, translations['pt'])
     
     return render_template('landing.html', 
-                           planos=PLANS_CONFIG, 
+                           planos=planos_db, 
                            t=texts, 
                            current_lang=lang)
 
