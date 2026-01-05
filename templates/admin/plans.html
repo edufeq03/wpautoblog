@@ -4,34 +4,62 @@
 
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {% for plan in plans %}
-    <div class="bg-slate-50 rounded-xl shadow-lg overflow-hidden border border-slate-300 hover:shadow-xl transition">
-        <div class="p-6">
-            <h4 class="text-xl font-black text-slate-900 uppercase tracking-wide">{{ plan.name }}</h4>
-            <p class="text-4xl font-black text-blue-700 mt-4">R$ {{ plan.price }}</p>
-            
-            <form action="{{ url_for('admin.edit_plan', id=plan.id) }}" method="POST" class="mt-8 space-y-5">
-                <div>
-                    <label class="block text-sm font-bold text-slate-800 mb-1">Posts p/ Dia</label>
-                    <input type="number" name="posts_per_day" value="{{ plan.posts_per_day }}" 
-                           class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+    {% set ordem_desejada = ['starter', 'lite', 'pro', 'vip'] %}
+    
+    {% for nome_plano in ordem_desejada %}
+        {% for plan in plans %}
+            {% if plan.name|lower == nome_plano %}
+            <div class="bg-slate-50 rounded-xl shadow-lg overflow-hidden border border-slate-300 hover:shadow-xl transition">
+                <div class="p-6">
+                    <div class="flex justify-between items-start">
+                        <h4 class="text-xl font-black text-slate-900 uppercase tracking-wide">{{ plan.name }}</h4>
+                        {% if plan.has_images %}
+                        <span class="bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded-full border border-green-200">
+                            IA IMAGEM ATIVA
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="text-4xl font-black text-blue-700 mt-4">R$ {{ plan.price }}</p>
+                    
+                    <form action="{{ url_for('admin.edit_plan', id=plan.id) }}" method="POST" class="mt-8 space-y-5">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-800 mb-1">Posts p/ Dia</label>
+                            <input type="number" name="posts_per_day" value="{{ plan.posts_per_day }}" 
+                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-800 mb-1">Máximo de Sites</label>
+                            <input type="number" name="max_sites" value="{{ plan.max_sites }}" 
+                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-800 mb-1">Preço (Valor Real)</label>
+                            <input type="text" name="price" value="{{ plan.price }}" 
+                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                        </div>
+
+                        <div class="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-slate-300 shadow-sm">
+                            <div class="relative inline-block w-10 h-6 transition duration-200 ease-in-out">
+                                <input type="checkbox" name="has_images" id="has_images_{{ plan.id }}" 
+                                       {% if plan.has_images %}checked{% endif %}
+                                       class="w-5 h-5 text-blue-600 rounded border-slate-400 focus:ring-blue-500 cursor-pointer">
+                            </div>
+                            <label for="has_images_{{ plan.id }}" class="text-sm font-black text-slate-800 cursor-pointer">
+                                Gerar Imagens com IA (DALL-E)
+                            </label>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-black transition-all shadow-md mt-4 uppercase tracking-widest text-sm">
+                            Atualizar Plano
+                        </button>
+                    </form>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-800 mb-1">Máximo de Sites</label>
-                    <input type="number" name="max_sites" value="{{ plan.max_sites }}" 
-                           class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-800 mb-1">Preço (Valor Real)</label>
-                    <input type="text" name="price" value="{{ plan.price }}" 
-                           class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                </div>
-                <button type="submit" class="w-full bg-slate-900 text-white py-3 rounded-lg font-black hover:bg-black transition-all shadow-md">
-                    SALVAR ALTERAÇÕES
-                </button>
-            </form>
-        </div>
-    </div>
+            </div>
+            {% endif %}
+        {% endfor %}
     {% endfor %}
 </div>
 {% endblock %}

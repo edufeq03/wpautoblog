@@ -92,6 +92,7 @@ class Plan(db.Model):
     price = db.Column(db.Float, default=0.0)
     has_radar = db.Column(db.Boolean, default=False)
     has_spy = db.Column(db.Boolean, default=False)
+    has_images = db.Column(db.Boolean, default=False)
     users = db.relationship('User', backref='plan_details', lazy=True)
 
 class Blog(db.Model):

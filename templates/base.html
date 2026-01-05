@@ -38,35 +38,35 @@
                 <h1 class="text-xl font-black tracking-tighter text-blue-400">WP <span class="text-white">AutoBlog</span></h1>
             </div>
             
-            <nav class="mt-6 flex-1">
-                {% set active_page = request.endpoint %}
-                {% set setup_status = current_user.get_setup_status() if current_user.is_authenticated else 'no_site' %}
-
-                <a href="{{ url_for('dashboard_hub') }}" class="flex items-center gap-3 px-6 py-3 transition-all duration-200 hover:bg-gray-800 {{ 'nav-active' if active_page == 'dashboard.dashboard_view' else 'text-gray-400' }}">
-                    <i class="fas fa-chart-line w-5"></i> Dashboard
-                </a>
-
+            <nav class="p-4 space-y-2">
                 {% set menu_items = [
-                    {'ep': 'content.ideas', 'icon': 'fa-lightbulb', 'label': 'Fila de Ideias'},
-                    {'ep': 'content.manual_post', 'icon': 'fa-pen-fancy', 'label': 'Postagem Manual'},
-                    {'ep': 'content.post_report', 'icon': 'fa-file-alt', 'label': 'Relatórios'},
-                    {'ep': 'content.spy_writer', 'icon': 'fa-user-secret', 'label': 'Redator Espião'},
-                    {'ep': 'radar.radar', 'icon': 'fa-satellite-dish', 'label': 'Radar de Fontes'}
+                    {'name': 'Dashboard', 'icon': 'fa-th-large', 'ep': 'dashboard.dashboard_view'},
+                    {'name': 'Meus Sites', 'icon': 'fa-globe', 'ep': 'sites.manage_sites'},
+                    {'name': 'Fila de Ideias', 'icon': 'fa-lightbulb', 'ep': 'content.ideas'},
+                    {'name': 'Relatórios', 'icon': 'fa-chart-bar', 'ep': 'content.post_report'},
+                    {'name': 'Radar de Trend', 'icon': 'fa-satellite-dish', 'ep': 'radar.radar'},
+                    {'name': 'Spy Writer', 'icon': 'fa-user-secret', 'ep': 'content.spy_writer'}
                 ] %}
 
                 {% for item in menu_items %}
-                <a href="{% if setup_status == 'complete' %}{{ url_for(item.ep) }}{% else %}#{% endif %}" 
-                   class="flex items-center gap-3 px-6 py-3 transition-all duration-200 {{ 'nav-active' if active_page == item.ep else 'text-gray-400' }} {% if setup_status != 'complete' %}opacity-40 cursor-not-allowed{% else %}hover:bg-gray-800{% endif %}"
-                   {% if setup_status != 'complete' %}title="Conclua a configuração primeiro"{% endif %}>
-                    <i class="fas {{ item.icon }} w-5"></i>
-                    <span>{{ item.label }}</span>
-                    {% if setup_status != 'complete' %}<i class="fas fa-lock ml-auto text-[10px]"></i>{% endif %}
-                </a>
-                {% endfor %}
+                    {% set is_active = request.endpoint == item.ep %}
+                    
+                    {# NOVA LÓGICA: Libera se o setup estiver completo OU se o usuário já tiver pelo menos 1 site cadastrado #}
+                    {% set can_access = (setup_status == 'complete' or (current_user.sites | length > 0) or item.ep in ['dashboard.dashboard_view', 'sites.manage_sites']) %}
 
-                <a href="{{ url_for('sites.manage_sites') }}" class="flex items-center gap-3 px-6 py-3 border-t border-gray-800 mt-4 pt-4 {{ 'nav-active' if active_page == 'sites.manage_sites' else 'text-gray-400 hover:bg-gray-800' }}">
-                    <i class="fas fa-cog w-5"></i> Gerenciar Sites
-                </a>
+                    <a href="{% if can_access %}{{ url_for(item.ep) }}{% else %}#{% endif %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
+                            {% if is_active %} nav-active text-white {% else %} text-gray-400 hover:bg-gray-800 hover:text-white {% endif %}
+                            {% if not can_access %} opacity-40 cursor-not-allowed {% endif %}">
+                        
+                        <i class="fas {{ item.icon }} text-sm {% if not is_active %}group-hover:text-blue-400{% endif %}"></i>
+                        <span class="font-bold text-sm">{{ item.name }}</span>
+                        
+                        {% if not can_access %}
+                            <i class="fas fa-lock text-[10px] ml-auto opacity-50"></i>
+                        {% endif %}
+                    </a>
+                {% endfor %}
             </nav>
 
             {% if current_user.is_authenticated %}

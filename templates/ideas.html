@@ -8,6 +8,7 @@
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">Fila de Ideias</h1>
             <p class="text-sm text-slate-500">Transforme sugestões da IA em artigos com um clique.</p>
         </div>
+        
         <form action="{{ url_for('content.generate_ideas') }}" method="POST">
             {% if current_user.sites %}
                 <input type="hidden" name="site_id" value="{{ request.args.get('site_id', current_user.sites[0].id) }}">
@@ -16,71 +17,50 @@
                 </button>
             {% else %}
                 <a href="{{ url_for('sites.manage_sites') }}" class="bg-slate-200 text-slate-500 px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 border border-slate-300">
-                    <i class="fas fa-plus-circle text-sm"></i> Conecte um site para gerar ideias
+                    <i class="fas fa-plus text-sm"></i> Cadastre um site primeiro
                 </a>
             {% endif %}
         </form>
     </div>
 
-    <div class="mb-6 flex items-center gap-4">
-        <div class="flex items-center gap-2">
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtrar por Site:</span>
-            {% if current_user.sites|length > 1 %}
-                <div class="relative w-64">
-                    <select onchange="window.location.href='/ideas?site_id=' + this.value" 
-                        class="w-full bg-white border border-slate-200 py-2 px-4 pr-10 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all shadow-sm">
-                        <option value="">Todos os sites</option>
-                        {% for site in current_user.sites %}
-                            <option value="{{ site.id }}" {% if request.args.get('site_id')|int == site.id %}selected{% endif %}>{{ site.site_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
-                        <i class="fas fa-chevron-down text-[10px]"></i>
-                    </div>
-                </div>
-            {% else %}
-                <div class="inline-flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 border border-slate-200">
-                    <i class="fas fa-globe text-blue-500 text-[10px]"></i> {{ current_user.sites[0].site_name if current_user.sites else 'Nenhum site' }}
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <table class="w-full text-left">
-            <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-black tracking-widest">
-                <tr>
-                    <th class="px-6 py-4">Sugestão de Título</th>
-                    <th class="px-6 py-4">Site Destino</th>
-                    <th class="px-6 py-4">Data</th>
-                    <th class="px-6 py-4 text-right">Ações</th>
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 border-b border-slate-200">
+                    <th class="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Site Alvo</th>
+                    <th class="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Sugestão de Título</th>
+                    <th class="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                    <th class="px-6 py-4 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
                 </tr>
             </thead>
-            <tbody class="text-sm divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 {% for idea in ideas %}
-                <tr class="hover:bg-blue-50/30 transition-colors group">
-                    <td class="px-6 py-3">
-                        <p class="text-slate-700 font-semibold leading-tight group-hover:text-blue-700 transition-colors">{{ idea.title }}</p>
-                    </td>
-                    <td class="px-6 py-3">
-                        <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-lg uppercase whitespace-nowrap">
-                            {{ idea.blog.site_name if idea.blog else 'Sem Blog' }}
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                            <i class="fas fa-globe text-[10px]"></i> {{ idea.blog.name }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-slate-400 text-xs whitespace-nowrap">
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{{ idea.title }}</p>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-400 font-medium">
                         {{ idea.created_at.strftime('%d/%m/%Y') }}
                     </td>
-                    <td class="px-6 py-3 text-right">
+                    <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-2">
-                            <form action="{{ url_for('content.delete_idea', idea_id=idea.id) }}" method="POST" class="inline">
-                                <button type="submit" class="p-2 text-slate-300 hover:text-red-500 transition-colors" title="Excluir ideia">
+                            <form action="{{ url_for('content.publish_idea', idea_id=idea.id) }}" method="POST" class="inline m-0">
+                                <button type="submit" onclick="return handlePostClick(this)" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-bold text-xs shadow-md shadow-blue-500/10">
+                                    <span class="btn-text text-white">Postar Agora</span>
+                                    <i class="fas fa-paper-plane text-[10px] btn-icon"></i>
+                                </button>
+                            </form>
+                            
+                            <form action="{{ url_for('content.delete_idea', idea_id=idea.id) }}" method="POST" class="inline m-0" onsubmit="return confirm('Excluir esta ideia?')">
+                                <button type="submit" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
                                     <i class="fas fa-trash-alt text-xs"></i>
                                 </button>
                             </form>
-                            <a href="{{ url_for('content.publish_idea', idea_id=idea.id) }}" 
-                               class="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-2 border border-green-100">
-                                <i class="fas fa-paper-plane text-[10px]"></i> Postar
-                            </a>
                         </div>
                     </td>
                 </tr>
@@ -98,4 +78,26 @@
         </table>
     </div>
 </div>
+
+<script>
+function handlePostClick(button) {
+    // 1. Desabilita o botão para evitar múltiplos cliques
+    button.disabled = true;
+    button.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    // 2. Altera o texto e ícone
+    const textSpan = button.querySelector('.btn-text');
+    const icon = button.querySelector('.btn-icon');
+    
+    if (textSpan) textSpan.innerText = "Postando...";
+    if (icon) {
+        icon.classList.remove('fa-paper-plane');
+        icon.classList.add('fa-spinner', 'fa-spin');
+    }
+    
+    // 3. Envia o formulário manualmente
+    button.closest('form').submit();
+    return true;
+}
+</script>
 {% endblock %}
