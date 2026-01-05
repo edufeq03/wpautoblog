@@ -55,6 +55,16 @@ class User(db.Model, UserMixin):
     # Relação com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)
 
+    def can_add_site(self):
+        """Verifica se o usuário pode adicionar mais um site com base no plano"""
+        limites = self.get_plan_limits()
+        max_sites = limites.get('max_sites', 1)
+        
+        # Conta quantos sites o usuário já tem
+        total_sites = len(self.sites)
+        
+        return total_sites < max_sites
+
     def get_plan_limits(self):
         """Busca os limites diretamente do relacionamento com a tabela Plan"""
         if self.plan_details:
