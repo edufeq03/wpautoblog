@@ -19,15 +19,19 @@ class User(db.Model, UserMixin):
     credits = db.Column(db.Integer, default=5)
     last_post_date = db.Column(db.Date, nullable=True)
 
-    def get_reset_token(self, expires_sec=1800):
-        s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
-        return s.dumps({'user_id': self.id}).decode('utf-8')
+    def get_reset_token(self):
+        # O Serializer recebe apenas a chave secreta aqui
+        s = Serializer(current_app.config['SECRET_KEY'])
+        # O token gerado já é uma string, não precisa de .decode('utf-8') nas versões novas
+        return s.dumps({'user_id': self.id})
 
     @staticmethod
-    def verify_reset_token(token):
+    def verify_reset_token(token, expires_sec=1800):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            user_id = s.loads(token)['user_id']
+            # max_age define quanto tempo o token é válido
+            data = s.loads(token, max_age=expires_sec)
+            user_id = data['user_id']
         except:
             return None
         return User.query.get(user_id)
