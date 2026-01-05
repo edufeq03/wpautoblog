@@ -6,6 +6,7 @@ from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
 
+# No auth.py, altere a rota register:
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -22,8 +23,12 @@ def register():
         new_user = User(email=email, password=generate_password_hash(password, method='scrypt'))
         db.session.add(new_user)
         db.session.commit()
-        flash('Conta criada com sucesso! Faça seu login para começar.', 'success')
-        return redirect(url_for('auth.login'))
+
+        # --- MUDANÇA AQUI: LOGIN AUTOMÁTICO ---
+        login_user(new_user)
+        
+        # Redireciona direto para o hub, que o mandará para o onboarding
+        return redirect(url_for('dashboard_hub'))
         
     return render_template('register.html')
 

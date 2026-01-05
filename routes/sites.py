@@ -19,12 +19,12 @@ def manage_sites():
 @login_required
 def add_site():
     if current_user.email == DEMO_EMAIL:
-        flash('Modo Demo: Você não pode adicionar novos sites nesta conta.', 'warning')
-        return redirect(url_for('sites.manage_sites'))
+        flash('Modo Demo: Ação não permitida.', 'warning')
+        return redirect(url_for('dashboard_hub'))
 
     if not current_user.can_add_site():
-        flash('Limite de sites atingido para o seu plano.', 'error')
-        return redirect(url_for('dashboard.pricing'))
+        flash('Limite de sites atingido.', 'error')
+        return redirect(url_for('dashboard_hub'))
 
     new_blog = Blog(
         user_id=current_user.id,
@@ -35,7 +35,7 @@ def add_site():
     )
     db.session.add(new_blog)
     db.session.commit()
-    flash('Site conectado com sucesso!', 'success')
+    flash('Site conectado! Agora configure o estilo da IA.', 'success')
     return redirect(url_for('dashboard_hub'))
 
 @sites_bp.route('/delete-site/<int:site_id>', methods=['POST'])
@@ -125,27 +125,27 @@ def update_prefs(site_id):
 @sites_bp.route('/update/<int:site_id>', methods=['POST'])
 @login_required
 def update_site(site_id):
-    # Busca o site garantindo que pertence ao usuário logado
+    """
+    Atualiza as configurações e força a permanência no onboarding 
+    para mostrar o Passo 3 (Sucesso).
+    """
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     
     if request.method == 'POST':
-        # Atualiza os campos básicos
         site.site_name = request.form.get('site_name')
         site.wp_url = request.form.get('wp_url')
         site.wp_user = request.form.get('wp_user')
         site.wp_app_password = request.form.get('wp_app_password')
-        
-        # Atualiza os campos de configuração da IA (Passo 2 do Onboarding)
         site.macro_themes = request.form.get('macro_themes')
         site.master_prompt = request.form.get('master_prompt')
         
         try:
             db.session.commit()
-            flash('Configurações atualizadas com sucesso!', 'success')
+            flash('Inteligência Artificial configurada com sucesso!', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Erro ao atualizar: {str(e)}', 'danger')
+            flash(f'Erro ao salvar: {str(e)}', 'danger')
+            return redirect(url_for('dashboard_hub'))
             
-    # Redireciona de volta para o hub (onboarding) para validar o próximo passo
-    # No final da função update_site em routes/sites.py
+    # O SEGREDO: Redireciona com finished=true para mostrar o Passo 3 no Onboarding
     return redirect(url_for('dashboard_hub', finished='true'))
