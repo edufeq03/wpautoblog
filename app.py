@@ -10,29 +10,25 @@ from routes.radar import radar_bp
 from routes.admin import admin_bp
 from flask_login import login_required, current_user
 import os
+from dotenv import load_dotenv # Adicionado
+
+# Carrega o .env explicitamente
+load_dotenv()
 
 app = Flask(__name__)
 
 # Configurações básicas
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
 
-# Configuração do Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
-
-mail = Mail(app)
-
-# Configuração do Banco de Dados (FIXO POSTGRES)
+# Configuração do Banco de Dados (FORÇANDO POSTGRES)
 database_url = os.environ.get('DATABASE_URL')
 
-# Tratamento para compatibilidade de protocolo
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+# Se não houver database_url, o app deve avisar em vez de criar um sqlite silencioso
+if not database_url:
+    raise ValueError("ERRO: Variável DATABASE_URL não encontrada no arquivo .env!")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -41,7 +37,7 @@ db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
-# Registro de Blueprints ATIVOS
+# Registro de Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(sites_bp, url_prefix='/sites')
@@ -61,11 +57,8 @@ def index():
 def dashboard_hub():
     status = current_user.get_setup_status()
     finished = request.args.get('finished') == 'true'
-    
-    # Se o setup estiver completo e não for o momento do "sucesso" (finished=true), vai pro dashboard
     if status == 'complete' and not finished:
         return redirect(url_for('dashboard.dashboard_view'))
-    
     return render_template('onboarding.html', status=status)
 
 if __name__ == '__main__':

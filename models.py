@@ -9,7 +9,8 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(user_id):
-    # O .get() do session é mais seguro e compatível com Postgres
+    # Uso do session.get para compatibilidade total com Postgres
+    from models import User
     return db.session.get(User, int(user_id))
 
 class User(db.Model, UserMixin):
@@ -21,10 +22,13 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False)
     plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=True)
 
+    # Relação com Blog
+    sites = db.relationship('Blog', backref='owner', lazy=True)
+
     # DICA: Crie uma propriedade para evitar erros se o plano for None
     @property
-    def current_plan_name(self):
-        return self.plan_details.name if self.plan_details else "Sem Plano"
+    def plan_name(self):
+        return self.plan_details.name if self.plan_details else "Free"
     
     @property
     def plan_type(self):
@@ -52,16 +56,14 @@ class User(db.Model, UserMixin):
     sites = db.relationship('Blog', backref='owner', lazy=True)
 
     def get_plan_limits(self):
-        planos = {
-            'trial': {'max_sites': 1, 'posts_por_dia': 1},
-            'pro':   {'max_sites': 2, 'posts_por_dia': 5},
-            'vip':   {'max_sites': 999, 'posts_por_dia': 999}
-        }
-        return planos.get(self.current_user.plan_details.name, planos['trial'])
-
-    def can_add_site(self):
-        if not self.plan_details: return False
-        return len(self.sites) < self.plan_details.max_sites
+        """Busca os limites diretamente do relacionamento com a tabela Plan"""
+        if self.plan_details:
+            return {
+                'max_sites': self.plan_details.max_sites,
+                'posts_por_dia': self.plan_details.posts_per_day,
+                'nome': self.plan_details.name
+            }
+        return {'max_sites': 1, 'posts_por_dia': 1, 'nome': 'Free'}
     
     # No seu arquivo models.py, dentro da classe User
     def is_setup_complete(self):
@@ -72,19 +74,12 @@ class User(db.Model, UserMixin):
         primeiro_site = self.sites[0]
         return bool(primeiro_site.wp_url and primeiro_site.master_prompt)
     
-    # No models.py, dentro da classe User
     def get_setup_status(self):
-        """
-        Retorna o status do onboarding do utilizador para controlar o acesso às ferramentas.
-        """
         if not self.sites:
             return 'no_site'
-        
-        # Pega o primeiro site para validar as configurações básicas
         site = self.sites[0]
         if not site.master_prompt or not site.macro_themes:
             return 'no_config'
-            
         return 'complete'
     
     def pode_postar_automatico(self):
@@ -184,7 +179,7 @@ class CapturedContent(db.Model):
 class Plan(db.Model):
     __tablename__ = 'plans'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False) # Free, Pro, VIP
+    name = db.Column(db.String(50), unique=True, nullable=False)
     max_sites = db.Column(db.Integer, default=1)
     posts_per_day = db.Column(db.Integer, default=1)
     credits_monthly = db.Column(db.Integer, default=5)
