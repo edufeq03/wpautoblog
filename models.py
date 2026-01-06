@@ -102,6 +102,7 @@ class Blog(db.Model):
     wp_url = db.Column(db.String(200), nullable=False)
     wp_user = db.Column(db.String(100), nullable=False)
     wp_app_password = db.Column(db.String(100), nullable=False)
+    timezone = db.Column(db.String(50), default='America/Sao_Paulo')
     
     # Configurações de IA
     macro_themes = db.Column(db.Text, nullable=True) 

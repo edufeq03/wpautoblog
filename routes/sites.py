@@ -94,6 +94,7 @@ def update_prefs(site_id):
         site.posts_per_day = int(request.form.get('posts_per_day', 1))
         site.schedule_time = request.form.get('schedule_time', '09:00')
         site.post_status = request.form.get('post_status', 'publish')
+        site.timezone = request.form.get('timezone', 'America/Sao_Paulo') # Captura o novo campo
 
         db.session.commit()
         flash('Configurações de automação salvas!', 'success')
