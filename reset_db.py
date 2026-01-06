@@ -13,9 +13,9 @@ def force_db_reset():
         
         print("3. Criando Planos...")
         starter = Plan(name='Starter', max_sites=1, posts_per_day=1, price=0.0, has_images=False)
-        lite    = Plan(name='Lite',    max_sites=3, posts_per_day=5, price=47.0, has_images=True)
-        pro     = Plan(name='Pro',     max_sites=5, posts_per_day=10, price=97.0, has_images=True)
-        vip     = Plan(name='VIP',     max_sites=15, posts_per_day=50, price=197.0, has_images=True)
+        lite    = Plan(name='Lite',    max_sites=1, posts_per_day=2, price=47.0, has_images=True)
+        pro     = Plan(name='Pro',     max_sites=3, posts_per_day=15, price=97.0, has_images=True)
+        vip     = Plan(name='VIP',     max_sites=15, posts_per_day=50, price=397.0, has_images=True)
         db.session.add_all([starter, lite, pro, vip])
         db.session.commit()
         
