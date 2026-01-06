@@ -66,8 +66,9 @@ def index():
 
     # Criamos um objeto 't' de mentira para o HTML não quebrar
     traducoes_fallback = {
-        "hero_title": "Automatize seu Blog WordPress",
-        "hero_subtitle": "Postagens inteligentes com IA e imagens únicas.",
+        "hero_title": "Automatize seu Blog",
+        "hero_subtitle": "Postagens inteligentes feitas por IA.",
+        "hero_button": "TESTAR GRÁTIS",
         # adicione outras chaves se o erro persistir em outras linhas
     }
 
