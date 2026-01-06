@@ -12,6 +12,7 @@ def register():
         return redirect(url_for('dashboard.dashboard_view'))
         
     if request.method == 'POST':
+        name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         
@@ -21,6 +22,7 @@ def register():
             
         free_plan = Plan.query.filter_by(name='Free').first()
         new_user = User(
+            name=name,
             email=email, 
             password=generate_password_hash(password, method='scrypt'),
             plan_id=free_plan.id if free_plan else None,
@@ -28,10 +30,8 @@ def register():
             )
         db.session.add(new_user)
         db.session.commit()
-
         login_user(new_user)
-        return redirect(url_for('dashboard.dashboard_view')) # Ajustado para sua rota de dashboard
-        
+        return redirect(url_for('dashboard.dashboard_view'))
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -139,14 +139,16 @@ def reset_password(token):
 
 @auth_bp.route('/login-demo')
 def login_demo():
-    # Busca o usuário demo no banco
-    user_demo = User.query.filter_by(email="demo@wpautoblog.com").first()
+    # Deve ser exatamente igual ao email no reset_db.py
+    user_demo = User.query.filter_by(email="demo@wpautoblog.com.br").first()
     
     if user_demo:
-        # Faz o login sem pedir senha
+        # O login_user autentica o usuário na sessão imediatamente
         login_user(user_demo)
         flash("Você entrou como usuário de demonstração. Explore os recursos!", "info")
-        return redirect(url_for('dashboard.dashboard_view')) # Ou sua rota principal
+        # Redireciona para a view principal do seu dashboard
+        return redirect(url_for('dashboard.dashboard_view')) 
     else:
-        flash("O usuário de demonstração não está disponível no momento.", "danger")
-        return redirect(url_for('dashboard.dashboard_view'))
+        # Caso o reset_db.py não tenha sido rodado ou o email mude
+        flash("O usuário de demonstração não foi encontrado no sistema.", "danger")
+        return redirect(url_for('auth.login'))

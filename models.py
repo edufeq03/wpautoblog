@@ -14,6 +14,7 @@ def load_user(user_id):
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     credits = db.Column(db.Integer, default=5)
@@ -21,9 +22,6 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False)
     plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False, default=1)
     created_at = db.Column(db.DateTime, default=db.func.now())
-    #plan_details = db.relationship('Plan', backref='users')
-
-    # Relacionamento com Blog
     sites = db.relationship('Blog', backref='owner', lazy=True)
 
     @property
@@ -104,14 +102,11 @@ class Blog(db.Model):
     wp_url = db.Column(db.String(200), nullable=False)
     wp_user = db.Column(db.String(100), nullable=False)
     wp_app_password = db.Column(db.String(100), nullable=False)
-    
     # Configurações de IA
     macro_themes = db.Column(db.Text, nullable=True) # Temas separados por vírgula
     master_prompt = db.Column(db.Text, nullable=True)
     post_status = db.Column(db.String(20), default='publish') # publish ou draft
-    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
     # Relacionamentos
     ideas = db.relationship('ContentIdea', backref='blog', lazy=True, cascade="all, delete-orphan")
     logs = db.relationship('PostLog', backref='blog', lazy=True, cascade="all, delete-orphan")

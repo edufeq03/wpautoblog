@@ -154,7 +154,7 @@ def publish_idea(idea_id):
 def manual_post():
     if current_user.credits <= 0:
         flash("Você não possui créditos para um post manual.", "warning")
-        return redirect(url_for('content.dashboard'))
+        return redirect(url_for('dashboard.dashboard_view')) # Ajustado para sua rota
 
     # Pega os blogs do usuário para o select do formulário
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
@@ -163,18 +163,31 @@ def manual_post():
         blog_id = request.form.get('blog_id')
         titulo = request.form.get('title')
         conteudo = request.form.get('content')
-        blog = Blog.query.get(blog_id)
+
+        # Verificação de segurança: se blog_id é nulo ou vazio
+        if not blog_id:
+            flash("Por favor, selecione um blog.", "warning")
+            return render_template('manual_post.html', blogs=blogs)
+
+        # Usando db.session.get() que é o padrão moderno do SQLAlchemy
+        blog = db.session.get(Blog, blog_id)
 
         if blog and blog.user_id == current_user.id:
+            # TRAVA PARA USUÁRIO DEMO
+            if current_user.email == 'demo@wpautoblog.com.br':
+                flash("Post manual simulado com sucesso (Modo Demo)!", "success")
+                return redirect(url_for('content.post_report'))
+
             res = enviar_para_wordpress(conteudo, titulo, None, blog)
             
             if res and res.status_code in [200, 201]:
-                current_user.credits -= 1
-                db.session.commit()
+                current_user.consume_credit() # Usa o método que você tem no models.py
                 flash("Post manual publicado com sucesso!", "success")
                 return redirect(url_for('content.post_report'))
             else:
-                flash("Falha ao enviar para o WordPress.", "danger")
+                flash("Falha ao enviar para o WordPress. Verifique as credenciais do site.", "danger")
+        else:
+            flash("Blog não encontrado ou acesso negado.", "danger")
                 
     return render_template('manual_post.html', blogs=blogs)
 

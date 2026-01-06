@@ -34,31 +34,29 @@
 
     <div class="flex min-h-screen overflow-x-hidden">
         <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 md:static md:inset-0 transition-transform duration-300 ease-in-out shadow-xl flex flex-col">
-            <div class="p-6">
+            <div class="p-6 text-center">
                 <h1 class="text-xl font-black tracking-tighter text-blue-400">WP <span class="text-white">AutoBlog</span></h1>
             </div>
             
-            <nav class="p-4 space-y-2">
+            <nav class="p-4 space-y-2 flex-1">
                 {% set menu_items = [
                     {'name': 'Dashboard', 'icon': 'fa-th-large', 'ep': 'dashboard.dashboard_view'},
                     {'name': 'Meus Sites', 'icon': 'fa-globe', 'ep': 'sites.manage_sites'},
-                    {'name': 'Post Manual', 'icon': 'fa-chart-bar', 'ep': 'content.manual_post'},
+                    {'name': 'Post Manual', 'icon': 'fa-pen-nib', 'ep': 'content.manual_post'},
                     {'name': 'Fila de Ideias', 'icon': 'fa-lightbulb', 'ep': 'content.ideas'},
-                    {'name': 'Relatórios', 'icon': 'fa-chart-bar', 'ep': 'content.post_report'},
+                    {'name': 'Relatórios', 'icon': 'fa-chart-line', 'ep': 'content.post_report'},
                     {'name': 'Radar de Trend', 'icon': 'fa-satellite-dish', 'ep': 'radar.radar'},
                     {'name': 'Spy Writer', 'icon': 'fa-user-secret', 'ep': 'content.spy_writer'}
                 ] %}
 
                 {% for item in menu_items %}
                     {% set is_active = request.endpoint == item.ep %}
-                    
-                    {# NOVA LÓGICA: Libera se o setup estiver completo OU se o usuário já tiver pelo menos 1 site cadastrado #}
                     {% set can_access = (setup_status == 'complete' or (current_user.sites | length > 0) or item.ep in ['dashboard.dashboard_view', 'sites.manage_sites']) %}
 
                     <a href="{% if can_access %}{{ url_for(item.ep) }}{% else %}#{% endif %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
-                            {% if is_active %} nav-active text-white {% else %} text-gray-400 hover:bg-gray-800 hover:text-white {% endif %}
-                            {% if not can_access %} opacity-40 cursor-not-allowed {% endif %}">
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
+                              {% if is_active %} nav-active text-white {% else %} text-gray-400 hover:bg-gray-800 hover:text-white {% endif %}
+                              {% if not can_access %} opacity-40 cursor-not-allowed {% endif %}">
                         
                         <i class="fas {{ item.icon }} text-sm {% if not is_active %}group-hover:text-blue-400{% endif %}"></i>
                         <span class="font-bold text-sm">{{ item.name }}</span>
@@ -70,30 +68,68 @@
                 {% endfor %}
             </nav>
 
-            {% if current_user.is_authenticated %}
-            <div class="p-4 border-t border-gray-800 mt-auto">
-                <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-6 py-3 text-red-400 hover:bg-red-900/20 rounded-xl transition-all w-full">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span class="font-bold">Sair do Sistema</span>
-                </a>
+            <div class="p-4 border-t border-gray-800">
+                <div class="bg-gray-800/50 rounded-xl p-3 flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-400">Créditos:</span>
+                    <span class="text-sm font-black text-blue-400">{{ current_user.credits }}</span>
+                </div>
             </div>
-            {% endif %}
         </aside>
 
         <main class="flex-1 flex flex-col min-w-0">
             <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
                 <div class="flex items-center gap-3">
-                    <button id="mobile-menu-button" class="md:hidden text-gray-600 p-2"><i class="fas fa-bars text-xl"></i></button>
-                    <span class="font-medium text-gray-500 italic hidden sm:inline">Painel de Controle</span>
+                    <button id="mobile-menu-button" class="md:hidden text-gray-600 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <span class="font-medium text-gray-400 text-sm hidden sm:inline">Bem-vindo ao WP AutoBlog</span>
                 </div>
-                <div class="flex items-center gap-4">
+
+                <div class="flex items-center">
                     {% if current_user.is_authenticated %}
-                    <div class="text-right mr-2 hidden xs:block">
-                        <p class="text-xs font-bold text-gray-800">{{ current_user.email }}</p>
-                        <p class="text-[10px] text-blue-600 font-bold uppercase">{{ current_user.plan_details.name }} Account</p>
-                    </div>
-                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        {{ current_user.email[0].upper() }}
+                    <div class="relative group py-2"> 
+                        <button class="flex items-center gap-3 px-3 py-1 rounded-full hover:bg-gray-50 transition-all duration-200 focus:outline-none">
+                            
+                            <div class="text-right hidden sm:block">
+                                <p class="text-xs font-bold text-gray-800 leading-tight">
+                                    {{ current_user.name if current_user.name else current_user.email.split('@')[0] }}
+                                </p>
+                                <span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                    {{ current_user.plan_details.name }} Account
+                                </span>
+                            </div>
+
+                            <div class="w-9 h-9 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white">
+                                {{ (current_user.name[0] if (current_user.name and current_user.name|length > 0) else current_user.email[0]).upper() }}
+                            </div>
+                            
+                            <i class="fas fa-chevron-down text-[10px] text-gray-400 group-hover:rotate-180 transition-transform duration-200"></i>
+                        </button>
+
+                        <div class="absolute right-0 top-full w-52 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right group-hover:translate-y-1 z-50">
+                            <div class="p-4 border-b border-gray-50">
+                                <p class="text-[10px] uppercase font-semibold text-gray-400 mb-1">Logado como</p>
+                                <p class="text-xs text-gray-800 truncate font-bold">{{ current_user.email }}</p>
+                            </div>
+                            
+                            <nav class="p-2">
+                                <a href="{{ url_for('dashboard.dashboard_view') }}" class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
+                                    <i class="fas fa-tachometer-alt w-4"></i>
+                                    Painel Principal
+                                </a>
+                                <a href="{{ url_for('sites.manage_sites') }}" class="flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">
+                                    <i class="fas fa-cog w-4"></i>
+                                    Configurações
+                                </a>
+                                
+                                <div class="my-2 border-t border-gray-50"></div>
+                                
+                                <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                    <i class="fas fa-power-off w-4"></i>
+                                    Sair do Sistema
+                                </a>
+                            </nav>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -108,8 +144,8 @@
     </div>
 
     <script>
-        // Lógica de Flash e Menu Mobile (conforme seu original)
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-hide das mensagens flash
             setTimeout(() => {
                 document.querySelectorAll('.flash-message').forEach(msg => {
                     msg.style.opacity = '0';
@@ -117,10 +153,21 @@
                 });
             }, 5000);
 
+            // Toggle do Menu Mobile
             const btn = document.getElementById('mobile-menu-button');
             const sidebar = document.getElementById('sidebar');
             if(btn && sidebar) {
-                btn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('-translate-x-full');
+                });
+                
+                // Fecha sidebar ao clicar fora no mobile
+                document.addEventListener('click', (e) => {
+                    if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                });
             }
         });
     </script>

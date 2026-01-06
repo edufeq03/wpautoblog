@@ -1,7 +1,7 @@
 from app import app
 from models import db, User, Blog, Plan, ContentIdea, PostLog
 from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 def force_db_reset():
     with app.app_context():
@@ -21,6 +21,7 @@ def force_db_reset():
         
         print("4. Criando Super Admin...")
         admin_master = User(
+            name='Admin',
             email='admin@admin.com',
             password=generate_password_hash('123456', method='scrypt'),
             plan_id=vip.id,
@@ -31,6 +32,7 @@ def force_db_reset():
         
         print("5. Criando usuário demo e dados de exemplo...")
         demo_user = User(
+            name='Usuario para Demonstracao',
             email='demo@wpautoblog.com.br',
             password=generate_password_hash('demo123', method='scrypt'),
             plan_id=vip.id,
@@ -70,7 +72,7 @@ def force_db_reset():
             status="Publicado",
             wp_post_id=123,
             post_url="#",
-            posted_at=datetime.utcnow() - timedelta(days=1)
+            posted_at=datetime.now(UTC) - timedelta(days=1)
         )
         db.session.add(log1)
         
