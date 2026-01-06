@@ -114,8 +114,6 @@
             </div>
         </div>
     </nav>
-
-
     <header class="pt-48 pb-32 px-6 text-center bg-gradient-to-b from-blue-50 to-white">
         <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight tracking-tighter">
             {{ t.hero_title }}<br>
@@ -135,7 +133,6 @@
                 Ver Demo ao Vivo
             </a>
         </div>
-
         <div class="mt-12 flex items-center justify-center gap-4 text-sm font-bold text-slate-400">
             <div class="flex -space-x-2">
                 <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?u=1">
@@ -145,19 +142,15 @@
             <span>+1.200 blogs automatizados hoje</span>
         </div>
     </header>
-
     <section id="precos" class="py-32 px-6">
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-24">
                 <h2 class="text-4xl md:text-5xl font-black mb-6">Investimento para o seu Sucesso</h2>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {% for plano in planos %}
                 <div class="price-card p-10 rounded-[2.5rem] shadow-2xl relative flex flex-col h-full">
-                    
                     <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">{{ plano.name }}</h3>
-                    
                     <div class="flex items-baseline gap-1 mb-8">
                         {% if plano.name == 'VIP' %}
                             <span class="text-2xl font-black text-slate-900 italic">Sob Consulta</span>
