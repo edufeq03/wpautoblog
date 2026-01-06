@@ -63,7 +63,15 @@ app.register_blueprint(admin_bp, url_prefix='/admin')
 @app.route('/')
 def index():
     planos_db = Plan.query.order_by(Plan.id.asc()).all()
-    return render_template('landing.html', planos=planos_db)
+
+    # Criamos um objeto 't' de mentira para o HTML não quebrar
+    traducoes_fallback = {
+        "hero_title": "Automatize seu Blog WordPress",
+        "hero_subtitle": "Postagens inteligentes com IA e imagens únicas.",
+        # adicione outras chaves se o erro persistir em outras linhas
+    }
+
+    return render_template('landing.html', planos=planos_db, t=traducoes_fallback)
 
 @app.route('/dashboard-hub')
 @login_required
