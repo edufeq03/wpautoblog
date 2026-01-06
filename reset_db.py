@@ -44,9 +44,9 @@ def force_db_reset():
         site_demo = Blog(
             user_id=demo_user.id,
             site_name="Portal Tech Demo",
-            wp_url="https://demo.seusite.com.br",
-            wp_user="AdminDemo",
-            wp_app_password="xxxx xxxx xxxx xxxx",
+            wp_url="https://wp.appmydream.com.br",
+            wp_user="Maria",
+            wp_app_password="2319 GNlZ JIDx D606 yEOT YB7W",
             macro_themes="Inteligência Artificial, Gadgets, Futuro do Trabalho",
             master_prompt="Você é um redator sênior de tecnologia focado em SEO."
         )

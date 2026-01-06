@@ -146,7 +146,7 @@ def login_demo():
         # Faz o login sem pedir senha
         login_user(user_demo)
         flash("Você entrou como usuário de demonstração. Explore os recursos!", "info")
-        return redirect(url_for('dashboard.index')) # Ou sua rota principal
+        return redirect(url_for('dashboard.dashboard_view')) # Ou sua rota principal
     else:
         flash("O usuário de demonstração não está disponível no momento.", "danger")
-        return redirect(url_for('main.index'))
+        return redirect(url_for('dashboard.dashboard_view'))
