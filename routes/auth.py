@@ -136,3 +136,17 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
     
     return render_template('reset_password.html', token=token)
+
+@auth_bp.route('/login-demo')
+def login_demo():
+    # Busca o usuário demo no banco
+    user_demo = User.query.filter_by(email="demo@wpautoblog.com").first()
+    
+    if user_demo:
+        # Faz o login sem pedir senha
+        login_user(user_demo)
+        flash("Você entrou como usuário de demonstração. Explore os recursos!", "info")
+        return redirect(url_for('dashboard.index')) # Ou sua rota principal
+    else:
+        flash("O usuário de demonstração não está disponível no momento.", "danger")
+        return redirect(url_for('main.index'))

@@ -77,7 +77,7 @@ def generate_ideas():
 
     try:
         # Gera 10 títulos baseados no nome do site configurado no models.py
-        prompt = f"Gere 10 títulos de artigos para um blog sobre {blog.site_name}. Retorne um por linha."
+        prompt = f"Gere 10 títulos de artigos para um blog sobre {blog.site_name}. Retorne um por linha, sem markdown."
         resultado = generate_text(prompt)
         
         if resultado:
@@ -96,6 +96,10 @@ def generate_ideas():
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
+    if current_user.email == "demo@wpautoblog.com":
+        flash("Simulação de publicação concluída com sucesso (Modo Demo).", "success")
+        return redirect(url_for('content.ideas'))
+
     # 1. Bloqueio por falta de créditos
     if current_user.credits <= 0:
         flash("Saldo de créditos insuficiente.", "warning")
