@@ -1,63 +1,82 @@
+import requests
+from requests.auth import HTTPBasicAuth
 from models import db, Blog, PostLog
 from datetime import datetime
 import pytz
-import requests
-from requests.auth import HTTPBasicAuth
 
 def check_and_post_all_sites(app):
-    """Varre o banco de dados e dispara postagens nos horários agendados."""
     with app.app_context():
-        # 1. Busca todos os sites do banco
         sites = Blog.query.all()
-        
-        # Log de cabeçalho da varredura
         print(f"\n--- [VARREDURA {datetime.now().strftime('%H:%M:%S')}] ---")
 
-        if not sites:
-            print("Nenhum site encontrado no banco de dados.")
-            return
-
-        # 2. Loop principal: Processa UM por UM
         for site in sites:
-            # Define o fuso horário salvo ou usa SP como padrão
             tz_name = site.timezone or 'America/Sao_Paulo'
-            try:
-                tz = pytz.timezone(tz_name)
-            except:
-                tz = pytz.timezone('America/Sao_Paulo')
-            
-            # Calcula a hora agora NESTE fuso horário específico
+            tz = pytz.timezone(tz_name)
             now_in_tz = datetime.now(tz)
             current_time_str = now_in_tz.strftime('%H:%M')
             
-            # 3. IMPRIME A LINHA DE CADA SITE (O que você quer ver)
-            print(f"| Site: {site.site_name[:15].ljust(15)} | Fuso: {tz_name.ljust(20)} | Agora: {current_time_str} | Alvo: {site.schedule_time} |")
+            print(f"| Site: {site.site_name[:15].ljust(15)} | Agora: {current_time_str} | Alvo: {site.schedule_time} |")
 
-            # 4. Verifica se o relógio bateu
             if site.schedule_time == current_time_str:
-                
-                # Validação de limite diário
-                today_site = now_in_tz.date()
-                today_posts = PostLog.query.filter(
+                # Evitar duplicidade no mesmo minuto
+                already_posted = PostLog.query.filter(
                     PostLog.blog_id == site.id,
-                    db.func.date(PostLog.posted_at) == today_site,
+                    db.func.date(PostLog.posted_at) == now_in_tz.date(),
                     PostLog.status == 'Publicado'
-                ).count()
+                ).filter(db.func.strftime('%H:%M', PostLog.posted_at) == current_time_str).first()
 
-                if today_posts < (site.posts_per_day or 1):
-                    print(f"   >>> 🚀 GATILHO ATIVADO para {site.site_name}!")
+                if not already_posted:
                     execute_auto_post(site, app)
-                else:
-                    print(f"   [!] Ignorado: Limite de {site.posts_per_day} posts já atingido hoje.")
 
 def execute_auto_post(site, app):
-    """Gera o conteúdo e publica no WordPress."""
+    """Gera conteúdo e envia para a REST API do WordPress."""
     try:
-        # Aqui entrará sua função de IA no futuro
-        print(f"   [*] Gerando post para {site.site_name}...")
+        print(f"   🚀 Iniciando postagem real para: {site.site_name}")
+
+        # --- PARTE 1: GERADOR DE CONTEÚDO (MOCK POR ENQUANTO) ---
+        # No próximo passo, aqui chamaremos a OpenAI/Gemini
+        titulo = f"Inovação em {site.macro_themes.split(',')[0] if site.macro_themes else 'Tecnologia'}"
+        conteudo = f"""
+        <h2>🚀 Post enviado via WP AutoBlog</h2>
+        <p>Este é um teste de integração real.</p>
+        <ul>
+            <li><b>Site:</b> {site.site_name}</li>
+            <li><b>Temas configurados:</b> {site.macro_themes}</li>
+            <li><b>Horário do disparo:</b> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</li>
+        </ul>
+        <p><i>Se você está vendo isso, a conexão entre seu Python e o WordPress está funcionando perfeitamente!</i></p>
+        """
+
+        # --- PARTE 2: CONEXÃO COM WP REST API ---
+        # Ajusta a URL para o endpoint de posts
+        wp_url = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
         
-        # Simulação de postagem (substitua pela lógica real de Requests)
-        print(f"   [OK] Postagem simulada com sucesso para {site.site_name}")
-        
+        payload = {
+            "title": titulo,
+            "content": conteudo,
+            "status": site.post_status or "publish"
+        }
+
+        # Autenticação Basic (User + App Password)
+        auth = HTTPBasicAuth(site.wp_user, site.wp_app_password)
+
+        response = requests.post(wp_url, json=payload, auth=auth, timeout=30)
+
+        if response.status_code == 201:
+            post_data = response.json()
+            print(f"   ✅ SUCESSO! Post publicado: {post_data.get('link')}")
+            
+            # Registrar no banco para controle
+            new_log = PostLog(
+                blog_id=site.id,
+                title=titulo,
+                status='Publicado',
+                post_url=post_data.get('link')
+            )
+            db.session.add(new_log)
+            db.session.commit()
+        else:
+            print(f"   ❌ ERRO WP ({response.status_code}): {response.text}")
+
     except Exception as e:
-        print(f"   [ERRO] Falha ao processar {site.site_name}: {e}")
+        print(f"   💥 ERRO CRÍTICO: {str(e)}")
