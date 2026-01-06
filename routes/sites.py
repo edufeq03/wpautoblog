@@ -1,8 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
 from models import db, Blog
-import requests
-from requests.auth import HTTPBasicAuth
 from datetime import datetime
 
 sites_bp = Blueprint('sites', __name__)
@@ -13,139 +11,110 @@ DEMO_EMAIL = 'demo@wpautoblog.com.br'
 @sites_bp.route('/manage-sites')
 @login_required
 def manage_sites():
-    return render_template('manage_sites.html', user=current_user)
+    """Lista todos os sites do usuário logado."""
+    user_sites = Blog.query.filter_by(user_id=current_user.id).all()
+    return render_template('manage_sites.html', sites=user_sites)
 
 @sites_bp.route('/add-site', methods=['POST'])
 @login_required
 def add_site():
+    """Rota para o cadastro completo via modal único."""
     if current_user.email == DEMO_EMAIL:
         flash('Modo Demo: Ação não permitida.', 'warning')
-        return redirect(url_for('dashboard_hub'))
-
-    if not current_user.can_add_site():
-        flash('Limite de sites atingido.', 'error')
-        return redirect(url_for('dashboard_hub'))
-
-    new_blog = Blog(
-        user_id=current_user.id,
-        site_name=request.form.get('site_name'),
-        wp_url=request.form.get('wp_url').strip('/'),
-        wp_user=request.form.get('wp_user'),
-        wp_app_password=request.form.get('wp_app_password')
-    )
-    db.session.add(new_blog)
-    db.session.commit()
-    flash('Site conectado! Agora configure o estilo da IA.', 'success')
-    return redirect(url_for('dashboard_hub'))
-
-@sites_bp.route('/delete-site/<int:site_id>', methods=['POST'])
-@login_required
-def delete_site(site_id):
-    if current_user.email == DEMO_EMAIL:
-        flash('Modo Demo: Você não pode remover o site de demonstração.', 'danger')
         return redirect(url_for('sites.manage_sites'))
 
-    # 1. Busca o site garantindo que pertence ao usuário
-    site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
+    # Verifica limite de sites do plano do usuário
+    if not current_user.can_add_site():
+        flash('Limite de sites atingido para o seu plano.', 'error')
+        return redirect(url_for('sites.manage_sites'))
 
     try:
-        # 2. Se você NÃO quiser usar o 'cascade' no models.py, 
-        # você teria que deletar os filhos manualmente aqui:
-        # PostLog.query.filter_by(blog_id=site_id).delete()
-        # ContentIdea.query.filter_by(blog_id=site_id).delete()
+        # Criando o novo blog com TODOS os campos vindos do modal único
+        new_blog = Blog(
+            user_id=current_user.id,
+            site_name=request.form.get('site_name'),
+            wp_url=request.form.get('wp_url', '').strip('/'),
+            wp_user=request.form.get('wp_user'),
+            wp_app_password=request.form.get('wp_app_password'),
+            macro_themes=request.form.get('macro_themes'),
+            master_prompt=request.form.get('master_prompt'),
+            posts_per_day=int(request.form.get('posts_per_day', 1)),
+            schedule_time=request.form.get('schedule_time', '09:00'),
+            post_status=request.form.get('post_status', 'publish')
+        )
         
-        # 3. Deleta o site (com o cascade do Passo 1, ele apagará logs e ideias automaticamente)
-        db.session.delete(site)
+        db.session.add(new_blog)
         db.session.commit()
+        flash(f'Site "{new_blog.site_name}" conectado e configurado com sucesso!', 'success')
         
-        flash(f'O site "{site.site_name}" e todos os dados relacionados foram removidos.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao remover site: {str(e)}', 'danger')
-        
-    return redirect(url_for('dashboard_hub'))
+        flash(f'Erro ao cadastrar site: {str(e)}', 'danger')
 
-@sites_bp.route('/test-post/<int:site_id>')
+    return redirect(url_for('sites.manage_sites'))
+
+@sites_bp.route('/update-auth/<int:site_id>', methods=['POST'])
 @login_required
-def test_post(site_id):
+def update_auth(site_id):
+    """Atualiza credenciais de acesso ao WordPress."""
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
-    wp_endpoint = f"{site.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
     
-    titulo_teste = "🚀 Teste de Conexão: WP AutoBlog"
-    corpo_teste = f"""
-    <h2>Conexão Ativa!</h2>
-    <p>Este é um post automático de teste para o site <strong>{site.site_name}</strong>.</p>
-    <hr>
-    <p><small>Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</small></p>
-    """
+    site.wp_url = request.form.get('wp_url', '').strip('/')
+    site.wp_user = request.form.get('wp_user')
+    
+    # Só atualiza a senha se o usuário preencheu o campo
+    new_pwd = request.form.get('wp_app_password')
+    if new_pwd and len(new_pwd.strip()) > 0:
+        site.wp_app_password = new_pwd
 
-    try:
-        response = requests.post(
-            wp_endpoint, 
-            json={"title": titulo_teste, "content": corpo_teste, "status": "publish"},
-            auth=HTTPBasicAuth(site.wp_user, site.wp_app_password), 
-            timeout=15
-        )
-        if response.status_code == 201:
-            flash(f"✅ Conexão OK! Post de teste publicado.", "success")
-        else:
-            flash(f"❌ Erro WP ({response.status_code}). Verifique as credenciais.", "danger")
-    except Exception as e:
-        flash(f"⚠️ Erro de rede: {str(e)}", "danger")
-        
+    db.session.commit()
+    flash('Conexão WordPress atualizada com sucesso!', 'success')
     return redirect(url_for('sites.manage_sites'))
 
 @sites_bp.route('/update-prompt/<int:site_id>', methods=['POST'])
 @login_required
 def update_prompt(site_id):
-    if current_user.email == DEMO_EMAIL:
-        flash('Modo Demo: Alteração desabilitada.', 'warning')
-        return redirect(url_for('sites.manage_sites'))
-
+    """Atualiza a inteligência da IA (Prompt e Temas)."""
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
+    
+    site.macro_themes = request.form.get('macro_themes')
     site.master_prompt = request.form.get('master_prompt')
-    site.macro_themes = request.form.get('macro_themes') 
+
     db.session.commit()
-    flash('Configurações de IA atualizadas!', 'success')
+    flash('Cérebro da IA atualizado!', 'success')
     return redirect(url_for('sites.manage_sites'))
 
 @sites_bp.route('/update-prefs/<int:site_id>', methods=['POST'])
 @login_required
 def update_prefs(site_id):
-    site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
-    site.posts_per_day = request.form.get('posts_per_day', type=int)
-    site.schedule_time = request.form.get('schedule_time')
-    site.post_status = request.form.get('post_status')
-    site.default_category = request.form.get('default_category')
-
-    db.session.commit()
-    flash(f"Preferências de {site.site_name} atualizadas!", "success")
-    return redirect(url_for('sites.manage_sites'))
-
-@sites_bp.route('/update/<int:site_id>', methods=['POST'])
-@login_required
-def update_site(site_id):
-    """
-    Atualiza as configurações e força a permanência no onboarding 
-    para mostrar o Passo 3 (Sucesso).
-    """
+    """Atualiza frequência, horário e status de postagem."""
     site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     
-    if request.method == 'POST':
-        site.site_name = request.form.get('site_name')
-        site.wp_url = request.form.get('wp_url')
-        site.wp_user = request.form.get('wp_user')
-        site.wp_app_password = request.form.get('wp_app_password')
-        site.macro_themes = request.form.get('macro_themes')
-        site.master_prompt = request.form.get('master_prompt')
+    try:
+        site.posts_per_day = int(request.form.get('posts_per_day', 1))
+        site.schedule_time = request.form.get('schedule_time', '09:00')
+        site.post_status = request.form.get('post_status', 'publish')
+
+        db.session.commit()
+        flash('Configurações de automação salvas!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar preferências: {str(e)}', 'danger')
         
-        try:
-            db.session.commit()
-            flash('Inteligência Artificial configurada com sucesso!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erro ao salvar: {str(e)}', 'danger')
-            return redirect(url_for('dashboard_hub'))
-            
-    # O SEGREDO: Redireciona com finished=true para mostrar o Passo 3 no Onboarding
-    return redirect(url_for('dashboard_hub', finished='true'))
+    return redirect(url_for('sites.manage_sites'))
+
+@sites_bp.route('/delete-site/<int:site_id>', methods=['POST'])
+@login_required
+def delete_site(site_id):
+    """Remove um site e suas configurações."""
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: Ação não permitida.', 'warning')
+        return redirect(url_for('sites.manage_sites'))
+
+    site = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
+    site_name = site.site_name
+    
+    db.session.delete(site)
+    db.session.commit()
+    flash(f'O site "{site_name}" foi removido.', 'info')
+    return redirect(url_for('sites.manage_sites'))

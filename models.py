@@ -102,11 +102,19 @@ class Blog(db.Model):
     wp_url = db.Column(db.String(200), nullable=False)
     wp_user = db.Column(db.String(100), nullable=False)
     wp_app_password = db.Column(db.String(100), nullable=False)
+    
     # Configurações de IA
-    macro_themes = db.Column(db.Text, nullable=True) # Temas separados por vírgula
+    macro_themes = db.Column(db.Text, nullable=True) 
     master_prompt = db.Column(db.Text, nullable=True)
-    post_status = db.Column(db.String(20), default='publish') # publish ou draft
+    
+    # NOVOS CAMPOS PARA AUTOMAÇÃO E PREFERÊNCIAS
+    post_status = db.Column(db.String(20), default='publish') 
+    posts_per_day = db.Column(db.Integer, default=1)      # Adicionado
+    schedule_time = db.Column(db.String(10), default='09:00') # Adicionado
+    default_category = db.Column(db.String(100), nullable=True) # Adicionado
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     # Relacionamentos
     ideas = db.relationship('ContentIdea', backref='blog', lazy=True, cascade="all, delete-orphan")
     logs = db.relationship('PostLog', backref='blog', lazy=True, cascade="all, delete-orphan")
