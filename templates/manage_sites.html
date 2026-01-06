@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="grid grid-cols-3 gap-2 pt-4">
-                    <button onclick="openAuthModal('{{ site.id }}', '{{ site.wp_url }}', '{{ site.wp_user }}')" class="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all group/btn">
+                    <button onclick="openAuthModal('{{ site.id }}', '{{ site.wp_url }}', '{{ site.wp_user }}')" class="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all">
                         <i class="fas fa-key text-sm mb-1"></i>
                         <span class="text-[10px] font-bold uppercase tracking-wider">Acesso</span>
                     </button>
@@ -64,33 +64,101 @@
     </div>
 </div>
 
+<div id="addSiteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50">
+            <h3 class="font-black text-blue-800 italic uppercase tracking-tighter">Conectar Novo Site</h3>
+            <button onclick="closeModal('addSiteModal')" class="text-blue-400 hover:text-blue-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form action="{{ url_for('sites.add_site') }}" method="POST" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+            <input type="hidden" name="timezone" class="user-tz-detector">
+
+            <div class="space-y-4">
+                <h4 class="text-xs font-black text-blue-600 uppercase tracking-widest border-b pb-2">1. Acesso WordPress</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Site (Apelido)</label>
+                        <input type="text" name="site_name" required placeholder="Ex: Meu Blog de Viagens" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">URL do Site</label>
+                        <input type="url" name="wp_url" required placeholder="https://seusite.com.br" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Usuário WP</label>
+                        <input type="text" name="wp_user" required placeholder="admin" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Senha de Aplicativo</label>
+                        <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h4 class="text-xs font-black text-purple-600 uppercase tracking-widest border-b pb-2">2. Configurações de IA</h4>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Temas principais (separados por vírgula)</label>
+                    <input type="text" name="macro_themes" placeholder="Tecnologia, Gadgets, Inovação" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Prompt Mestre (Personalidade da IA)</label>
+                    <textarea name="master_prompt" rows="3" placeholder="Escreva como um especialista em tecnologia..." class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h4 class="text-xs font-black text-orange-600 uppercase tracking-widest border-b pb-2">3. Agendamento</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Posts/Dia</label>
+                        <input type="number" name="posts_per_day" value="1" min="1" max="10" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Horário</label>
+                        <input type="time" name="schedule_time" value="09:00" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Status</label>
+                        <select name="post_status" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
+                            <option value="publish">Publicar</option>
+                            <option value="draft">Rascunho</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+                Salvar e Conectar Site
+            </button>
+        </form>
+    </div>
+</div>
+
 <div id="prefsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-orange-50">
-            <h3 class="font-black text-orange-800 italic uppercase tracking-tighter">Configurar Automação</h3>
+            <h3 class="font-black text-orange-800 italic uppercase tracking-tighter">Editar Automação</h3>
             <button onclick="closeModal('prefsModal')" class="text-orange-400 hover:text-orange-600"><i class="fas fa-times"></i></button>
         </div>
         <form id="prefsForm" method="POST" class="p-6 space-y-4">
             <input type="hidden" name="timezone" id="modalTimezone">
-            
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Posts por Dia</label>
-                <input type="number" name="posts_per_day" id="modalPostsPerDay" min="1" max="10" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
+                <input type="number" name="posts_per_day" id="modalPostsPerDay" min="1" class="w-full bg-slate-50 border-none rounded-xl p-3">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Status do Post</label>
-                <select name="post_status" id="modalPostStatus" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
-                    <option value="publish">Publicar Imediatamente</option>
-                    <option value="draft">Salvar como Rascunho</option>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Status</label>
+                <select name="post_status" id="modalPostStatus" class="w-full bg-slate-50 border-none rounded-xl p-3">
+                    <option value="publish">Publicar</option>
+                    <option value="draft">Rascunho</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Horário de Postagem</label>
-                <input type="time" name="schedule_time" id="modalScheduleTime" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Horário</label>
+                <input type="time" name="schedule_time" id="modalScheduleTime" class="w-full bg-slate-50 border-none rounded-xl p-3">
             </div>
-            <button type="submit" class="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-200 hover:bg-orange-700 transition-all">
-                Salvar Configurações
-            </button>
+            <button type="submit" class="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl hover:bg-orange-700">Salvar Alterações</button>
         </form>
     </div>
 </div>
@@ -102,10 +170,10 @@
             <button onclick="closeModal('authModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
         </div>
         <form id="authForm" method="POST" class="p-6 space-y-4">
-            <input type="url" name="wp_url" id="modalWpUrl" placeholder="URL do Site" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-            <input type="text" name="wp_user" id="modalWpUser" placeholder="Usuário" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-            <input type="password" name="wp_app_password" placeholder="Nova Senha de Aplicativo (opcional)" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-all">Atualizar Conexão</button>
+            <input type="url" name="wp_url" id="modalWpUrl" placeholder="URL do Site" class="w-full bg-slate-50 border-none rounded-xl p-3">
+            <input type="text" name="wp_user" id="modalWpUser" placeholder="Usuário" class="w-full bg-slate-50 border-none rounded-xl p-3">
+            <input type="password" name="wp_app_password" placeholder="Nova Senha (opcional)" class="w-full bg-slate-50 border-none rounded-xl p-3">
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-all">Atualizar Acesso</button>
         </form>
     </div>
 </div>
@@ -117,21 +185,23 @@
             <button onclick="closeModal('promptModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
         </div>
         <form id="promptForm" method="POST" class="p-6 space-y-4">
-            <textarea name="macro_themes" id="modalMacroThemesText" rows="3" placeholder="Temas (separados por vírgula)" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500"></textarea>
-            <textarea name="master_prompt" id="modalPromptText" rows="5" placeholder="Prompt Mestre" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500"></textarea>
-            <button type="submit" class="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl hover:bg-purple-700 transition-all">Salvar Inteligência</button>
+            <textarea name="macro_themes" id="modalMacroThemesText" rows="3" placeholder="Temas" class="w-full bg-slate-50 border-none rounded-xl p-3"></textarea>
+            <textarea name="master_prompt" id="modalPromptText" rows="5" placeholder="Prompt" class="w-full bg-slate-50 border-none rounded-xl p-3"></textarea>
+            <button type="submit" class="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl hover:bg-purple-700 transition-all">Salvar IA</button>
         </form>
     </div>
 </div>
 
 <script>
     function openModal(id) { 
-        document.getElementById(id).classList.remove('hidden'); 
+        document.getElementById(id).classList.remove('hidden');
+        // Detecta fuso horário sempre que abrir um modal que tenha o detector
+        const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const detectors = document.querySelectorAll('.user-tz-detector');
+        detectors.forEach(d => d.value = userTZ);
     }
     
-    function closeModal(id) { 
-        document.getElementById(id).classList.add('hidden'); 
-    }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
     function openAuthModal(id, url, user) {
         document.getElementById('authForm').action = "/sites/update-auth/" + id;
@@ -148,28 +218,16 @@
     }
 
     function openPrefsModal(id, posts, status, time) {
-        // Define a rota de destino
         document.getElementById('prefsForm').action = "/sites/update-prefs/" + id;
-        
-        // Preenche os campos
         document.getElementById('modalPostsPerDay').value = posts || 1;
         document.getElementById('modalPostStatus').value = status || 'publish';
         document.getElementById('modalScheduleTime').value = time || '09:00';
         
-        // CAPTURA AUTOMÁTICA DO FUSO HORÁRIO DO NAVEGADOR
         const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
         document.getElementById('modalTimezone').value = userTZ;
-        
-        console.log("Timezone detectado:", userTZ); // Debug no console
-        
         openModal('prefsModal');
     }
 
-    // Fecha o modal ao clicar fora dele
-    window.onclick = function(e) { 
-        if (e.target.classList.contains('fixed')) { 
-            e.target.classList.add('hidden'); 
-        } 
-    };
+    window.onclick = function(e) { if (e.target.classList.contains('fixed')) { e.target.classList.add('hidden'); } };
 </script>
 {% endblock %}
