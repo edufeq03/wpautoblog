@@ -22,6 +22,7 @@ def force_db_reset():
         admin_master = User(
             name='Admin Master',
             email='admin@admin.com',
+            is_admin=True,
             password=generate_password_hash('senha123', method='pbkdf2:sha256'),
             plan_id=vip.id
         )
