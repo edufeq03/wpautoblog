@@ -5,13 +5,11 @@ from datetime import datetime, timedelta, UTC
 
 def force_db_reset():
     with app.app_context():
-        print("1. Removendo todas as tabelas no Postgres...")
+        print("1. Reiniciando Banco de Dados...")
         db.drop_all() 
-        
-        print("2. Criando novas tabelas...")
         db.create_all()
         
-        print("3. Criando Planos...")
+        print("2. Criando Planos...")
         starter = Plan(name='Starter', max_sites=1, posts_per_day=1, price=0.0, has_images=False)
         lite    = Plan(name='Lite',    max_sites=1, posts_per_day=2, price=47.0, has_images=True)
         pro     = Plan(name='Pro',     max_sites=3, posts_per_day=15, price=97.0, has_images=True)
@@ -19,67 +17,69 @@ def force_db_reset():
         db.session.add_all([starter, lite, pro, vip])
         db.session.commit()
         
-        print("4. Criando Super Admin...")
+        print("3. Criando Usuários (Admin e Demo)...")
+        # Admin Real
         admin_master = User(
-            name='Admin',
+            name='Admin Master',
             email='admin@admin.com',
-            password=generate_password_hash('123456', method='scrypt'),
-            plan_id=vip.id,
-            credits=9999,
-            is_admin=True
+            password=generate_password_hash('senha123', method='pbkdf2:sha256'),
+            plan_id=vip.id
         )
-        db.session.add(admin_master)
-        
-        print("5. Criando usuário demo e dados de exemplo...")
+        # Usuário Demo
         demo_user = User(
-            name='Usuario para Demonstracao',
-            email='demo@wpautoblog.com.br',
-            password=generate_password_hash('demo123', method='scrypt'),
-            plan_id=vip.id,
-            credits=100,
-            is_admin=False # Deixe False para ele ver a interface de usuário comum
+            name='Visitante Demo',
+            email='demo@wpautoblog.com',
+            password=generate_password_hash('demo123', method='pbkdf2:sha256'),
+            plan_id=vip.id # Demo vê tudo liberado
         )
-        db.session.add(demo_user)
-        db.session.commit() # Commit para gerar o ID do demo_user
-        
-        # 6. Criando blog para o demo
+        db.session.add_all([admin_master, demo_user])
+        db.session.commit()
+
+        print("4. Criando Site de Demonstração...")
         site_demo = Blog(
             user_id=demo_user.id,
             site_name="Portal Tech Demo",
             wp_url="https://wp.appmydream.com.br",
             wp_user="Maria",
-            wp_app_password="2319 GNlZ JIDx D606 yEOT YB7W",
-            macro_themes="Inteligência Artificial, Gadgets, Futuro do Trabalho",
-            master_prompt="Você é um redator sênior de tecnologia focado em SEO."
+            wp_app_password="XXXX XXXX XXXX XXXX",
+            macro_themes="IA, Gadgets, Futuro do Trabalho",
+            master_prompt="Você é um redator sênior de tecnologia focado em SEO.",
+            schedule_time="09:00",
+            posts_per_day=3,
+            post_status="publish"
         )
         db.session.add(site_demo)
         db.session.commit()
 
-        print("7. Populando histórico de demonstração...")
-        # Adiciona algumas ideias na fila
-        ideias = [
-            "Como a IA vai mudar o marketing em 2026",
-            "5 Gadgets que você precisa conhecer este mês",
-            "O guia definitivo do trabalho remoto"
+        print("5. Gerando Histórico Fictício para Gráficos...")
+        # Criar posts nos últimos 7 dias para o gráfico do Dashboard não ficar vazio
+        titulos_exemplo = [
+            "O impacto do GPT-5 no mercado", "Novos MacBooks 2026", 
+            "Como automatizar blogs", "Segurança em APIs", "DALL-E 3 vs Midjourney"
         ]
-        for titulo in ideias:
-            db.session.add(ContentIdea(title=titulo, blog_id=site_demo.id))
-
-        # Adiciona alguns logs de posts já "feitos"
-        log1 = PostLog(
-            blog_id=site_demo.id,
-            title="A Revolução dos Carros Elétricos",
-            status="Publicado",
-            wp_post_id=123,
-            post_url="#",
-            posted_at=datetime.now(UTC) - timedelta(days=1)
-        )
-        db.session.add(log1)
         
+        for i in range(7):
+            data_post = datetime.now(UTC) - timedelta(days=i)
+            log = PostLog(
+                blog_id=site_demo.id,
+                title=titulos_exemplo[i % len(titulos_exemplo)],
+                status="Publicado",
+                post_url="#",
+                posted_at=data_post
+            )
+            db.session.add(log)
+        
+        print("6. Populando Fila de Ideias...")
+        ideias = [
+            "As 10 melhores ferramentas de IA de 2026",
+            "Trabalho remoto: O fim dos escritórios?",
+            "Guia de SEO para iniciantes"
+        ]
+        for t in ideias:
+            db.session.add(ContentIdea(title=t, blog_id=site_demo.id))
+            
         db.session.commit()
-        
-        print("\n✅ SUCESSO: Banco resetado e Ambiente Demo pronto!")
-        print(f"Login Demo: {demo_user.email} | Senha: demo123")
+        print("✅ Banco Resetado e Demo Pronta!")
 
 if __name__ == "__main__":
     force_db_reset()

@@ -13,26 +13,21 @@ try:
 except ImportError:
     processar_imagem_featured = None
 
-# Importando as funções dos seus serviços
+# Importando utilitários
 from utils.scrapers import extrair_texto_da_url
 from utils.ai_logic import preparar_contexto_brainstorm
 
-# --- VERIFICAÇÃO DO SERVIÇO DE IMAGEM ---
-try:
-    from services.image_service import processar_imagem_featured
-    # Este print aparecerá no terminal assim que o Flask carregar o módulo
-    print("✅ Sucesso: OpenAI detectada e serviço de imagem carregado corretamente!")
-except ImportError as e:
-    processar_imagem_featured = None
-    print(f"⚠️ ALERTA: Serviço de imagem não foi carregado! Erro: {e}")
-except Exception as e:
-    processar_imagem_featured = None
-    print(f"❌ Erro inesperado ao carregar image_service: {e}")
-
 content_bp = Blueprint('content', __name__)
+
+# PADRONIZAÇÃO DO EMAIL DEMO (Conforme definido no reset_db.py)
+DEMO_EMAIL = 'demo@wpautoblog.com.br'
 
 def enviar_para_wordpress(conteudo, titulo, id_imagem, blog):
     """Função centralizada para enviar conteúdo ao WordPress via REST API."""
+    # TRAVA DE SEGURANÇA: Simula sucesso para conta demo sem gastar recursos
+    if current_user.email == DEMO_EMAIL:
+        return type('Response', (object,), {'status_code': 201, 'json': lambda: {'link': 'https://wp.autoblog.com.br/post-demo', 'id': 999}})
+    
     wp_payload = {
         'title': titulo,
         'content': conteudo,
@@ -76,7 +71,7 @@ def generate_ideas():
         return redirect(url_for('content.ideas'))
 
     try:
-        # Gera 10 títulos baseados no nome do site configurado no models.py
+        # A trava de geração de texto já existe dentro do ai_service.generate_text
         prompt = f"Gere 10 títulos de artigos para um blog sobre {blog.site_name}. Retorne um por linha, sem markdown."
         resultado = generate_text(prompt)
         
@@ -96,11 +91,11 @@ def generate_ideas():
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
-    if current_user.email == "demo@wpautoblog.com":
+    # TRAVA DE SEGURANÇA PARA CONTA DEMO
+    if current_user.email == DEMO_EMAIL:
         flash("Simulação de publicação concluída com sucesso (Modo Demo).", "success")
         return redirect(url_for('content.ideas'))
 
-    # 1. Bloqueio por falta de créditos
     if current_user.credits <= 0:
         flash("Saldo de créditos insuficiente.", "warning")
         return redirect(url_for('content.ideas'))
@@ -109,21 +104,16 @@ def publish_idea(idea_id):
     blog = idea.blog
 
     try:
-        # A. Gera texto via IA
         texto_final = generate_text(f"Escreva um artigo detalhado sobre: {idea.title}")
         
-        # B. Tenta gerar imagem
         id_imagem = None
         if processar_imagem_featured and current_user.plan_details and current_user.plan_details.has_images:
             auth_wp = (blog.wp_user, blog.wp_app_password)
             id_imagem = processar_imagem_featured(idea.title, blog.wp_url, auth_wp)
 
-        # C. Envia ao WordPress usando a nova função
         response = enviar_para_wordpress(texto_final, idea.title, id_imagem, blog)
 
-        # D. Valida sucesso e debita créditos
         if response and response.status_code in [200, 201]:
-            # DÉBITO DE CRÉDITO SÓ EM CASO DE SUCESSO
             current_user.credits -= 1
             idea.is_posted = True
             
@@ -136,7 +126,7 @@ def publish_idea(idea_id):
                 post_url=res_data.get('link')
             )
             db.session.add(novo_log)
-            db.session.commit() # Salva o log e o débito de crédito
+            db.session.commit()
             
             flash(f"Artigo publicado! 1 crédito debitado (Saldo: {current_user.credits})", "success")
         else:
@@ -148,64 +138,46 @@ def publish_idea(idea_id):
 
     return redirect(url_for('content.ideas'))
 
-# --- 4. RELATÓRIOS E OUTRAS FUNÇÕES ---
+# --- 4. POST MANUAL E RELATÓRIOS ---
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
-    if current_user.credits <= 0:
-        flash("Você não possui créditos para um post manual.", "warning")
-        return redirect(url_for('dashboard.dashboard_view')) # Ajustado para sua rota
-
-    # Pega os blogs do usuário para o select do formulário
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
 
     if request.method == 'POST':
+        # Verificação de créditos (Demo ignora)
+        if current_user.credits <= 0 and current_user.email != DEMO_EMAIL:
+            flash("Você não possui créditos para um post manual.", "warning")
+            return redirect(url_for('dashboard.dashboard_view'))
+
         blog_id = request.form.get('blog_id')
         titulo = request.form.get('title')
         conteudo = request.form.get('content')
 
-        # Verificação de segurança: se blog_id é nulo ou vazio
         if not blog_id:
             flash("Por favor, selecione um blog.", "warning")
             return render_template('manual_post.html', blogs=blogs)
 
-        # Usando db.session.get() que é o padrão moderno do SQLAlchemy
         blog = db.session.get(Blog, blog_id)
 
         if blog and blog.user_id == current_user.id:
-            # TRAVA PARA USUÁRIO DEMO
-            if current_user.email == 'demo@wpautoblog.com.br':
+            # INTERCEPTAÇÃO DEMO
+            if current_user.email == DEMO_EMAIL:
                 flash("Post manual simulado com sucesso (Modo Demo)!", "success")
                 return redirect(url_for('content.post_report'))
 
             res = enviar_para_wordpress(conteudo, titulo, None, blog)
             
             if res and res.status_code in [200, 201]:
-                current_user.consume_credit() # Usa o método que você tem no models.py
+                current_user.consume_credit()
                 flash("Post manual publicado com sucesso!", "success")
                 return redirect(url_for('content.post_report'))
             else:
-                flash("Falha ao enviar para o WordPress. Verifique as credenciais do site.", "danger")
+                flash("Falha ao enviar para o WordPress. Verifique credenciais.", "danger")
         else:
             flash("Blog não encontrado ou acesso negado.", "danger")
                 
     return render_template('manual_post.html', blogs=blogs)
-
-@content_bp.route('/spy-writer', methods=['GET', 'POST'])
-@login_required
-def spy_writer():
-    processed_content = None
-    if request.method == 'POST':
-        wp_url = request.form.get('wp_url')
-        try:
-            raw_text = extrair_texto_da_url(wp_url)
-            if raw_text:
-                processed_content = generate_text(f"Reescreva este artigo: {raw_text[:2000]}")
-            else:
-                flash("Não foi possível extrair texto desta URL.", "warning")
-        except Exception as e:
-            flash(f"Erro ao processar URL: {str(e)}", "danger")
-    return render_template('spy_writer.html', processed_content=processed_content)
 
 @content_bp.route('/post-report')
 @login_required
@@ -220,6 +192,11 @@ def post_report():
 @content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def delete_idea(idea_id):
+    # SEGURANÇA: Não permite que o demo delete ideias (para manter a fila cheia para o próximo)
+    if current_user.email == DEMO_EMAIL:
+        flash('Modo Demo: A remoção de ideias está desabilitada para manter o ambiente de teste.', 'warning')
+        return redirect(url_for('content.ideas'))
+
     idea = ContentIdea.query.join(Blog).filter(
         ContentIdea.id == idea_id, 
         Blog.user_id == current_user.id
@@ -229,3 +206,30 @@ def delete_idea(idea_id):
     db.session.commit()
     flash('Ideia removida.', 'info')
     return redirect(url_for('content.ideas'))
+
+@content_bp.route('/spy-writer', methods=['GET', 'POST'])
+@login_required
+def spy_writer():
+    processed_content = None
+    
+    if request.method == 'POST':
+        # Verificação de segurança para Demo
+        if current_user.email == DEMO_EMAIL:
+            flash("Modo Demo: Simulação de extração e reescrita de conteúdo.", "info")
+            processed_content = "Este é um exemplo de conteúdo reescrito pela IA no modo de demonstração. Em uma conta real, extrairíamos o texto da URL fornecida e criaríamos uma versão única para seu blog."
+            return render_template('spy_writer.html', processed_content=processed_content)
+
+        wp_url = request.form.get('wp_url')
+        try:
+            # Extração real (apenas para não-demo)
+            raw_text = extrair_texto_da_url(wp_url)
+            if raw_text:
+                # Chama a IA para reescrever
+                prompt = f"Reescreva o seguinte artigo de forma original e otimizada para SEO: {raw_text[:3000]}"
+                processed_content = generate_text(prompt)
+            else:
+                flash("Não foi possível extrair texto desta URL. Verifique se o site permite raspagem.", "warning")
+        except Exception as e:
+            flash(f"Erro ao processar URL: {str(e)}", "danger")
+            
+    return render_template('spy_writer.html', processed_content=processed_content)
