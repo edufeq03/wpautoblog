@@ -134,7 +134,7 @@ class ContentIdea(db.Model):
 class PostLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False)
-    title = db.Column(db.String(250))
+    title = db.Column(db.String(500))
     content = db.Column(db.Text)
     wp_post_id = db.Column(db.Integer)
     post_url = db.Column(db.String(500))

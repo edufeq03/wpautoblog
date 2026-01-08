@@ -34,11 +34,10 @@ def publish_idea(idea_id):
 def manual_post():
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
     if request.method == 'POST':
-        # Captura exatamente o que o formulário envia
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
-        action = request.form.get('action_type')
+        action = request.form.get('action_type') # 'now' ou 'queue'
         image_file = request.files.get('image_file')
 
         success, message = content_service.process_manual_post(
@@ -53,12 +52,16 @@ def manual_post():
 @login_required
 def spy_writer():
     processed = None
+    blogs = Blog.query.filter_by(user_id=current_user.id).all()
+    
     if request.method == 'POST':
-        url = request.form.get('wp_url')
-        processed = content_service.process_spy_writer(url, getattr(current_user, 'is_demo', False))
+        url = request.form.get('url') # Corrigido para 'url' conforme o HTML
+        processed = content_service.analyze_spy_link(url, getattr(current_user, 'is_demo', False))
+        
         if not processed:
-            flash("Não foi possível processar esta URL.", "warning")
-    return render_template('spy_writer.html', processed_content=processed)
+            flash("Não foi possível extrair conteúdo deste link. Verifique a URL.", "warning")
+            
+    return render_template('spy_writer.html', processed_content=processed, blogs=blogs)
 
 @content_bp.route('/post-report')
 @login_required

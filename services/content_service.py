@@ -42,6 +42,11 @@ def process_manual_post(user, site_id, title, content, action, image_file=None):
         auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
         wp_image_id = upload_manual_image(image_file, blog.wp_url, auth)
 
+    # Geração de imagem por IA (se NÃO houver imagem manual e o plano permitir)
+    if not wp_image_id and user.plan_details and user.plan_details.has_images:
+        auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
+        wp_image_id = processar_imagem_featured(title, blog.wp_url, auth)
+
     # 2. Publicar Agora ou Agendar
     if action == 'now':
         response = _send_to_wp(blog, title, content, wp_image_id)
@@ -121,3 +126,27 @@ def process_spy_writer(url, is_demo):
     if is_demo: return "Conteúdo demonstrativo (Modo Demo)."
     raw = extrair_texto_da_url(url)
     return generate_text(f"Reescreva: {raw[:3000]}") if raw else None
+
+# --- SPY WRITER LOGIC ---
+def analyze_spy_link(url, is_demo):
+    if is_demo:
+        return {"title": "Título Exemplo", "text": "Conteúdo exemplo."}
+    
+    raw_text = extrair_texto_da_url(url)
+    if not raw_text:
+        return None
+    
+    # Prompt mais rígido: "Apenas o título", "Sem introdução"
+    title_prompt = f"Gere apenas um título curto e chamativo (máximo 80 caracteres) para um post baseado neste texto. Não escreva 'Aqui está o título' nem numere opções: {raw_text[:500]}"
+    content_prompt = f"Reescreva o conteúdo de forma original e profissional para blog: {raw_text[:3500]}"
+    
+    title = generate_text(title_prompt).strip().replace('"', '')
+    
+    # LIMITADOR DE DANOS: Se a IA falhar e mandar um texto enorme, cortamos em 150 caracteres
+    if len(title) > 150:
+        title = title[:147] + "..."
+
+    return {
+        "title": title,
+        "text": generate_text(content_prompt)
+    }
