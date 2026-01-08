@@ -150,6 +150,7 @@ class ContentSource(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_scraped = db.Column(db.DateTime, nullable=True)
+    blog = db.relationship('Blog', backref='sources')
 
 class CapturedContent(db.Model):
     id = db.Column(db.Integer, primary_key=True)

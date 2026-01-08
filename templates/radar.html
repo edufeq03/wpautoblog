@@ -2,88 +2,123 @@
 {% block title %}Radar de Fontes - WP AutoBlog{% endblock %}
 
 {% block content %}
-<div class="p-6">
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <i class="fas fa-satellite-dish text-purple-600"></i> Radar de Fontes
-        </h1>
-        <p class="text-sm text-gray-500">Monitoramento automático de concorrentes e tendências.</p>
+<div class="p-6 max-w-6xl mx-auto">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <i class="fas fa-satellite-dish text-purple-600"></i> Radar de Fontes
+            </h1>
+            <p class="text-sm text-slate-500">Monitorize concorrentes e transforme tendências em ideias de conteúdo.</p>
+        </div>
+        <a href="{{ url_for('radar.sync_radar') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-2xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2">
+            <i class="fas fa-sync-alt text-xs"></i> Sincronizar Agora
+        </a>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <form action="{{ url_for('radar.add_source') }}" method="POST" class="flex flex-col md:flex-row items-end gap-4">
-            <div class="flex-1 w-full">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1 tracking-wider">URL (Blog ou Canal YouTube)</label>
-                <input type="url" name="url" required placeholder="https://youtube.com/@..." class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm transition-all">
-            </div>
-
-            <div class="w-full md:w-64">
-                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1 tracking-wider">Site de Destino</label>
-                {% if current_user.sites|length > 1 %}
-                    <div class="relative">
-                        <select name="site_id" required 
-                            class="w-full bg-gray-50 border border-gray-200 py-2.5 px-4 pr-10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 appearance-none cursor-pointer transition-all text-gray-700 font-medium">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Adicionar Nova Fonte</h2>
+                <form action="{{ url_for('radar.add_source') }}" method="POST" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1">URL do Blog ou YouTube</label>
+                        <input type="url" name="url" required placeholder="https://..." 
+                            class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none text-sm transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Vincular ao Site</label>
+                        <select name="site_id" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 text-sm appearance-none cursor-pointer">
                             {% for site in current_user.sites %}
                                 <option value="{{ site.id }}">{{ site.site_name }}</option>
                             {% endfor %}
                         </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
-                            <i class="fas fa-chevron-down text-[10px]"></i>
-                        </div>
                     </div>
-                {% elif current_user.sites|length == 1 %}
-                    <div class="bg-gray-50 border border-gray-100 py-2.5 px-4 rounded-xl text-sm text-gray-500 font-bold border-dashed">
-                        <i class="fas fa-link mr-1 text-purple-300"></i> {{ current_user.sites[0].site_name }}
-                    </div>
-                    <input type="hidden" name="site_id" value="{{ current_user.sites[0].id }}">
-                {% else %}
-                    <div class="bg-red-50 border border-red-100 py-2.5 px-4 rounded-xl text-xs text-red-500 font-medium">
-                        Conecte um site primeiro
-                    </div>
-                {% endif %}
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-2xl font-bold transition-all">
+                        Salvar Fonte
+                    </button>
+                </form>
             </div>
 
-            <button type="submit" {% if not current_user.sites %}disabled{% endif %} class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20 whitespace-nowrap">
-                Ativar Radar
-            </button>
-        </form>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-left">
-            <thead class="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-wider">
-                <tr>
-                    <th class="px-6 py-4">URL da Fonte</th>
-                    <th class="px-6 py-4">Tipo</th>
-                    <th class="px-6 py-4">Destino</th>
-                    <th class="px-6 py-4 text-center">Status</th>
-                    <th class="px-6 py-4 text-right">Ações</th>
-                </tr>
-            </thead>
-            <tbody class="text-sm divide-y divide-gray-100">
-                {% for fonte in fontes %}
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-gray-700 truncate max-w-md">{{ fonte.source_url }}</td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 rounded text-[10px] font-bold {{ 'bg-red-50 text-red-600' if fonte.source_type == 'youtube' else 'bg-blue-50 text-blue-600' }}">
-                            {{ fonte.source_type|upper }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-gray-500">{{ fonte.blog.site_name }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">ATIVO</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <form action="{{ url_for('site.delete_source', source_id=fonte.id) }}" method="POST" class="inline">
-                            <button type="submit" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fontes Ativas</h2>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    {% for fonte in fontes %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="truncate pr-4">
+                            <p class="text-xs font-bold text-slate-700 truncate">{{ fonte.source_url }}</p>
+                            <p class="text-[10px] text-slate-400">{{ fonte.blog.site_name }}</p>
+                        </div>
+                        <form action="{{ url_for('radar.delete_source', source_id=fonte.id) }}" method="POST">
+                            <button type="submit" class="text-slate-300 hover:text-red-500 transition-colors">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
                         </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">O seu radar está limpo. Adicione uma fonte acima.</td></tr>
+                    </div>
+                    {% else %}
+                    <div class="p-8 text-center">
+                        <p class="text-xs text-slate-400">Nenhuma fonte cadastrada.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Últimos Insights do Radar</h2>
+            
+            {% set insights = [] %}
+            {# Aqui assumimos que você passou 'insights' no render_template, ou busca via fontes #}
+            {# Se estiver usando a tabela CapturedContent: #}
+            
+            {% for fonte in fontes %}
+                {% for insight in fonte.captures %} {# Supondo backref 'captures' no models.py #}
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-purple-200 transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-purple-50 text-purple-600 text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                            Insight de {{ fonte.source_type }}
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-medium">{{ insight.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 group-hover:text-purple-700 transition-colors">
+                        {{ insight.title if insight.title != "Insight Automático" else "Oportunidade de Conteúdo Detectada" }}
+                    </h3>
+                    
+                    <div class="text-sm text-slate-600 leading-relaxed mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        {{ insight.summary | replace('\n', '<br>') | safe }}
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                        <a href="{{ insight.url }}" target="_blank" class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                            <i class="fas fa-external-link-alt text-[10px]"></i> Ver Fonte Original
+                        </a>
+                        <a href="{{ url_for('radar.approve_insight', insight_id=insight.id) }}" 
+                           class="bg-slate-800 hover:bg-purple-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                            <i class="fas fa-lightbulb"></i> Aproveitar como Ideia
+                        </a>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            {% endfor %}
+
+            {% if not fontes or (fontes and fontes[0].captures|length == 0) %}
+            <div class="bg-white p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-microchip text-slate-300 text-2xl"></i>
+                </div>
+                <h3 class="text-slate-800 font-bold">Nenhum insight disponível</h3>
+                <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2">Clique em "Sincronizar Agora" para que a IA analise as suas fontes de conteúdo.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 {% endblock %}

@@ -65,3 +65,11 @@ def delete_source(source_id):
     db.session.delete(fonte)
     db.session.commit()
     return redirect(url_for('radar.radar'))
+
+@radar_bp.route('/approve-insight/<int:insight_id>')
+@login_required
+def approve_insight(insight_id):
+    # Transforma o insight em uma ideia de post
+    content_service.convert_radar_insight_to_idea(insight_id)
+    flash("Insight transformado em ideia de post! Verifique sua lista de ideias.", "success")
+    return redirect(url_for('content.ideas'))
