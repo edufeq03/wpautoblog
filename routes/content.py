@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
 from models import db, Blog, ContentIdea
 from services import content_service
-from services.scrapers import extrair_texto_da_url # Ponto 3: Movido para services
+from services.scraper_service import extrair_texto_da_url # Ponto 3: Movido para services
 
 content_bp = Blueprint('content', __name__)
 

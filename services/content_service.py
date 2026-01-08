@@ -3,6 +3,9 @@ from requests.auth import HTTPBasicAuth
 from models import db, ContentIdea, PostLog, Blog
 from services.ai_service import generate_text
 from services.image_service import processar_imagem_featured # Importação limpa
+from services.scraper_service import extrair_texto_da_url
+from groq import Groq
+import os
 
 def get_filtered_ideas(user_id, site_id=None):
     """Busca ideias não postadas de um usuário, com filtro opcional por site."""
@@ -71,3 +74,39 @@ def _send_to_wp(blog, titulo, conteudo, id_img):
     return requests.post(f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
                          auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
                          json=payload, timeout=30)
+
+def get_groq_client():
+    return Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+def sync_sources_logic(fontes, scraper_func):
+    """Lógica pesada de raspagem e IA para o Radar."""
+    groq_client = get_groq_client()
+    contador = 0
+    
+    for fonte in fontes:
+        texto_real = scraper_func(fonte.source_url)
+        if texto_real:
+            try:
+                response = groq_client.chat.completions.create(
+                    model="llama-3.1-70b-specdec",
+                    messages=[
+                        {"role": "system", "content": "Extraia os 3 pontos principais deste conteúdo para um novo artigo SEO."},
+                        {"role": "user", "content": texto_real[:4000]}
+                    ]
+                )
+                
+                from models import CapturedContent
+                nova_captura = CapturedContent(
+                    source_id=fonte.id, 
+                    site_id=fonte.blog_id, 
+                    url=fonte.source_url, 
+                    title="Insight Automático", 
+                    summary=response.choices[0].message.content
+                )
+                db.session.add(nova_captura)
+                contador += 1
+            except Exception as e:
+                print(f"Erro no processamento Groq: {e}")
+    
+    db.session.commit()
+    return contador
