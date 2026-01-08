@@ -60,3 +60,46 @@ def processar_imagem_featured(titulo_post, wp_url, auth_wp):
     except Exception as e:
         print(f"DEBUG: EXCEÇÃO NO SERVICE: {str(e)}")
         return None
+    
+import requests
+import os
+
+def upload_manual_image(image_file, wp_url, auth):
+    """
+    Recebe um objeto de arquivo do Flask, faz o upload para o WordPress 
+    e retorna o ID da mídia (attachment ID).
+    """
+    try:
+        # 1. Preparar o arquivo para envio
+        # Lemos o nome original e o conteúdo binário
+        filename = image_file.filename
+        content_type = image_file.content_type
+        
+        # 2. Configurar os Headers da API do WordPress para Mídia
+        headers = {
+            'Content-Disposition': f'attachment; filename={filename}',
+            'Content-Type': content_type
+        }
+
+        # 3. Endpoint de mídia do WordPress
+        endpoint = f"{wp_url.rstrip('/')}/wp-json/wp/v2/media"
+
+        # 4. Faz o upload (enviando os bytes do arquivo no corpo da requisição)
+        response = requests.post(
+            endpoint,
+            auth=auth,
+            headers=headers,
+            data=image_file.read(),
+            timeout=30
+        )
+
+        if response.status_code in [200, 201]:
+            data = response.json()
+            return data.get('id') # Retorna o ID da imagem no WP
+        else:
+            print(f"❌ Erro no upload WP: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"❌ Falha crítica no upload de imagem: {e}")
+        return None
