@@ -1,74 +1,64 @@
 {% extends "base.html" %}
-{% block title %}Postagem Manual - WP AutoBlog{% endblock %}
-
 {% block content %}
-<div class="p-6 max-w-4xl mx-auto">
-    <div class="mb-8">
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Postagem Manual</h1>
-        <p class="text-sm text-slate-500">Publique conteúdo diretamente em seus sites conectados.</p>
+<div class="p-6 max-w-5xl mx-auto">
+    <div class="mb-8 border-b border-slate-300 pb-6">
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Postagem Manual Profissional</h1>
+        <p class="text-slate-600">Crie seu conteúdo personalizado e escolha o destino.</p>
     </div>
 
-    {% if current_user.sites %}
-    <form action="{{ url_for('content.manual_post') }}" method="POST" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div>
-            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Site de Destino</label>
+    <form action="{{ url_for('content.manual_post') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             
-            {% if current_user.sites|length > 1 %}
-                <div class="relative">
-                    <select name="site_id" required 
-                        class="w-full bg-slate-50 border border-slate-200 py-3 px-4 pr-10 rounded-2xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-all">
-                        <option value="" disabled selected>Selecione o site...</option>
-                        {% for site in current_user.sites %}
-                            <option value="{{ site.id }}">{{ site.site_name }} ({{ site.wp_url }})</option>
-                        {% endfor %}
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
-                        <i class="fas fa-chevron-down text-xs"></i>
+            <div class="md:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2 tracking-wider">Título do Artigo</label>
+                    <input type="text" name="title" required class="w-full bg-slate-50 border border-slate-300 py-3 px-4 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-800">
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2 tracking-wider">Conteúdo do Post</label>
+                    <textarea name="content" required rows="15" class="w-full bg-slate-50 border border-slate-300 py-4 px-4 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm text-slate-700 leading-relaxed"></textarea>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-300">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-4 tracking-wider">Configurações de Envio</label>
+                    
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1">SITE DESTINO</label>
+                        <select name="site_id" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-medium">
+                            {% for blog in blogs %}
+                            <option value="{{ blog.id }}">{{ blog.site_name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
+
+                    <div class="mb-4">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1">IMAGEM DESTACADA (OPCIONAL)</label>
+                        <input type="file" name="image_file" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-300">
+                        <label class="block text-[10px] font-bold text-slate-500 mb-3">AÇÃO</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 p-3 bg-white border border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 transition-all">
+                                <input type="radio" name="action_type" value="now" checked class="w-4 h-4 text-blue-600">
+                                <span class="text-sm font-bold text-slate-700">Publicar Agora</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 bg-white border border-slate-300 rounded-lg cursor-pointer hover:border-blue-400 transition-all">
+                                <input type="radio" name="action_type" value="queue" class="w-4 h-4 text-blue-600">
+                                <span class="text-sm font-bold text-slate-700">Enviar para Fila</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full mt-6 bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-rocket"></i> Executar Ação
+                    </button>
                 </div>
-            {% else %}
-                <div class="w-full bg-slate-50 border border-slate-100 py-3 px-4 rounded-2xl text-sm font-bold text-blue-600 flex items-center justify-between">
-                    <span>{{ current_user.sites[0].site_name }}</span>
-                    <input type="hidden" name="site_id" value="{{ current_user.sites[0].id }}">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-            {% endif %}
-        </div>
-
-        <div>
-            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Título do Artigo</label>
-            <input type="text" name="title" required placeholder="Ex: Guia definitivo de Python para Iniciantes" 
-                class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all font-semibold text-slate-700">
-        </div>
-
-        <div>
-            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">Conteúdo (HTML ou Texto Plano)</label>
-            <textarea name="content" required rows="12" placeholder="Escreva ou cole seu artigo aqui..." 
-                class="w-full bg-slate-50 border border-slate-200 py-4 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm text-slate-600 leading-relaxed"></textarea>
-        </div>
-
-        <div class="flex items-center justify-end gap-4 pt-2">
-            <button type="reset" class="px-6 py-3 text-slate-400 font-bold hover:text-slate-600 transition-colors text-sm">
-                Limpar Campos
-            </button>
-            <button type="submit" 
-                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-blue-500/30 transition-all flex items-center gap-3">
-                <i class="fas fa-paper-plane text-xs"></i> Publicar no WordPress
-            </button>
+            </div>
         </div>
     </form>
-    
-    {% else %}
-    <div class="bg-white p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
-        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-globe text-slate-300 text-3xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-slate-800 mb-2">Nenhum site conectado</h2>
-        <p class="text-slate-500 mb-8 max-w-sm mx-auto">Para fazer postagens manuais, você precisa primeiro conectar seu site WordPress nas configurações.</p>
-        <a href="{{ url_for('sites.manage_sites') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-blue-500/20 transition-all">
-            <i class="fas fa-plus-circle"></i> Conectar meu primeiro site
-        </a>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

@@ -2,7 +2,6 @@ from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
 from models import db, Blog, ContentIdea
 from services import content_service
-from services.scraper_service import extrair_texto_da_url # Ponto 3: Movido para services
 
 content_bp = Blueprint('content', __name__)
 
@@ -16,7 +15,8 @@ def ideas():
 @content_bp.route('/generate-ideas', methods=['POST'])
 @login_required
 def generate_ideas():
-    blog = Blog.query.filter_by(id=request.form.get('site_id'), user_id=current_user.id).first_or_404()
+    site_id = request.form.get('site_id')
+    blog = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     count = content_service.generate_ideas_logic(blog)
     flash(f'{count} ideias geradas para {blog.site_name}!', 'success')
     return redirect(url_for('content.ideas'))
@@ -34,9 +34,31 @@ def publish_idea(idea_id):
 def manual_post():
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
     if request.method == 'POST':
-        # Lógica de post manual simplificada
-        flash("Funcionalidade em manutenção para novos padrões.", "info")
+        # Captura exatamente o que o formulário envia
+        site_id = request.form.get('site_id')
+        title = request.form.get('title')
+        content = request.form.get('content')
+        action = request.form.get('action_type')
+        image_file = request.files.get('image_file')
+
+        success, message = content_service.process_manual_post(
+            current_user, site_id, title, content, action, image_file
+        )
+        flash(message, "success" if success else "danger")
+        return redirect(url_for('content.ideas'))
+    
     return render_template('manual_post.html', blogs=blogs)
+
+@content_bp.route('/spy-writer', methods=['GET', 'POST'])
+@login_required
+def spy_writer():
+    processed = None
+    if request.method == 'POST':
+        url = request.form.get('wp_url')
+        processed = content_service.process_spy_writer(url, getattr(current_user, 'is_demo', False))
+        if not processed:
+            flash("Não foi possível processar esta URL.", "warning")
+    return render_template('spy_writer.html', processed_content=processed)
 
 @content_bp.route('/post-report')
 @login_required
@@ -49,19 +71,10 @@ def post_report():
 @login_required
 def delete_idea(idea_id):
     if getattr(current_user, 'is_demo', False):
-        flash('Modo Demo: Remoção desabilitada.', 'warning')
-        return redirect(url_for('content.ideas'))
-    idea = ContentIdea.query.get_or_404(idea_id)
-    db.session.delete(idea)
-    db.session.commit()
+        flash('Modo Demo: Ação bloqueada.', 'warning')
+    else:
+        idea = ContentIdea.query.get_or_404(idea_id)
+        db.session.delete(idea)
+        db.session.commit()
+        flash('Ideia removida.', 'info')
     return redirect(url_for('content.ideas'))
-
-@content_bp.route('/spy-writer', methods=['GET', 'POST'])
-@login_required
-def spy_writer():
-    processed = None
-    if request.method == 'POST':
-        url = request.form.get('wp_url')
-        raw_text = extrair_texto_da_url(url)
-        processed = content_service.generate_text(f"Reescreva: {raw_text[:2000]}") if raw_text else None
-    return render_template('spy_writer.html', processed_content=processed)

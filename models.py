@@ -107,7 +107,7 @@ class Blog(db.Model):
     
     # Configurações de IA
     macro_themes = db.Column(db.Text, nullable=True) 
-    master_prompt = db.Column(db.Text, nullable=True)
+    master_prompt = db.Column(db.Text, nullable=True, default='Voce é um excelente escritor de post para Blogs.')
     
     # NOVOS CAMPOS PARA AUTOMAÇÃO E PREFERÊNCIAS
     post_status = db.Column(db.String(20), default='publish') 
@@ -127,6 +127,9 @@ class ContentIdea(db.Model):
     title = db.Column(db.String(250), nullable=False)
     is_posted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    full_content = db.Column(db.Text, nullable=True)  # Para posts manuais na fila
+    featured_image_id = db.Column(db.Integer, nullable=True) # ID da imagem já no WP
+    is_manual = db.Column(db.Boolean, default=False)
 
 class PostLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
