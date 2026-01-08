@@ -31,6 +31,7 @@ def force_db_reset():
             name='Visitante Demo',
             email='demo@wpautoblog.com',
             password=generate_password_hash('demo123', method='pbkdf2:sha256'),
+            is_demo=True,
             plan_id=vip.id # Demo vê tudo liberado
         )
         db.session.add_all([admin_master, demo_user])

@@ -4,7 +4,7 @@ from models import db, Blog, ContentSource, CapturedContent
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from utils.scrapers import extrair_texto_da_url
+from services.scrapers import extrair_texto_da_url
 
 load_dotenv()
 
