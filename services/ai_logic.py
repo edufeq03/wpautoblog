@@ -2,7 +2,7 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 from models import CapturedContent, ContentSource, db
-from utils.scrapers import extrair_texto_da_url
+from services.scraper_service import extrair_texto_da_url
 
 load_dotenv()
 def get_groq_client():

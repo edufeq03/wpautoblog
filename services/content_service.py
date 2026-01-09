@@ -21,8 +21,7 @@ def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def generate_ideas_logic(blog):
-    """Gera 5 ideias de posts altamente relevantes usando IA Groq."""
-    from models import db, ContentIdea
+    """Gera 10 ideias de posts altamente relevantes usando IA Groq."""
     groq_client = get_groq_client()
     
     # Prompt estruturado para evitar markdown e conversas da IA
@@ -34,10 +33,10 @@ def generate_ideas_logic(blog):
         "2. Retorne um título por linha.\n"
         "3. Não use números, hífens, asteriscos ou explicações.\n"
         "4. Não use Markdown.\n"
-        "5. Gere exatamente 5 títulos."
+        "5. Gere exatamente 10 títulos."
     )
     
-    prompt_usuario = f"Gere 5 ideias de títulos de posts para um blog chamado '{blog.site_name}'."
+    prompt_usuario = f"Gere 10 ideias de títulos de posts para um blog chamado '{blog.site_name}'."
     # Dica: Se o seu modelo Blog tiver um campo 'category' ou 'description', 
     # você pode adicionar aqui: f" sobre o nicho: {blog.category}"
 
@@ -76,7 +75,7 @@ def generate_ideas_logic(blog):
         return novas_ideias_count
 
     except Exception as e:
-        print(f"Erro ao gerar ideias com Groq: {e}")
+        print(f"Erro ao gerar ideias: {e}")
         db.session.rollback()
         return 0
 
@@ -192,35 +191,39 @@ def _send_to_wp(blog, titulo, conteudo, id_img):
 
 # --- RADAR LOGIC ---
 def sync_sources_logic(fontes, scraper_func):
-    """Varre as fontes e gera insights usando os nomes de campos do models.py."""
+    """Varre as fontes e gera insights usando os nomes exatos do models.py."""
     from models import db, CapturedContent
     groq_client = get_groq_client()
     contador = 0
     
     for fonte in fontes:
+        print(f"DEBUG: Tentando sincronizar {fonte.source_url}")
         texto_real = scraper_func(fonte.source_url)
+        
         if texto_real:
             try:
                 response = groq_client.chat.completions.create(
                     model=model_name,
                     messages=[
-                        {"role": "system", "content": "Você é um analista. Extraia 3 insights para posts baseados neste texto. Responda apenas o texto simples."},
+                        {"role": "system", "content": "Você é um analista. Extraia 3 insights para posts baseados neste texto. Responda apenas o texto simples, sem markdown."},
                         {"role": "user", "content": texto_real[:4000]}
                     ]
                 )
                 
-                # Ajustado para os nomes do seu models.py: content_summary e original_url
+                # NOMES DE CAMPOS CORRIGIDOS BASEADO NO SEU MODELS.PY:
+                # original_url e content_summary
                 nova_captura = CapturedContent(
                     source_id=fonte.id, 
                     site_id=fonte.blog_id, 
-                    original_url=fonte.source_url, 
+                    url=fonte.source_url, 
                     title=f"Insight: {fonte.source_url.split('/')[-1][:30]}", 
                     content_summary=response.choices[0].message.content
                 )
                 db.session.add(nova_captura)
                 contador += 1
+                print(f"DEBUG: Insight gerado para {fonte.source_url}")
             except Exception as e:
-                print(f"Erro no Radar: {e}")
+                print(f"Erro no processamento para {fonte.source_url}: {e}")
     
     db.session.commit()
     return contador
