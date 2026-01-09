@@ -1,4 +1,4 @@
-# app.py revisado
+# app.py revisado e corrigido
 from flask import Flask, render_template, redirect, url_for, request
 from models import db, login_manager, Plan, User
 from routes.auth import auth_bp
@@ -11,6 +11,7 @@ from routes.admin import admin_bp
 from flask_login import login_required, current_user
 from flask_apscheduler import APScheduler
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,7 +27,7 @@ if database_url and database_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Configuração do Agendador
+# Configuração do Agendador (Correção de instâncias e Timezone)
 class SchedulerConfig:
     SCHEDULER_API_ENABLED = True
     SCHEDULER_TIMEZONE = "America/Sao_Paulo"
@@ -39,14 +40,21 @@ db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
+# Inicializa o APScheduler
 scheduler = APScheduler()
 
-# Importamos o serviço apenas dentro da função para evitar importação circular no reset_db
+# Função que será executada pelo agendador
 def job_automation():
     with app.app_context():
         from services.schedule_service import check_and_post_all_sites
-        print(f"--- [SCHEDULER] Verificando sites às {os.popen('date').read().strip()} ---")
-        check_and_post_all_sites(app)
+        # Correção: Usando datetime nativo para não travar o terminal no Windows
+        agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        print(f"\n--- [SCHEDULER] Iniciando Verificação: {agora} ---")
+        try:
+            check_and_post_all_sites(app)
+            print(f"--- [SCHEDULER] Verificação Concluída com Sucesso ---")
+        except Exception as e:
+            print(f"--- [SCHEDULER] Erro Crítico na Automação: {e} ---")
 
 # --- BLUEPRINTS ---
 app.register_blueprint(auth_bp)
@@ -69,11 +77,19 @@ def index():
     return render_template('landing.html', planos=planos_db, t=t)
 
 # --- INICIALIZAÇÃO SEGURA DO SCHEDULER ---
-if __name__ == '__main__':
-    # Só inicia o scheduler se não estiver no processo de reloader do Flask
-    if not os.environ.get("WERKZEUG_RUN_MAIN"):
-        scheduler.add_job(id='do_automation', func=job_automation, trigger='interval', minutes=5, max_instances=1)
-        scheduler.init_app(app)
-        scheduler.start()
+# Fora do main para garantir que o Flask o carregue, 
+# mas usamos um try/except para evitar erros em re-execuções
+if not scheduler.running:
+    scheduler.init_app(app)
+    scheduler.start()
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Adiciona o Job para rodar a cada 60 segundos
+    try:
+        scheduler.add_job(id='job_automation', func=job_automation, trigger='interval', seconds=60)
+        print(">>> [SISTEMA] Automação agendada com sucesso (60s).")
+    except Exception as e:
+        print(f">>> [SISTEMA] Aviso: Job já existe ou falhou ao iniciar: {e}")
+
+if __name__ == '__main__':
+    # use_reloader=False é essencial para o Windows não abrir o scheduler 2 vezes!
+    app.run(debug=True, port=5000, use_reloader=False)

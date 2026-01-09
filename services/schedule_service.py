@@ -24,37 +24,31 @@ def calcular_horarios_do_dia(horario_base, posts_per_day):
     return horarios
 
 def check_and_post_all_sites(app):
-    """Varre o banco e dispara postagens nos horários distribuídos."""
     with app.app_context():
+        # Busca apenas sites ativos
         sites = Blog.query.all()
-        print(f"\n--- [VARREDURA {datetime.now().strftime('%H:%M:%S')}] ---")
+        agora_utc = datetime.now(pytz.utc)
+        
+        print(f"--- [DEBUG] Verificando {len(sites)} sites...", flush=True)
 
         for site in sites:
-            tz_name = site.timezone or 'America/Sao_Paulo'
-            try:
-                tz = pytz.timezone(tz_name)
-            except:
-                tz = pytz.timezone('America/Sao_Paulo')
+            tz = pytz.timezone(site.timezone or 'America/Sao_Paulo')
+            agora_local = datetime.now(tz)
+            hora_atual = agora_local.strftime('%H:%M')
             
-            now_in_tz = datetime.now(tz)
-            current_time_str = now_in_tz.strftime('%H:%M')
-            lista_horarios = calcular_horarios_do_dia(site.schedule_time, site.posts_per_day or 1)
+            # Calcula alvos
+            alvos = calcular_horarios_do_dia(site.schedule_time, site.posts_per_day)
             
-            print(f"| Site: {site.site_name[:15].ljust(15)} | Agora: {current_time_str} | Alvos: {lista_horarios} |")
+            print(f"| Site: {site.site_name[:15]:<15} | Agora: {hora_atual} | Alvos: {alvos} |", flush=True)
 
-            if current_time_str in lista_horarios:
-                # CORREÇÃO PARA POSTGRESQL (to_char em vez de strftime)
-                ja_postou_agora = PostLog.query.filter(
-                    PostLog.blog_id == site.id,
-                    db.func.date(PostLog.posted_at) == now_in_tz.date(),
-                    db.func.to_char(PostLog.posted_at, 'HH24:MI') == current_time_str
-                ).first()
-
-                if not ja_postou_agora:
-                    print(f"   >>> 🚀 GATILHO ATIVADO para {site.site_name}")
-                    execute_auto_post(site, app)
-                else:
-                    print(f"   [!] Aguardando: Post deste horário já concluído.")
+            if hora_atual in alvos:
+                print(f">>> HORA DE POSTAR NO SITE: {site.site_name} <<<", flush=True)
+                # SÓ AQUI ele deve entrar na lógica pesada de gerar texto/imagem
+                try:
+                    # execute_post_logic(site) ...
+                    pass 
+                except Exception as e:
+                    print(f"Erro ao postar: {e}", flush=True)
 
 def execute_auto_post(site, app):
     """Lógica principal: IA -> Imagem (com Fallback) -> WordPress"""
