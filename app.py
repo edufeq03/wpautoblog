@@ -30,6 +30,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 class SchedulerConfig:
     SCHEDULER_API_ENABLED = True
     SCHEDULER_TIMEZONE = "America/Sao_Paulo"
+    SCHEDULER_JOB_DEFAULTS = {"coalesce": True, "max_instances": 1}
 
 app.config.from_object(SchedulerConfig())
 
@@ -71,7 +72,7 @@ def index():
 if __name__ == '__main__':
     # Só inicia o scheduler se não estiver no processo de reloader do Flask
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
-        scheduler.add_job(id='do_automation', func=job_automation, trigger='interval', minutes=1, max_instances=3)
+        scheduler.add_job(id='do_automation', func=job_automation, trigger='interval', minutes=5, max_instances=1)
         scheduler.init_app(app)
         scheduler.start()
     
