@@ -44,7 +44,7 @@ def pricing():
     """Rota de preços que envia a lista de planos para o template."""
     # Busca todos os planos cadastrados no banco de dados
     # Isso envia uma LISTA de objetos, resolvendo o erro do .items()
-    planos = Plan.query.order_by(Plan.price.asc()).all()
+    planos = Plan.query.order_by(Plan.id.asc()).all()
     
     return render_template('pricing.html', 
                            user=current_user, 
