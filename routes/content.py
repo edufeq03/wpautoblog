@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 from flask_login import login_required, current_user
-from models import db, Blog, ContentIdea
+from models import db, Blog, ContentIdea, PostLog
 from services import content_service
 
 content_bp = Blueprint('content', __name__)
@@ -67,7 +67,7 @@ def spy_writer():
 @login_required
 def post_report():
     site_id = request.args.get('site_id', type=int)
-    logs = content_service.get_post_reports(current_user.id, site_id)
+    logs = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id).order_by(PostLog.posted_at.desc()).all()
     return render_template('post_report.html', logs=logs)
 
 @content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
