@@ -20,6 +20,25 @@ except ImportError:
 def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
+def generate_ideas_logic(blog):
+    """Gera sugestões de pautas baseadas no nicho do blog."""
+    from models import db, ContentIdea
+    import random
+    
+    # Exemplo de lógica simples de geração
+    temas = ["Tendências de 2026 em", "Como melhorar seu", "O guia definitivo de", "Por que você precisa de"]
+    nicho = blog.site_name # Ou algum campo de nicho que você tenha
+    
+    novas_ideias = 0
+    for _ in range(3): # Gera 3 ideias por vez
+        titulo = f"{random.choice(temas)} {nicho}"
+        nova = ContentIdea(blog_id=blog.id, title=titulo, is_posted=False)
+        db.session.add(nova)
+        novas_ideias += 1
+    
+    db.session.commit()
+    return novas_ideias
+
 # --- BUSCAS E RELATÓRIOS ---
 def get_filtered_ideas(user_id, site_id=None):
     query = ContentIdea.query.join(Blog).filter(Blog.user_id == user_id, ContentIdea.is_posted == False)
