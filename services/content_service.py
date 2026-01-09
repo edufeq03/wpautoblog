@@ -4,7 +4,12 @@ from models import db, ContentIdea, PostLog, Blog, CapturedContent
 from services.ai_service import generate_text
 from services.scraper_service import extrair_texto_da_url
 import os
+from dotenv import load_dotenv
 from groq import Groq
+
+load_dotenv()
+model_name = os.environ.get("GROQ_MODEL_QUICK")
+
 # Tentativa de importar serviços de imagem (proteção contra ausência do arquivo)
 try:
     from services.image_service import processar_imagem_featured, upload_manual_image
@@ -156,10 +161,8 @@ def analyze_spy_link(url, is_demo):
     }
 
 def sync_sources_logic(fontes, scraper_func):
-    """
-    Monitora múltiplas fontes e gera insights.
-    """
-    # Agora o get_groq_client() vai funcionar pois definimos acima
+    """Varre as fontes, extrai texto e gera insights com IA."""
+    from models import db, CapturedContent # Import local para evitar erros de escopo
     groq_client = get_groq_client()
     contador = 0
     
@@ -168,27 +171,25 @@ def sync_sources_logic(fontes, scraper_func):
         if texto_real:
             try:
                 response = groq_client.chat.completions.create(
-                    model="llama-3.1-70b-specdec",
+                    model=model_name,
                     messages=[
-                        {"role": "system", "content": "Você é um analista de tendências. Extraia os 3 pontos MAIS IMPORTANTES deste conteúdo para um novo artigo."},
+                        {"role": "system", "content": "Você é um analista de tendências. Extraia os 3 pontos MAIS IMPORTANTES deste conteúdo para um novo artigo de blog. Seja conciso."},
                         {"role": "user", "content": texto_real[:4000]}
                     ]
                 )
                 
-                # Import local para evitar circular imports
-                from models import CapturedContent, db
-                
+                # Criamos o registro do insight
                 nova_captura = CapturedContent(
                     source_id=fonte.id, 
                     site_id=fonte.blog_id, 
                     url=fonte.source_url, 
-                    title=f"Insight: {fonte.source_url[:30]}...", 
-                    summary=response.choices[0].message.content
+                    title=f"Insight: {fonte.source_url.split('//')[-1][:30]}", 
+                    content_summary=response.choices[0].message.content
                 )
                 db.session.add(nova_captura)
                 contador += 1
             except Exception as e:
-                print(f"Erro no processamento Groq: {e}")
+                print(f"Erro no Radar para {fonte.source_url}: {e}")
     
     db.session.commit()
     return contador

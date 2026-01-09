@@ -69,7 +69,9 @@ def delete_source(source_id):
 @radar_bp.route('/approve-insight/<int:insight_id>')
 @login_required
 def approve_insight(insight_id):
-    # Transforma o insight em uma ideia de post
-    content_service.convert_radar_insight_to_idea(insight_id)
-    flash("Insight transformado em ideia de post! Verifique sua lista de ideias.", "success")
-    return redirect(url_for('content.ideas'))
+    """Rota que transforma um insight em uma ideia de post real."""
+    if content_service.convert_radar_insight_to_idea(insight_id):
+        flash("Insight aprovado! Ele agora aparece na sua lista de Ideias.", "success")
+    else:
+        flash("Erro ao processar insight.", "danger")
+    return redirect(url_for('radar.radar'))

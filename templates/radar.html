@@ -2,39 +2,41 @@
 {% block title %}Radar de Fontes - WP AutoBlog{% endblock %}
 
 {% block content %}
-<div class="p-6 max-w-6xl mx-auto">
-    <div class="mb-8 flex justify-between items-end">
+<div class="p-6 max-w-7xl mx-auto">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
             <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
                 <i class="fas fa-satellite-dish text-purple-600"></i> Radar de Fontes
             </h1>
-            <p class="text-sm text-slate-500">Monitorize concorrentes e transforme tendências em ideias de conteúdo.</p>
+            <p class="text-sm text-slate-500">Monitorize concorrentes e transforme tendências em ideias de posts com IA.</p>
         </div>
-        <a href="{{ url_for('radar.sync_radar') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-2xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2">
-            <i class="fas fa-sync-alt text-xs"></i> Sincronizar Agora
+        <a href="{{ url_for('radar.sync_radar') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3.5 rounded-2xl font-black transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2">
+            <i class="fas fa-sync-alt"></i> Sincronizar Agora
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <div class="lg:col-span-1 space-y-6">
+        <div class="lg:col-span-4 space-y-6">
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Adicionar Nova Fonte</h2>
                 <form action="{{ url_for('radar.add_source') }}" method="POST" class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1">URL do Blog ou YouTube</label>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">URL do Blog ou Canal</label>
                         <input type="url" name="url" required placeholder="https://..." 
-                            class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none text-sm transition-all">
+                            class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm transition-all">
                     </div>
+
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Vincular ao Site</label>
-                        <select name="site_id" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 text-sm appearance-none cursor-pointer">
-                            {% for site in current_user.sites %}
-                                <option value="{{ site.id }}">{{ site.site_name }}</option>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Site de Destino</label>
+                        <select name="site_id" required class="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm transition-all">
+                            {% for blog in current_user.sites %}
+                                <option value="{{ blog.id }}">{{ blog.site_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-2xl font-bold transition-all">
+
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-black text-white py-3 rounded-xl font-bold transition-all">
                         Salvar Fonte
                     </button>
                 </form>
@@ -42,83 +44,74 @@
 
             <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-100 bg-slate-50/50">
-                    <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fontes Ativas</h2>
+                    <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Minhas Fontes</h2>
                 </div>
                 <div class="divide-y divide-slate-100">
                     {% for fonte in fontes %}
-                    <div class="p-4 flex items-center justify-between">
+                    <div class="p-4 flex items-center justify-between group">
                         <div class="truncate pr-4">
-                            <p class="text-xs font-bold text-slate-700 truncate">{{ fonte.source_url }}</p>
-                            <p class="text-[10px] text-slate-400">{{ fonte.blog.site_name }}</p>
+                            <p class="text-sm font-bold text-slate-700 truncate">{{ fonte.source_url }}</p>
+                            <span class="text-[10px] text-slate-400">{{ fonte.source_type|upper }} • {{ fonte.blog.site_name }}</span>
                         </div>
                         <form action="{{ url_for('radar.delete_source', source_id=fonte.id) }}" method="POST">
-                            <button type="submit" class="text-slate-300 hover:text-red-500 transition-colors">
+                            <button type="submit" class="text-slate-300 hover:text-red-500 transition-colors p-2">
                                 <i class="fas fa-trash-alt text-xs"></i>
                             </button>
                         </form>
                     </div>
                     {% else %}
-                    <div class="p-8 text-center">
-                        <p class="text-xs text-slate-400">Nenhuma fonte cadastrada.</p>
-                    </div>
+                    <div class="p-8 text-center text-slate-400 text-xs italic">Nenhuma fonte cadastrada.</div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-2 space-y-6">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">Últimos Insights do Radar</h2>
-            
-            {% set insights = [] %}
-            {# Aqui assumimos que você passou 'insights' no render_template, ou busca via fontes #}
-            {# Se estiver usando a tabela CapturedContent: #}
-            
-            {% for fonte in fontes %}
-                {% for insight in fonte.captures %} {# Supondo backref 'captures' no models.py #}
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 hover:border-purple-200 transition-all group">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="bg-purple-50 text-purple-600 text-[10px] font-black px-3 py-1 rounded-full uppercase">
-                            Insight de {{ fonte.source_type }}
-                        </span>
-                        <span class="text-[10px] text-slate-400 font-medium">{{ insight.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
-                    </div>
-                    
-                    <h3 class="text-lg font-bold text-slate-800 mb-3 group-hover:text-purple-700 transition-colors">
-                        {{ insight.title if insight.title != "Insight Automático" else "Oportunidade de Conteúdo Detectada" }}
-                    </h3>
-                    
-                    <div class="text-sm text-slate-600 leading-relaxed mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        {{ insight.summary | replace('\n', '<br>') | safe }}
-                    </div>
+        <div class="lg:col-span-8">
+            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i class="fas fa-bolt text-yellow-500"></i> Últimos Insights Gerados
+            </h2>
 
-                    <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-                        <a href="{{ insight.url }}" target="_blank" class="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                            <i class="fas fa-external-link-alt text-[10px]"></i> Ver Fonte Original
-                        </a>
-                        <a href="{{ url_for('radar.approve_insight', insight_id=insight.id) }}" 
-                           class="bg-slate-800 hover:bg-purple-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
-                            <i class="fas fa-lightbulb"></i> Aproveitar como Ideia
-                        </a>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% set tem_insights = false %}
+                {% for fonte in fontes %}
+                    {% for insight in fonte.captures %}
+                        {% set tem_insights = true %}
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="text-[9px] font-black bg-purple-50 text-purple-600 px-2 py-1 rounded-lg uppercase tracking-tighter">
+                                    {{ fonte.source_type }}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-medium">{{ insight.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                            </div>
+                            
+                            <h3 class="font-bold text-slate-800 text-sm mb-2 leading-snug">{{ insight.title }}</h3>
+                            <p class="text-xs text-slate-500 mb-4 flex-grow leading-relaxed">{{ insight.summary[:250] }}...</p>
+                            
+                            <div class="pt-4 border-t border-slate-50 flex items-center justify-between">
+                                <a href="{{ insight.url }}" target="_blank" class="text-[10px] font-bold text-blue-500 hover:text-blue-700">
+                                    <i class="fas fa-external-link-alt mr-1"></i> Ver Original
+                                </a>
+                                <a href="{{ url_for('radar.approve_insight', insight_id=insight.id) }}" 
+                                   class="bg-purple-100 hover:bg-purple-600 text-purple-700 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2">
+                                    <i class="fas fa-plus-circle"></i> Aproveitar Ideia
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
 
-            {% if not fontes or (fontes and fontes[0].captures|length == 0) %}
-            <div class="bg-white p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
-                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-microchip text-slate-300 text-2xl"></i>
+                {% if not tem_insights %}
+                <div class="col-span-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                        <i class="fas fa-robot text-slate-300 text-2xl"></i>
+                    </div>
+                    <h3 class="text-slate-800 font-bold">Nenhum insight ainda</h3>
+                    <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2">Clique em <b>Sincronizar Agora</b> para que a nossa IA analise as suas fontes e gere sugestões.</p>
                 </div>
-                <h3 class="text-slate-800 font-bold">Nenhum insight disponível</h3>
-                <p class="text-sm text-slate-500 max-w-xs mx-auto mt-2">Clique em "Sincronizar Agora" para que a IA analise as suas fontes de conteúdo.</p>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
+
     </div>
 </div>
-
-<style>
-    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-</style>
 {% endblock %}
