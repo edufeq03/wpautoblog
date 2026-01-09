@@ -173,7 +173,7 @@ def sync_sources_logic(fontes, scraper_func):
                 response = groq_client.chat.completions.create(
                     model=model_name,
                     messages=[
-                        {"role": "system", "content": "Você é um analista de tendências. Extraia os 3 pontos MAIS IMPORTANTES deste conteúdo para um novo artigo de blog. Seja conciso."},
+                        {"role": "system", "content": "Você é um analista de tendências. Extraia os 3 pontos MAIS IMPORTANTES deste conteúdo para um novo artigo de blog. Seja conciso. Responda no formato de texto simples, sem formatação ou markdown"},
                         {"role": "user", "content": texto_real[:4000]}
                     ]
                 )

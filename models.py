@@ -161,3 +161,4 @@ class CapturedContent(db.Model):
     content_summary = db.Column(db.Text)
     is_processed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    source = db.relationship('ContentSource', backref=db.backref('captures', lazy=True))
