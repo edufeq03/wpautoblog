@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 from groq import Groq
 
 load_dotenv()
-model_name = os.environ.get("GROQ_MODEL_QUICK")
+model_name = os.environ.get("GROQ_MODEL_QUICK", "llama-3.3-70b-versatile")
 
+# Proteção para serviços de imagem
 try:
     from services.image_service import processar_imagem_featured, upload_manual_image
 except ImportError:
@@ -20,66 +21,8 @@ except ImportError:
 def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def generate_ideas_logic(blog):
-    """Gera 10 ideias de posts altamente relevantes usando IA Groq."""
-    groq_client = get_groq_client()
-    
-    # Prompt estruturado para evitar markdown e conversas da IA
-    prompt_sistema = (
-        "Você é um estrategista de conteúdo SEO experiente. "
-        "Sua tarefa é gerar títulos de posts para blogs. "
-        "REGRAS CRÍTICAS:\n"
-        "1. Retorne APENAS os títulos.\n"
-        "2. Retorne um título por linha.\n"
-        "3. Não use números, hífens, asteriscos ou explicações.\n"
-        "4. Não use Markdown.\n"
-        "5. Gere exatamente 10 títulos."
-    )
-    
-    prompt_usuario = f"Gere 10 ideias de títulos de posts para um blog chamado '{blog.site_name}'."
-    # Dica: Se o seu modelo Blog tiver um campo 'category' ou 'description', 
-    # você pode adicionar aqui: f" sobre o nicho: {blog.category}"
-
-    try:
-        response = groq_client.chat.completions.create(
-            model=model_name, # Usa a variável que já definimos no topo do seu arquivo
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": prompt_usuario}
-            ],
-            temperature=0.7, # Criatividade moderada
-            max_tokens=200
-        )
-        
-        # Extrai o texto e limpa espaços extras
-        conteudo_bruto = response.choices[0].message.content.strip()
-        
-        # Divide por linhas e remove linhas vazias ou resíduos de formatação
-        linhas = [linha.strip() for linha in conteudo_bruto.split('\n') if len(linha.strip()) > 5]
-        
-        novas_ideias_count = 0
-        for titulo in linhas:
-            # Limpeza extra para remover possíveis números que a IA insista em colocar (ex: "1. Titulo")
-            titulo_limpo = titulo.lstrip('0123456789. -')
-            
-            if titulo_limpo:
-                nova_ideia = ContentIdea(
-                    blog_id=blog.id,
-                    title=titulo_limpo,
-                    is_posted=False
-                )
-                db.session.add(nova_ideia)
-                novas_ideias_count += 1
-        
-        db.session.commit()
-        return novas_ideias_count
-
-    except Exception as e:
-        print(f"Erro ao gerar ideias: {e}")
-        db.session.rollback()
-        return 0
-
 # --- BUSCAS E RELATÓRIOS ---
+
 def get_filtered_ideas(user_id, site_id=None):
     query = ContentIdea.query.join(Blog).filter(Blog.user_id == user_id, ContentIdea.is_posted == False)
     if site_id:
@@ -87,131 +30,68 @@ def get_filtered_ideas(user_id, site_id=None):
     return query.order_by(ContentIdea.created_at.desc()).all()
 
 def get_post_reports(user_id, site_id=None):
-    # Esta função alimenta o seu Post Report
     query = PostLog.query.join(Blog).filter(Blog.user_id == user_id)
     if site_id:
         query = query.filter(PostLog.blog_id == site_id)
     return query.order_by(PostLog.posted_at.desc()).all()
 
-# --- LÓGICA DE POSTAGEM MANUAL ---
-def process_manual_post(user, site_id, title, content, action, image_file=None):
-    if not site_id:
-        return False, "Nenhum site selecionado."
+# --- GERAÇÃO DE IDEIAS (BRAINSTORM) ---
 
-    blog = Blog.query.filter_by(id=site_id, user_id=user.id).first_or_404()
+def generate_ideas_logic(blog):
+    """Gera 5 ideias de títulos SEO baseados no nome/nicho do blog."""
+    groq_client = get_groq_client()
     
-    wp_image_id = None
-    if image_file and upload_manual_image:
-        auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
-        wp_image_id = upload_manual_image(image_file, blog.wp_url, auth)
+    prompt_sistema = (
+        "Você é um estrategista de conteúdo SEO. Retorne APENAS os títulos, "
+        "um por linha, sem números, sem aspas e sem markdown. Gere 5 títulos."
+    )
+    prompt_usuario = f"Gere 5 títulos de posts para o blog: {blog.site_name}"
 
-    if not wp_image_id and user.plan_details and user.plan_details.has_images:
-        auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
-        wp_image_id = processar_imagem_featured(title, blog.wp_url, auth)
-
-    if action == 'now':
-        response = _send_to_wp(blog, title, content, wp_image_id)
-        if response and response.status_code in [200, 201]:
-            data = response.json()
-            # SALVAMENTO NO LOG (Post Report)
-            log = PostLog(
-                blog_id=blog.id, 
-                title=title, 
-                content=content[:500],
-                status="Publicado",
-                wp_post_id=data.get('id'), 
-                post_url=data.get('link')
-            )
-            db.session.add(log)
-            db.session.commit()
-            return True, "Publicado com sucesso no WordPress!"
-        return False, "Erro ao conectar com a API do WordPress."
-    else:
-        nova_ideia = ContentIdea(
-            title=title,
-            blog_id=blog.id,
-            full_content=content,
-            featured_image_id=wp_image_id,
-            is_manual=True,
-            is_posted=False
-        )
-        db.session.add(nova_ideia)
-        db.session.commit()
-        return True, "Post manual salvo na fila de postagem!"
-
-# --- FLUXO DE PUBLICAÇÃO (AUTOMÁTICO / FILA) ---
-def publish_content_flow(idea, user):
-    """Executa a postagem de uma ideia da fila e gera o LOG."""
-    if getattr(user, 'is_demo', False):
-        return True, "Modo Demo: Simulação concluída."
-
-    texto = idea.full_content if getattr(idea, 'is_manual', False) else generate_text(f"Escreva um artigo de blog sobre: {idea.title}")
-    id_img = idea.featured_image_id if getattr(idea, 'is_manual', False) else None
-
-    if not id_img and not getattr(idea, 'is_manual', False):
-        if user.plan_details and user.plan_details.has_images:
-            auth = HTTPBasicAuth(idea.blog.wp_user, idea.blog.wp_app_password)
-            id_img = processar_imagem_featured(idea.title, idea.blog.wp_url, auth)
-
-    response = _send_to_wp(idea.blog, idea.title, texto, id_img)
-    
-    if response and response.status_code in [200, 201]:
-        data = response.json()
-        
-        # 1. Marcar ideia como postada
-        idea.is_posted = True
-        
-        # 2. CRIAR LOG PARA O POST REPORT (Isso faltava no fluxo automático)
-        novo_log = PostLog(
-            blog_id=idea.blog_id,
-            title=idea.title,
-            content=texto[:500],
-            status="Publicado",
-            wp_post_id=data.get('id'),
-            post_url=data.get('link')
-        )
-        db.session.add(novo_log)
-        db.session.commit()
-        return True, "Publicado!"
-    
-    return False, "Erro na API do WordPress."
-
-def _send_to_wp(blog, titulo, conteudo, id_img):
-    payload = {'title': titulo, 'content': conteudo, 'status': blog.post_status or 'publish'}
-    if id_img: payload['featured_media'] = id_img
-    
     try:
-        return requests.post(
-            f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
-            auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
-            json=payload, timeout=30
+        response = groq_client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            temperature=0.7
         )
-    except:
-        return None
+        
+        conteudo = response.choices[0].message.content.strip()
+        linhas = [l.strip() for l in conteudo.split('\n') if len(l.strip()) > 5]
+        
+        count = 0
+        for titulo in linhas:
+            titulo_limpo = titulo.lstrip('0123456789. -')
+            nova_ideia = ContentIdea(blog_id=blog.id, title=titulo_limpo, is_posted=False)
+            db.session.add(nova_ideia)
+            count += 1
+        
+        db.session.commit()
+        return count
+    except Exception as e:
+        print(f"Erro ao gerar ideias: {e}")
+        return 0
 
-# --- RADAR LOGIC ---
+# --- FLUXO DO RADAR (INSIGHTS) ---
+
 def sync_sources_logic(fontes, scraper_func):
-    """Varre as fontes e gera insights usando os nomes exatos do models.py."""
-    from models import db, CapturedContent
+    """Extrai conteúdo das fontes e gera insights analíticos."""
     groq_client = get_groq_client()
     contador = 0
     
     for fonte in fontes:
-        print(f"DEBUG: Tentando sincronizar {fonte.source_url}")
         texto_real = scraper_func(fonte.source_url)
-        
         if texto_real:
             try:
                 response = groq_client.chat.completions.create(
                     model=model_name,
                     messages=[
-                        {"role": "system", "content": "Você é um analista. Extraia 3 insights para posts baseados neste texto. Responda apenas o texto simples, sem markdown."},
+                        {"role": "system", "content": "Analise o texto e extraia os 3 pontos mais importantes para um post. Responda em texto simples."},
                         {"role": "user", "content": texto_real[:4000]}
                     ]
                 )
                 
-                # NOMES DE CAMPOS CORRIGIDOS BASEADO NO SEU MODELS.PY:
-                # original_url e content_summary
                 nova_captura = CapturedContent(
                     source_id=fonte.id, 
                     site_id=fonte.blog_id, 
@@ -221,20 +101,104 @@ def sync_sources_logic(fontes, scraper_func):
                 )
                 db.session.add(nova_captura)
                 contador += 1
-                print(f"DEBUG: Insight gerado para {fonte.source_url}")
             except Exception as e:
-                print(f"Erro no processamento para {fonte.source_url}: {e}")
+                print(f"Erro no Radar para {fonte.source_url}: {e}")
     
     db.session.commit()
     return contador
 
 def convert_radar_insight_to_idea(insight_id):
+    """Ponte: Transforma Insight em Título SEO + Contexto para a Fila."""
     insight = CapturedContent.query.get_or_404(insight_id)
-    nova_ideia = ContentIdea(
-        title=insight.title,
-        blog_id=insight.site_id,
-        is_posted=False
+    groq_client = get_groq_client()
+
+    prompt = (
+        f"Transforme este resumo em um título de post atraente e SEO: '{insight.content_summary}'. "
+        "Retorne apenas o título, sem aspas."
     )
-    db.session.add(nova_ideia)
-    db.session.commit()
-    return True
+
+    try:
+        res = groq_client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        titulo_gerado = res.choices[0].message.content.strip().replace('"', '')
+
+        nova_ideia = ContentIdea(
+            title=titulo_gerado,
+            blog_id=insight.site_id,
+            context_insight=insight.content_summary, # Salva o resumo para guiar o post final
+            is_posted=False
+        )
+        db.session.add(nova_ideia)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Erro na conversão: {e}")
+        return False
+
+# --- PUBLICAÇÃO FINAL ---
+
+def publish_content_flow(idea, user):
+    """Gera o post final usando Título + Contexto (se houver) e publica no WP."""
+    if getattr(user, 'is_demo', False):
+        return True, "Modo Demo ativo."
+
+    # Se a ideia veio do Radar, usamos o contexto capturado para um post fiel
+    if idea.context_insight:
+        prompt_final = (
+            f"Escreva um artigo de blog completo com o título '{idea.title}'. "
+            f"Baseie o conteúdo nestes fatos: {idea.context_insight}"
+        )
+    else:
+        prompt_final = f"Escreva um artigo de blog completo sobre: {idea.title}"
+
+    conteudo_post = generate_text(prompt_final)
+    
+    # Lógica de Imagem
+    wp_image_id = idea.featured_image_id
+    if not wp_image_id and processar_imagem_featured:
+        auth = HTTPBasicAuth(idea.blog.wp_user, idea.blog.wp_app_password)
+        wp_image_id = processar_imagem_featured(idea.title, idea.blog.wp_url, auth)
+
+    # Envio ao WordPress
+    response = _send_to_wp(idea.blog, idea.title, conteudo_post, wp_image_id)
+    
+    if response and response.status_code in [200, 201]:
+        data = response.json()
+        idea.is_posted = True
+        
+        # Salva no Post Report
+        log = PostLog(
+            blog_id=idea.blog_id,
+            title=idea.title,
+            content=conteudo_post[:500],
+            status="Publicado",
+            wp_post_id=data.get('id'),
+            post_url=data.get('link')
+        )
+        db.session.add(log)
+        db.session.commit()
+        return True, "Post publicado com sucesso!"
+    
+    return False, "Falha na comunicação com o WordPress."
+
+def _send_to_wp(blog, titulo, conteudo, id_img):
+    payload = {
+        'title': titulo, 
+        'content': conteudo, 
+        'status': blog.post_status or 'publish'
+    }
+    if id_img:
+        payload['featured_media'] = id_img
+    
+    try:
+        return requests.post(
+            f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
+            auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
+            json=payload, 
+            timeout=30
+        )
+    except:
+        return None

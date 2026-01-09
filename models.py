@@ -118,18 +118,22 @@ class Blog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relacionamentos
-    ideas = db.relationship('ContentIdea', backref='blog', lazy=True, cascade="all, delete-orphan")
     logs = db.relationship('PostLog', backref='blog', lazy=True, cascade="all, delete-orphan")
 
 class ContentIdea(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False)
-    title = db.Column(db.String(250), nullable=False)
+    title = db.Column(db.String(500), nullable=False)
+    context_insight = db.Column(db.Text, nullable=True) 
+    full_content = db.Column(db.Text, nullable=True)
+    featured_image_id = db.Column(db.Integer, nullable=True)
+    is_manual = db.Column(db.Boolean, default=False)
     is_posted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    full_content = db.Column(db.Text, nullable=True)  # Para posts manuais na fila
-    featured_image_id = db.Column(db.Integer, nullable=True) # ID da imagem já no WP
-    is_manual = db.Column(db.Boolean, default=False)
+    
+    # RELAÇÃO CORRIGIDA:
+    # Usamos backref='ideas' aqui e MAIS EM LUGAR NENHUM (remova do Blog se houver algo parecido)
+    blog = db.relationship('Blog', backref=db.backref('ideas', lazy=True))
 
 class PostLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -162,3 +166,4 @@ class CapturedContent(db.Model):
     is_processed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     source = db.relationship('ContentSource', backref=db.backref('captures', lazy=True))
+    

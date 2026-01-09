@@ -3,18 +3,26 @@ from flask_login import login_required, current_user
 from models import db, Blog, ContentSource
 from services import content_service
 from services.scraper_service import extrair_texto_da_url
+from sqlalchemy.orm import joinedload # Adicione este import no topo
 
 radar_bp = Blueprint('radar', __name__)
 
 @radar_bp.route('/radar')
 @login_required
 def radar():
-    query = ContentSource.query.join(Blog).filter(Blog.user_id == current_user.id)
+    # Usamos joinedload para trazer os insights (captures) de uma vez só
+    query = ContentSource.query.options(joinedload(ContentSource.captures)).join(Blog).filter(Blog.user_id == current_user.id)
+    
     site_id = request.args.get('site_id', type=int)
     if site_id:
         query = query.filter(ContentSource.blog_id == site_id)
         
     fontes = query.order_by(ContentSource.created_at.desc()).all()
+    
+    # DEBUG: Remova isso após testar. Ajuda a ver no terminal se o dado existe.
+    for f in fontes:
+        print(f"Fonte: {f.source_url} | Insights encontrados: {len(f.captures)}")
+        
     return render_template('radar.html', fontes=fontes)
 
 @radar_bp.route('/add-source', methods=['POST'])
