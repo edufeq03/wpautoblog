@@ -21,23 +21,64 @@ def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def generate_ideas_logic(blog):
-    """Gera sugestões de pautas baseadas no nicho do blog."""
+    """Gera 5 ideias de posts altamente relevantes usando IA Groq."""
     from models import db, ContentIdea
-    import random
+    groq_client = get_groq_client()
     
-    # Exemplo de lógica simples de geração
-    temas = ["Tendências de 2026 em", "Como melhorar seu", "O guia definitivo de", "Por que você precisa de"]
-    nicho = blog.site_name # Ou algum campo de nicho que você tenha
+    # Prompt estruturado para evitar markdown e conversas da IA
+    prompt_sistema = (
+        "Você é um estrategista de conteúdo SEO experiente. "
+        "Sua tarefa é gerar títulos de posts para blogs. "
+        "REGRAS CRÍTICAS:\n"
+        "1. Retorne APENAS os títulos.\n"
+        "2. Retorne um título por linha.\n"
+        "3. Não use números, hífens, asteriscos ou explicações.\n"
+        "4. Não use Markdown.\n"
+        "5. Gere exatamente 5 títulos."
+    )
     
-    novas_ideias = 0
-    for _ in range(3): # Gera 3 ideias por vez
-        titulo = f"{random.choice(temas)} {nicho}"
-        nova = ContentIdea(blog_id=blog.id, title=titulo, is_posted=False)
-        db.session.add(nova)
-        novas_ideias += 1
-    
-    db.session.commit()
-    return novas_ideias
+    prompt_usuario = f"Gere 5 ideias de títulos de posts para um blog chamado '{blog.site_name}'."
+    # Dica: Se o seu modelo Blog tiver um campo 'category' ou 'description', 
+    # você pode adicionar aqui: f" sobre o nicho: {blog.category}"
+
+    try:
+        response = groq_client.chat.completions.create(
+            model=model_name, # Usa a variável que já definimos no topo do seu arquivo
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            temperature=0.7, # Criatividade moderada
+            max_tokens=200
+        )
+        
+        # Extrai o texto e limpa espaços extras
+        conteudo_bruto = response.choices[0].message.content.strip()
+        
+        # Divide por linhas e remove linhas vazias ou resíduos de formatação
+        linhas = [linha.strip() for linha in conteudo_bruto.split('\n') if len(linha.strip()) > 5]
+        
+        novas_ideias_count = 0
+        for titulo in linhas:
+            # Limpeza extra para remover possíveis números que a IA insista em colocar (ex: "1. Titulo")
+            titulo_limpo = titulo.lstrip('0123456789. -')
+            
+            if titulo_limpo:
+                nova_ideia = ContentIdea(
+                    blog_id=blog.id,
+                    title=titulo_limpo,
+                    is_posted=False
+                )
+                db.session.add(nova_ideia)
+                novas_ideias_count += 1
+        
+        db.session.commit()
+        return novas_ideias_count
+
+    except Exception as e:
+        print(f"Erro ao gerar ideias com Groq: {e}")
+        db.session.rollback()
+        return 0
 
 # --- BUSCAS E RELATÓRIOS ---
 def get_filtered_ideas(user_id, site_id=None):
