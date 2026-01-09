@@ -92,4 +92,4 @@ if not scheduler.running:
 
 if __name__ == '__main__':
     # use_reloader=False é essencial para o Windows não abrir o scheduler 2 vezes!
-    app.run(debug=True, port=5000, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
