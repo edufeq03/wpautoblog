@@ -71,7 +71,7 @@ def index():
 if __name__ == '__main__':
     # Só inicia o scheduler se não estiver no processo de reloader do Flask
     if not os.environ.get("WERKZEUG_RUN_MAIN"):
-        scheduler.add_job(id='do_automation', func=job_automation, trigger='interval', minutes=1)
+        scheduler.add_job(id='do_automation', func=job_automation, trigger='interval', minutes=1, max_instances=3)
         scheduler.init_app(app)
         scheduler.start()
     

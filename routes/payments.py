@@ -94,3 +94,11 @@ def buy_credits(plan_id):
         print(f"❌ Erro Detalhado: {preference_response['response']}")
         flash("Erro ao iniciar pagamento. Tente novamente em instantes.", "danger")
         return redirect(url_for('content.ideas'))
+    
+
+# No arquivo routes/payments.py
+@payments_bp.route('/checkout/<int:plano_id>')
+@login_required
+def checkout(plano_id):
+    # Lógica do checkout...
+    return f"Página de checkout para o plano {plano_id}"

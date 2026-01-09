@@ -8,12 +8,13 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        {% for chave, plano in planos.items() %}
-            {% if plano.interno %}
+        {% for plano in planos %}
+            {# Removido o .items() pois 'planos' está chegando como uma lista do SQLAlchemy #}
+            
             <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg relative flex flex-col h-full {% if plano.nome == 'VIP' %}border-2 border-blue-500 transform lg:scale-105{% endif %}">
                 
                 {% if plano.nome == 'VIP' %}
-                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Mais Popular</div>
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-md">Mais Popular</div>
                 {% endif %}
 
                 <h3 class="text-xl font-bold mb-2 {% if plano.nome == 'VIP' %}text-blue-600{% else %}text-gray-700{% endif %}">Plano {{ plano.nome }}</h3>
@@ -21,18 +22,25 @@
                 
                 <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
                     <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.sites }} Sites WordPress</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.posts }} Postagens por dia</li>
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.posts_por_dia }} Postagens por dia</li>
                     <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.credits }} Créditos Mensais</li>
                     <li><i class="fas fa-check text-green-500 mr-2"></i> Redator Espião Liberado</li>
+                    {% if plano.has_images %}
+                    <li><i class="fas fa-check text-green-500 mr-2"></i> Geração de Imagens por IA</li>
+                    {% endif %}
                 </ul>
 
-                <a href="{{ url_for('payments.checkout', plano_alvo=chave) }}" 
-                   class="block text-center w-full py-3 {% if plano.nome == 'VIP' %}bg-blue-600 hover:bg-blue-700{% else %}bg-slate-800 hover:bg-slate-900{% endif %} text-white rounded-xl font-bold transition-all">
-                    {% if current_user.plan_name == plano.nome %}Plano Atual / Renovar{% else %}Selecionar {{ plano.nome }}{% endif %}
+                {# Ajustado para usar o ID do plano como referência para o checkout #}
+                <a href="{{ url_for('payments.checkout', plano_id=plano.id) }}" 
+                   class="block text-center w-full py-3 {% if plano.nome == 'VIP' %}bg-blue-600 hover:bg-blue-700{% else %}bg-slate-800 hover:bg-slate-900{% endif %} text-white rounded-xl font-bold transition-all shadow-lg">
+                    Assinar Agora
                 </a>
             </div>
-            {% endif %}
         {% endfor %}
+    </div>
+
+    <div class="mt-16 text-center text-gray-400 text-sm">
+        <p><i class="fas fa-shield-alt mr-2"></i> Pagamento seguro via Stripe ou Mercado Pago.</p>
     </div>
 </div>
 {% endblock %}

@@ -1,6 +1,6 @@
 from flask import render_template, request, Blueprint
 from flask_login import login_required, current_user
-from models import db, Blog, PostLog
+from models import db, Blog, PostLog, Plan  # Adicionado Plan aqui
 from datetime import datetime
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -9,13 +9,13 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @login_required
 def dashboard_view():
     """Página principal do painel com resumo estatístico."""
-    # Agora buscamos os limites direto do relacionamento com a tabela Plan
-    # Usamos valores padrão caso o plano não esteja definido (prevenção de erro)
+    # Busca os detalhes do plano através do relacionamento definido no User
     plan = current_user.plan_details
+    
     limites = {
         'posts_por_dia': plan.posts_per_day if plan else 1,
         'max_sites': plan.max_sites if plan else 1,
-        'nome': plan.name if plan else 'Nenhum'
+        'nome': plan.name if plan else 'Free'
     }
     
     saldo_atual = current_user.credits if hasattr(current_user, 'credits') else 0
@@ -41,7 +41,11 @@ def dashboard_view():
 @dashboard_bp.route('/pricing')
 @login_required
 def pricing():
-    """Página de listagem de planos e upgrades."""
-    from models import Plan
-    planos = Plan.query.all()
-    return render_template('pricing.html', user=current_user, planos=planos)
+    """Rota de preços que envia a lista de planos para o template."""
+    # Busca todos os planos cadastrados no banco de dados
+    # Isso envia uma LISTA de objetos, resolvendo o erro do .items()
+    planos = Plan.query.order_by(Plan.price.asc()).all()
+    
+    return render_template('pricing.html', 
+                           user=current_user, 
+                           planos=planos)
