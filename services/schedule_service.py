@@ -25,30 +25,39 @@ def calcular_horarios_do_dia(horario_base, posts_per_day):
 
 def check_and_post_all_sites(app):
     with app.app_context():
-        # Busca apenas sites ativos
-        sites = Blog.query.all()
-        agora_utc = datetime.now(pytz.utc)
+        from models import Blog, ContentIdea, User
+        from services.content_service import publish_content_flow # Usaremos o fluxo que já criamos
         
-        print(f"--- [DEBUG] Verificando {len(sites)} sites...", flush=True)
+        sites = Blog.query.all()
+        print(f"\n--- [DEBUG] Verificando {len(sites)} sites...", flush=True)
 
         for site in sites:
             tz = pytz.timezone(site.timezone or 'America/Sao_Paulo')
             agora_local = datetime.now(tz)
             hora_atual = agora_local.strftime('%H:%M')
             
-            # Calcula alvos
             alvos = calcular_horarios_do_dia(site.schedule_time, site.posts_per_day)
-            
             print(f"| Site: {site.site_name[:15]:<15} | Agora: {hora_atual} | Alvos: {alvos} |", flush=True)
 
             if hora_atual in alvos:
-                print(f">>> HORA DE POSTAR NO SITE: {site.site_name} <<<", flush=True)
-                # SÓ AQUI ele deve entrar na lógica pesada de gerar texto/imagem
-                try:
-                    # execute_post_logic(site) ...
-                    pass 
-                except Exception as e:
-                    print(f"Erro ao postar: {e}", flush=True)
+                print(f">>> [AUTOMAÇÃO] HORA DE POSTAR: {site.site_name} <<<", flush=True)
+                
+                # BUSCA UMA IDEIA: Pega a ideia mais antiga que ainda não foi postada para este site
+                ideia = ContentIdea.query.filter_by(blog_id=site.id, is_posted=False).order_by(ContentIdea.created_at.asc()).first()
+                
+                if ideia:
+                    print(f"    📝 Ideia encontrada: {ideia.title}", flush=True)
+                    user = User.query.get(site.user_id)
+                    
+                    # DISPARA A PUBLICAÇÃO (IA + WordPress)
+                    sucesso, msg = publish_content_flow(ideia, user)
+                    
+                    if sucesso:
+                        print(f"    ✅ SUCESSO: {msg}", flush=True)
+                    else:
+                        print(f"    ❌ ERRO: {msg}", flush=True)
+                else:
+                    print(f"    ⚠️ AVISO: Nenhuma ideia disponível na fila para {site.site_name}. O post foi pulado.", flush=True)
 
 def execute_auto_post(site, app):
     """Lógica principal: IA -> Imagem (com Fallback) -> WordPress"""
