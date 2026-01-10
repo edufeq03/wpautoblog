@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WP AutoBlog - Automação Inteligente e Lucrativa</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --premium-blue: #2563eb;
+            --premium-purple: #7c3aed;
+        }
+        /* Ajuste de contraste: Fundo levemente mais definido para destacar os cards brancos */
+        body { background-color: #f1f5f9; }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--premium-blue), var(--premium-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .price-card {
+            transition: all 0.5s cubic-bezier(0.15, 0.83, 0.66, 1);
+            background: #ffffff;
+            backdrop-filter: blur(12px);
+            /* Borda mais visível para contraste */
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+        }
+        .price-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 40px 80px -20px rgba(37, 99, 235, 0.2);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+        .btn-premium {
+            background: linear-gradient(135deg, var(--premium-blue), var(--premium-purple));
+            transition: all 0.3s ease;
+        }
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 100;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .whatsapp-float:hover { transform: scale(1.1); background-color: #128c7e; }
+        
+        .testimonial-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 20px;
+            padding: 20px 0;
+            scrollbar-width: none;
+        }
+        .testimonial-card {
+            min-width: 300px;
+            scroll-snap-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-slate-900">
+
+    <a href="https://wa.me/5519981119287?text=Suporte_AutoBlog" class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <nav class="fixed w-full z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <span class="text-xl font-black tracking-tight text-slate-900">WP <span class="text-blue-600">AutoBlog</span></span>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-8">
+                <div class="relative group">
+                    <button class="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-blue-600 transition py-2">
+                        <img id="current-lang-flag" src="https://flagcdn.com/w20/br.png" alt="PT-BR" class="w-5 h-auto rounded-sm">
+                        <span id="current-lang-text">PT</span>
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </button>
+                    
+                    <div class="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                        <a href="?lang=pt" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 first:rounded-t-xl transition">
+                            <img src="https://flagcdn.com/w20/br.png" class="w-5 h-auto rounded-sm">
+                            <span class="text-xs font-bold">Português</span>
+                        </a>
+                        <a href="?lang=en" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 last:rounded-b-xl transition">
+                            <img src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-sm">
+                            <span class="text-xs font-bold">English</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a href="#precos" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Preços</a>
+                <a href="{{ url_for('auth.login') }}" class="text-sm font-bold text-slate-900">Entrar</a>
+                <a href="{{ url_for('auth.register') }}" class="btn-premium px-8 py-3 text-white text-sm font-bold rounded-2xl shadow-xl">
+                    Começar Agora
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="pt-48 pb-32 px-6 text-center bg-gradient-to-b from-blue-50 to-[#f1f5f9]">
+        <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight tracking-tighter">
+            {{ t.hero_title }}<br>
+            <span class="gradient-text">{{ t.hero_subtitle }}</span>
+        </h1>
+        <p class="text-xl text-slate-500 max-w-2xl mx-auto mb-16 font-medium">
+            {{ t.hero_line }}
+        </p>
+        <p class="text-xl max-w-2xl mx-auto mb-16 font-small">
+            Postagens agendadas para trazer muita relevância ao seu site e retorno financeiro a você.
+        </p>
+        
+        <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+            <a href="{{ url_for('auth.register') }}" class="btn-premium px-12 py-6 text-white font-black rounded-3xl text-xl shadow-2xl inline-block hover:scale-105 transition-transform">
+                {{ t.hero_button }}
+            </a>
+
+            <!--<a href="{{ url_for('auth.login_demo') }}" class="px-10 py-5 text-slate-600 font-bold rounded-3xl text-lg border-2 border-slate-200 hover:bg-white transition-all flex items-center gap-3">
+                <i class="fas fa-play-circle text-blue-600"></i>
+                Ver Demo ao Vivo
+            </a>-->
+        </div>
+        <div class="mt-12 flex items-center justify-center gap-4 text-sm font-bold text-slate-400">
+            <div class="flex -space-x-2">
+                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?u=1">
+                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?u=2">
+                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?u=3">
+            </div>
+            <span>+1.200 blogs automatizados hoje</span>
+        </div>
+    </header>
+
+    <section id="precos" class="py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-24">
+                <h2 class="text-4xl md:text-5xl font-black mb-6">Investimento para o seu Sucesso</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {% for plano in planos %}
+                <div class="price-card p-10 rounded-[2.5rem] shadow-2xl relative flex flex-col h-full">
+                    <h3 class="text-sm font-black text-blue-600 uppercase tracking-widest mb-4">{{ plano.name }}</h3>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        {% if plano.name == 'VIP' %}
+                            <span class="text-2xl font-black text-slate-900 italic">Sob Consulta</span>
+                        {% else %}
+                            <!-- Ajuste: Reduzido de text-5xl para text-3xl para melhor alinhamento -->
+                            <span class="text-3xl font-black text-slate-900">R$ {{ plano.price }}</span>
+                            <span class="text-slate-400 font-bold text-sm">/mês</span>
+                        {% endif %}
+                    </div>
+
+                    <ul class="space-y-5 mb-12 flex-grow">
+                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.max_sites }} Site(s) WordPress
+                        </li>
+                        <li class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500"></i> {{ plano.posts_per_day }} Postagens/dia
+                        </li>
+                    </ul>
+
+                    {% if plano.name == 'VIP' %}
+                        <a href="https://wa.me/5519981119287?text=Lead_VIP_AutoBlog" 
+                        class="block text-center w-full py-5 rounded-[1.5rem] font-black bg-blue-600 text-white hover:bg-blue-700 transition-all">
+                            Falar com Consultor
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-900 text-white hover:bg-black">
+                            Selecionar Plano
+                        </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 bg-white/50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">O que dizem nossos usuários</h2>
+                <p class="text-slate-500">Junte-se a centenas de blogueiros que escalaram sua operação.</p>
+            </div>
+            
+            <div class="testimonial-container">
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"Consegui automatizar 15 blogs de nicho e meu tráfego subiu 300% em apenas dois meses. A qualidade dos textos é surreal."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-600">RM</div>
+                        <p class="font-bold text-slate-900 text-sm">Ricardo M. <span class="block font-normal text-slate-400 text-xs">Afiliado Profissional</span></p>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"O Redator Espião é o que eu precisava. Monitoro meus concorrentes e posto conteúdos melhores que os deles no automático."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center font-bold text-purple-600">JL</div>
+                        <p class="font-bold text-slate-900 text-sm">Julia L. <span class="block font-normal text-slate-400 text-xs">Dona de Agência</span></p>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"Eu gastava horas escrevendo e revisando posts. Hoje publico conteúdo todos os dias e uso meu tempo para pensar em estratégia e parcerias. Meu site ficou muito mais profissional."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-600">CS</div>
+                        <p class="font-bold text-slate-900 text-sm">Carlos S. <span class="block font-normal text-slate-400 text-xs">Empreendedor Digital</span></p>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"A automação mudou completamente minha rotina. Antes eu postava quando dava, agora tenho constância e textos bem estruturados. O tempo que sobrou virou crescimento."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center font-bold text-red-600">MA</div>
+                        <p class="font-bold text-slate-900 text-sm">Marina A. <span class="block font-normal text-slate-400 text-xs">Criadora de Conteúdo</span></p>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"Passei a enxergar meu blog como um ativo de verdade. A ferramenta cuida do operacional e eu foco em SEO e monetização. A qualidade percebida do site subiu muito."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center font-bold text-orange-600">FP</div>
+                        <p class="font-bold text-slate-900 text-sm">Felipe P. <span class="block font-normal text-slate-400 text-xs">Gestor de Tráfego</span></p>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="flex gap-1 text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 italic leading-relaxed">"O maior ganho foi o tempo. Consigo manter vários sites atualizados sem estresse e ainda melhorar títulos, estrutura e autoridade dos conteúdos. Simplesmente funciona."</p>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center font-bold text-teal-600">RN</div>
+                        <p class="font-bold text-slate-900 text-sm">Renato N. <span class="block font-normal text-slate-400 text-xs">Consultor SEO</span></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Dúvidas Frequentes</h2>
+                <p class="text-slate-500">Tudo o que você precisa saber sobre o WP AutoBlog.</p>
+            </div>
+
+            <div class="space-y-4">
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        O Google pune conteúdo gerado por IA?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Não. O Google foca na qualidade e utilidade do conteúdo. Nossos prompts são desenhados para gerar valor real, seguindo as diretrizes de SEO mais modernas e evitando padrões robóticos.</p>
+                </details>
+
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        O conteúdo é original ou copiado de outros sites?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Nossa tecnologia gera textos 100% originais e inéditos. A IA processa informações de diversas fontes de autoridade para aprender sobre o assunto, mas a redação final é única, passando com facilidade em detectores de plágio.</p>
+                </details>
+
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        Preciso instalar algum plugin no meu WordPress?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Não! Utilizamos a API nativa do WordPress via "Application Passwords". Isso significa que seu site permanece leve, seguro e você não precisa se preocupar com atualizações de plugins extras.</p>
+                </details>
+
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        Preciso de conhecimentos técnicos para usar?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Absolutamente nenhum. O WP AutoBlog foi feito para ser intuitivo. Se você sabe preencher um formulário simples, você consegue colocar seu blog no piloto automático em menos de 5 minutos.</p>
+                </details>
+
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        Em quais idiomas a IA consegue escrever?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">A IA é poliglota. Você pode configurar sua automação para gerar conteúdos em mais de 25 idiomas, incluindo Português (BR), Inglês (US), Espanhol, Francês e Alemão.</p>
+                </details>
+
+                <details class="group bg-slate-50 p-6 rounded-[2rem] border border-transparent hover:border-blue-100 transition-all cursor-pointer">
+                    <summary class="font-bold text-slate-800 flex justify-between items-center list-none">
+                        Como os créditos funcionam?
+                        <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
+                    </summary>
+                    <p class="text-slate-500 text-sm mt-4 leading-relaxed">Cada crédito equivale a uma jornada completa: Pesquisa de palavras-chave + Redação do Artigo + Geração de Imagem de Destaque + Publicação Automática. Seus créditos são renovados mensalmente de acordo com o plano escolhido.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-900 text-white py-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div class="col-span-2">
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-black tracking-tight">WP <span class="text-blue-600">AutoBlog</span></span>
+                </div>
+                <p class="text-slate-400 max-w-sm mb-8">
+                    A plataforma líder em automação de conteúdo para WordPress. Inteligência artificial que trabalha para o seu SEO.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Links Rápidos</h4>
+                <ul class="space-y-4 text-slate-400 text-sm">
+                    <li><a href="#precos" class="hover:text-white transition">Preços</a></li>
+                    <li><a href="#" class="hover:text-white transition">Funcionalidades</a></li>
+                    <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Suporte</h4>
+                <ul class="space-y-4 text-slate-400 text-sm">
+                    <li><a href="https://wa.me/5519981119287" class="hover:text-white transition">WhatsApp</a></li>
+                    <li><a href="#" class="hover:text-white transition">Termos de Uso</a></li>
+                    <li><a href="#" class="hover:text-white transition">Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-slate-800 text-center text-slate-500 text-xs">
+            &copy; 2024 WP AutoBlog. Todos os direitos reservados.
+        </div>
+    </footer>
+
+</body>
+</html>
