@@ -80,8 +80,8 @@ def login():
 def logout():
     logout_user()
     flash('Sessão encerrada com sucesso.', 'info')
-    # Redireciona para a Landing Page (ajuste 'main.index' para o nome da sua rota inicial)
-    return redirect(url_for('auth.logout')) 
+    # Redireciona para a função 'index' que está no seu app.py
+    return redirect(url_for('auth.login'))
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
