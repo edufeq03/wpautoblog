@@ -43,7 +43,7 @@ def force_db_reset():
             site_name="Portal Tech Demo",
             wp_url="https://wp.appmydream.com.br",
             wp_user="Maria",
-            wp_app_password="XXXX XXXX XXXX XXXX",
+            wp_app_password="EcMS lvqw HB3c hqWZ 9YdG tTfh",
             macro_themes="IA, Gadgets, Futuro do Trabalho",
             master_prompt="Você é um redator sênior de tecnologia focado em SEO.",
             schedule_time="09:00",
