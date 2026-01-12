@@ -241,3 +241,59 @@ def process_manual_post(user, site_id, title, content, action, image_file=None):
         return True, f"Sucesso! O post foi enviado como {status_label}."
     
     return False, "Erro ao comunicar com o WordPress."
+
+def analyze_spy_link(url, is_demo=False):
+    """
+    Extrai o conteúdo de uma URL e usa IA para criar uma nova versão.
+    """
+    if not url:
+        return None
+
+    # 1. Extrai o texto bruto da URL informada
+    # Certifique-se que o scraper_service está funcionando
+    texto_extraido = extrair_texto_da_url(url)
+    print(f"O texto extraido foi:\n{texto_extraido[:500]}...")
+    
+    if not texto_extraido:
+        print(f"!!! [SPY-WRITER] Falha ao extrair texto da URL: {url}")
+        return None
+
+    # 2. Se for usuário demo, retorna um texto fixo para economizar tokens
+    if is_demo:
+        return {
+            'title': "Título Exemplo do Spy Writer (Modo Demo)",
+            'content': "Este é um conteúdo de exemplo gerado pelo modo espião. Na versão completa, a IA leria o site original e reescreveria o texto com SEO."
+        }
+
+    # 3. Usa a IA para processar o conteúdo
+    try:
+        prompt_sistema = "Você é um redator especialista em SEO e reescrita de artigos."
+        prompt_usuario = f"""
+        Analise o texto abaixo extraído de um site concorrente e crie um NOVO artigo baseado nele.
+        O novo artigo deve ter um título chamativo e um conteúdo rico em detalhes, formatado em HTML (apenas tags p, h2, h3, ul, li).
+        Não copie o texto original, crie uma versão única e melhorada.
+        
+        Texto original:
+        {texto_extraido[:4000]} 
+        
+        Responda EXATAMENTE neste formato:
+        TITULO: [O seu título aqui]
+        CONTEUDO: [O seu conteúdo em HTML aqui]
+        """
+        
+        resposta_ia = generate_text(prompt_usuario, system_prompt=prompt_sistema)
+        
+        if resposta_ia and "TITULO:" in resposta_ia and "CONTEUDO:" in resposta_ia:
+            partes = resposta_ia.split("CONTEUDO:")
+            titulo = partes[0].replace("TITULO:", "").strip()
+            conteudo = partes[1].strip()
+            
+            return {
+                'title': titulo,
+                'content': resposta_ia if resposta_ia else texto_extraido
+            }
+            
+    except Exception as e:
+        print(f"!!! [SPY-WRITER] Erro ao processar IA: {e}")
+        
+    return None
