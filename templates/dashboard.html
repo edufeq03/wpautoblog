@@ -11,14 +11,17 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm shadow-blue-100">
-                    <i class="fas fa-paper-plane text-xl"></i>
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                    <i class="fas fa-bolt text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Posts Hoje</p>
-                    <h3 class="text-2xl font-black text-slate-800">{{ posts_hoje if posts_hoje is defined else 0 }}</h3>
-                </div>
+                <span class="text-[10px] font-black px-2 py-1 bg-slate-100 rounded-lg text-slate-500 uppercase">Diário</span>
+            </div>
+            <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Capacidade de IA</p>
+            <h3 class="text-2xl font-black text-slate-800">{{ posts_hoje }} / {{ current_user.plan.posts_per_day }}</h3>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                {% set percent = (posts_hoje / current_user.plan.posts_per_day * 100) if current_user.plan.posts_per_day > 0 else 0 %}
+                <div class="bg-blue-600 h-full transition-all duration-500" style="width: {{ percent if percent <= 100 else 100 }}%"></div>
             </div>
         </div>
 

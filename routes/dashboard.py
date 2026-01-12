@@ -10,7 +10,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 def dashboard_view():
     """Página principal do painel com resumo estatístico."""
     # Busca os detalhes do plano através do relacionamento definido no User
-    plan = current_user.plan_details
+    plan = current_user.plan
     
     limites = {
         'posts_por_dia': plan.posts_per_day if plan else 1,

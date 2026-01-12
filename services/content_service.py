@@ -4,7 +4,7 @@ from models import db, ContentIdea, PostLog, Blog, CapturedContent
 from services.ai_service import generate_text
 from services.scraper_service import extrair_texto_da_url
 import os
-from datetime import datetime
+from datetime import datetime, date
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -179,6 +179,7 @@ def publish_content_flow(idea, user):
             post_url=data.get('link')
         )
         db.session.add(log)
+        user.last_post_date = date.today()
         db.session.commit()
         return True, "Post publicado com sucesso!"
     
@@ -237,6 +238,7 @@ def process_manual_post(user, site_id, title, content, action, image_file=None):
             post_url=data.get('link')
         )
         db.session.add(log)
+        user.last_post_date = date.today()
         db.session.commit()
         return True, f"Sucesso! O post foi enviado como {status_label}."
     
@@ -297,3 +299,28 @@ def analyze_spy_link(url, is_demo=False):
         print(f"!!! [SPY-WRITER] Erro ao processar IA: {e}")
         
     return None
+
+def user_reached_limit(user, is_ai_post=False):
+    """
+    Verifica se o usuário atingiu o limite diário de postagens de IA.
+    Postagens manuais (is_ai_post=False) são sempre liberadas.
+    """
+    if not is_ai_post or user.is_admin:
+        return False, 0, 0
+
+    if not user.plan:
+        return True, 0, 0 
+    
+    limite_diario = user.plan.posts_per_day
+    if limite_diario >= 999:
+        return False, limite_diario, 0
+
+    hoje = date.today()
+    # Conta apenas postagens que vieram de ideias (IA) se necessário, 
+    # ou todas as postagens do dia para controle de tráfego.
+    post_count = PostLog.query.join(Blog).filter(
+        Blog.user_id == user.id,
+        db.func.date(PostLog.posted_at) == hoje
+    ).count()
+
+    return post_count >= limite_diario, limite_diario, post_count

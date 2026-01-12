@@ -22,19 +22,20 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False)
     is_demo = db.Column(db.Boolean, default=False)
     plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False, default=1)
+    plan = db.relationship('Plan', back_populates='users')
     created_at = db.Column(db.DateTime, default=db.func.now())
     sites = db.relationship('Blog', backref='owner', lazy=True)
 
     @property
     def plan_name(self):
-        return self.plan_details.name if self.plan_details else "Free"
+        return self.plan.name if self.plan else "Free"
     
     def get_plan_limits(self):
-        if self.plan_details:
+        if self.plan:
             return {
-                'max_sites': self.plan_details.max_sites,
-                'posts_por_dia': self.plan_details.posts_per_day,
-                'nome': self.plan_details.name
+                'max_sites': self.plan.max_sites,
+                'posts_por_dia': self.plan.posts_per_day,
+                'nome': self.plan.name
             }
         return {'max_sites': 1, 'posts_por_dia': 1, 'nome': 'Free'}
 
@@ -66,10 +67,11 @@ class User(db.Model, UserMixin):
         ).count()
         
         return posts_feitos_hoje < posts_permitidos
-
+    
     def can_add_site(self):
-        limites = self.get_plan_limits()
-        return len(self.sites) < limites['max_sites']
+        limits = self.get_plan_limits()
+        current_sites_count = len(self.sites)
+        return current_sites_count < limits['max_sites']
 
     def get_setup_status(self):
         if not self.sites:
@@ -94,7 +96,7 @@ class Plan(db.Model):
     has_radar = db.Column(db.Boolean, default=False)
     has_spy = db.Column(db.Boolean, default=False)
     has_images = db.Column(db.Boolean, default=False)
-    users = db.relationship('User', backref='plan_details', lazy=True)
+    users = db.relationship('User', back_populates='plan')
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

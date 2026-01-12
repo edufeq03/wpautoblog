@@ -24,13 +24,19 @@ def generate_ideas():
     count = content_service.generate_ideas_logic(blog)
     
     flash(f'{count} novas ideias geradas para {blog.site_name}!', 'success')
-    # Mantém o filtro do site após gerar
     return redirect(url_for('content.ideas', site_id=site_id))
 
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
+    # TRAVA DE IA ATIVA
+    reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
+    if reached:
+        flash(f"Limite diário de IA atingido ({current}/{limit}). Posts manuais continuam liberados!", "danger")
+        return redirect(url_for('content.ideas'))
+
     idea = ContentIdea.query.get_or_404(idea_id)
+    # Passando o current_user para o serviço
     sucesso, msg = content_service.publish_content_flow(idea, current_user)
     flash(msg, "success" if sucesso else "danger")
     return redirect(url_for('content.ideas'))
@@ -38,32 +44,22 @@ def publish_idea(idea_id):
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
-    # Carrega os blogs do usuário para o select do formulário
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
-    
     if request.method == 'POST':
+        # Post manual não chama a trava 'reached', permitindo uso livre
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
-        action = request.form.get('action_type') # 'now' ou 'draft'
-        
-        # IMPORTANTE: Captura o arquivo de imagem usando request.files
+        action = request.form.get('action_type')
         image_file = request.files.get('image')
 
-        # Chama o serviço que processa o upload da imagem e o post no WP
         success, message = content_service.process_manual_post(
             current_user, site_id, title, content, action, image_file
         )
-        
         if success:
             flash(message, "success")
-            # Redireciona para o relatório de postagens em caso de sucesso
             return redirect(url_for('content.post_report'))
-        else:
-            flash(message, "danger")
-            # Em caso de erro, permanece na página para o usuário revisar os dados
-            return render_template('manual_post.html', blogs=blogs)
-    
+        flash(message, "danger")
     return render_template('manual_post.html', blogs=blogs)
 
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
@@ -71,29 +67,29 @@ def manual_post():
 def spy_writer():
     processed = None
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
-    
     if request.method == 'POST':
-        url = request.form.get('url') # Corrigido para 'url' conforme o HTML
+        # Trava para Spy Writer (IA)
+        reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
+        if reached:
+            flash(f"Limite diário de IA atingido.", "danger")
+            return redirect(url_for('content.spy_writer'))
+
+        url = request.form.get('url')
         processed = content_service.analyze_spy_link(url, getattr(current_user, 'is_demo', False))
-        
         if not processed:
-            flash("Não foi possível extrair conteúdo deste link. Verifique a URL.", "warning")
-            
+            flash("Falha ao extrair conteúdo.", "warning")
     return render_template('spy_writer.html', processed_content=processed, blogs=blogs)
 
 @content_bp.route('/post-report')
 @login_required
 def post_report():
-    site_id = request.args.get('site_id', type=int)
     logs = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id).order_by(PostLog.posted_at.desc()).all()
     return render_template('post_report.html', logs=logs)
 
 @content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def delete_idea(idea_id):
-    if getattr(current_user, 'is_demo', False):
-        flash('Modo Demo: Ação bloqueada.', 'warning')
-    else:
+    if not getattr(current_user, 'is_demo', False):
         idea = ContentIdea.query.get_or_404(idea_id)
         db.session.delete(idea)
         db.session.commit()

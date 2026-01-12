@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <span class="text-[10px] font-bold px-2 py-1 rounded bg-zinc-800 text-zinc-400 group-hover:bg-blue-600/20 group-hover:text-blue-400 transition-colors uppercase">
-                        {{ user.plan_details.name if user.plan_details else 'Free' }}
+                        {{ user.plan.name if user.plan else 'Free' }}
                     </span>
                 </li>
                 {% endfor %}

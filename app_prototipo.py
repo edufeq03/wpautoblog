@@ -50,7 +50,7 @@ def register():
             return redirect(url_for('register'))
         
         hashed_password = generate_password_hash(password, method='scrypt')
-        new_user = User(email=email, password=hashed_password, current_user.plan_details.name='trial')
+        new_user = User(email=email, password=hashed_password, current_user.plan.name='trial')
         
         db.session.add(new_user)
         db.session.commit()
