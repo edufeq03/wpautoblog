@@ -30,6 +30,15 @@ def register():
             )
         db.session.add(new_user)
         db.session.commit()
+
+        # --- ADICIONE ISSO AQUI ---
+        try:
+            send_welcome_email(new_user)
+        except Exception as e:
+            print(f"Erro ao enviar email: {e}") 
+            # Não bloqueamos o registro se o email falhar
+        # --------------------------
+        
         login_user(new_user)
         return redirect(url_for('dashboard.dashboard_view'))
     return render_template('register.html')
@@ -152,3 +161,26 @@ def login_demo():
         # Caso o reset_db.py não tenha sido rodado ou o email mude
         flash("O usuário de demonstração não foi encontrado no sistema.", "danger")
         return redirect(url_for('auth.login'))
+
+def send_welcome_email(user):
+    # Obtemos o objeto mail que foi registrado na app
+    mail = current_app.extensions.get('mail')
+    if not mail:
+        print("!!! [ERRO] Flask-Mail não inicializado no app")
+        return
+
+    msg = Message("¡Bienvenido! EL Postador já está a postos.",
+                  sender=current_app.config.get('MAIL_DEFAULT_SENDER'),
+                  recipients=[user.email])
+    
+    link_completo = url_for('dashboard.dashboard_view', _external=True)
+    
+    # Certifique-se de que o arquivo welcome.html está em templates/emails/
+    try:
+        msg.html = render_template('emails/welcome.html', 
+                                   user_name=user.name, 
+                                   dashboard_url=link_completo)
+        mail.send(msg)
+        print(f"✅ Email de boas-vindas enviado para {user.email}")
+    except Exception as e:
+        print(f"❌ Erro ao renderizar ou enviar email: {e}")

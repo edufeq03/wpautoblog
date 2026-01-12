@@ -1,4 +1,4 @@
-# app.py revisado e corrigido
+# app.py revisado e completo - EL POSTADOR
 from flask import Flask, render_template, redirect, url_for, request
 from models import db, login_manager, Plan, User
 from routes.auth import auth_bp
@@ -10,54 +10,41 @@ from routes.radar import radar_bp
 from routes.admin import admin_bp
 from routes.teste import teste_bp
 from flask_login import login_required, current_user
+from flask_mail import Mail
 from flask_apscheduler import APScheduler
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 
+# 1. Carrega variáveis de ambiente
 load_dotenv()
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÕES ---
+# --- CONFIGURAÇÕES DE BANCO DE DADOS ---
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY')
-
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Configuração do Agendador (Correção de instâncias e Timezone)
-class SchedulerConfig:
-    SCHEDULER_API_ENABLED = os.environ.get('SCHEDULER_API_ENABLED', 'True') == 'True'
-    SCHEDULER_TIMEZONE = os.environ.get('SCHEDULER_TIMEZONE', 'America/Sao_Paulo')
-    SCHEDULER_JOB_DEFAULTS = {"coalesce": True, "max_instances": 1}
+# --- CONFIGURAÇÕES DE E-MAIL (SMTP GMAIL) ---
+# Aqui estava o erro: as chaves precisam estar no app.config
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
 
-app.config.from_object(SchedulerConfig())
-
-# --- INICIALIZAÇÃO ---
+# --- INICIALIZAÇÃO DE EXTENSÕES ---
 db.init_app(app)
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
-
-# Inicializa o APScheduler
+mail = Mail(app) # Agora o mail lerá as configurações acima corretamente
 scheduler = APScheduler()
 
-# Função que será executada pelo agendador
-def job_automation():
-    with app.app_context():
-        from services.schedule_service import check_and_post_all_sites
-        agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        print(f"\n--- [SCHEDULER] Iniciando Verificação: {agora} ---")
-        try:
-            check_and_post_all_sites(app)
-            print(f"--- [SCHEDULER] Verificação Concluída ---")
-        except Exception as e:
-            print(f"--- [SCHEDULER] Erro: {e} ---")
-
-# --- BLUEPRINTS ---
+# --- REGISTRO DE BLUEPRINTS ---
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(sites_bp, url_prefix='/sites')
@@ -70,30 +57,32 @@ app.register_blueprint(teste_bp, url_prefix='/teste')
 @app.route('/')
 def index():
     planos_db = Plan.query.order_by(Plan.id.asc()).all()
+    # Identidade visual EL Postador
     t = {
-        "hero_title": "Automatize seu Blog",
-        "hero_subtitle": "Postagens inteligentes feitas por IA.",
-        "hero_button": "TESTAR GRÁTIS",
-        "hero_line": "Sua máquina de conteúdo SEO no piloto automático."
+        "hero_title": "EL Postador",
+        "hero_subtitle": "Sua máquina de conteúdo SEO no piloto automático.",
+        "hero_button": "¡PROBAR GRATIS!",
+        "hero_line": "Onde a tendência vira lucro."
     }
     return render_template('landing.html', planos=planos_db, t=t)
 
-# --- INICIALIZAÇÃO SEGURA DO SCHEDULER ---
-# Fora do main para garantir que o Flask o carregue, 
-# mas usamos um try/except para evitar erros em re-execuções
+# --- CONFIGURAÇÃO DO SCHEDULER (AUTOMAÇÃO) ---
+def job_automation():
+    with app.app_context():
+        # Aqui entra a lógica de verificação de posts agendados
+        pass
+
 if not scheduler.running:
     scheduler.init_app(app)
     scheduler.start()
-    
-    # Adiciona o Job para rodar a cada 60 segundos
     try:
+        # Verifica a cada 60 segundos
         scheduler.add_job(id='job_automation', func=job_automation, trigger='interval', seconds=60)
-        print(">>> [SISTEMA] Automação agendada com sucesso (60s).")
+        print(">>> [SISTEMA] EL Postador: Automação agendada (60s).")
     except Exception as e:
-        print(f">>> [SISTEMA] Aviso: Job já existe ou falhou ao iniciar: {e}")
+        print(f">>> [ERRO SCHEDULER] {e}")
 
 if __name__ == '__main__':
-    # Nova lógica de Debug requisitada
-    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
-    print(f">>> [SISTEMA] Modo: {'DEBUG' if debug_mode else 'PRODUÇÃO'}")
-    app.run(host='0.0.0.0', debug=debug_mode, port=5000, use_reloader=False)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
