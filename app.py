@@ -8,6 +8,7 @@ from routes.content import content_bp
 from routes.sites import sites_bp 
 from routes.radar import radar_bp
 from routes.admin import admin_bp
+from routes.teste import teste_bp
 from flask_login import login_required, current_user
 from flask_apscheduler import APScheduler
 import os
@@ -64,6 +65,7 @@ app.register_blueprint(radar_bp, url_prefix='/radar')
 app.register_blueprint(content_bp, url_prefix='/content')
 app.register_blueprint(payments_bp, url_prefix='/payments')
 app.register_blueprint(admin_bp, url_prefix='/admin')
+app.register_blueprint(teste_bp, url_prefix='/teste')
 
 @app.route('/')
 def index():
