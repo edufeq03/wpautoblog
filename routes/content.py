@@ -32,51 +32,33 @@ def publish_idea(idea_id):
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
+    # Carrega os blogs do usuário para o select do formulário
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
+    
     if request.method == 'POST':
         site_id = request.form.get('site_id')
         title = request.form.get('title')
         content = request.form.get('content')
-        action = request.form.get('action_type') # 'now' ou 'queue'
-        image_file = request.files.get('image_file')
+        action = request.form.get('action_type') # 'now' ou 'draft'
+        
+        # IMPORTANTE: Captura o arquivo de imagem usando request.files
+        image_file = request.files.get('image')
 
+        # Chama o serviço que processa o upload da imagem e o post no WP
         success, message = content_service.process_manual_post(
             current_user, site_id, title, content, action, image_file
         )
-        flash(message, "success" if success else "danger")
-        return redirect(url_for('content.ideas'))
+        
+        if success:
+            flash(message, "success")
+            # Redireciona para o relatório de postagens em caso de sucesso
+            return redirect(url_for('content.post_report'))
+        else:
+            flash(message, "danger")
+            # Em caso de erro, permanece na página para o usuário revisar os dados
+            return render_template('manual_post.html', blogs=blogs)
     
     return render_template('manual_post.html', blogs=blogs)
-
-def process_manual_post(user, site_id, title, content, action, image_file=None):
-    """
-    Processa a postagem manual enviada pelo formulário.
-    """
-    from models import Blog, db
-    import services.wordpress_service as wp_service
-    import services.image_service as image_service
-
-    blog = Blog.query.filter_by(id=site_id, user_id=user.id).first()
-    if not blog:
-        return False, "Site não encontrado ou você não tem permissão."
-
-    # Lógica de Imagem
-    image_url = None
-    if image_file and image_file.filename != '':
-        # Se o usuário subiu uma imagem, processamos ela
-        image_url = image_service.upload_to_storage(image_file)
-    
-    # Se for postagem imediata ('now')
-    if action == 'now':
-        success, msg = wp_service.post_to_wordpress(blog, title, content, image_url)
-        if success:
-            return True, f"Postagem realizada com sucesso no site {blog.site_name}!"
-        else:
-            return False, f"Erro ao postar no WordPress: {msg}"
-    
-    # Se for para a fila ('queue') - Exemplo de implementação simples
-    # Aqui você pode salvar em uma tabela de agendamento se tiver uma
-    return False, "A função de fila (queue) ainda está em desenvolvimento."
 
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required

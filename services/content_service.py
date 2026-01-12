@@ -186,7 +186,7 @@ def publish_content_flow(idea, user):
 
 def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     # Se não for passado status, ele usa o padrão do banco (que geralmente é 'publish')
-    post_status = status if status else blog.post_status
+    post_status = status if status else (blog.post_status or 'publish')
     
     payload = {
         'title': titulo, 
@@ -195,7 +195,7 @@ def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     }
     
     if id_img:
-        payload['featured_media'] = id_img
+        payload['featured_media'] = int(id_img)
 
     auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
     try:
@@ -214,7 +214,9 @@ def process_manual_post(user, site_id, title, content, action, image_file=None):
     wp_image_id = None
     if image_file and image_file.filename != '':
         if upload_manual_image:
+            # IMPORTANTE: upload_manual_image deve retornar o ID (int) da imagem no WP
             wp_image_id = upload_manual_image(image_file, blog.wp_url, (blog.wp_user, blog.wp_app_password))
+            print(f">>> [DEBUG] Imagem enviada ao WP. ID recebido: {wp_image_id}")
     
     # Define o status baseado na escolha do usuário
     # Se for 'now' -> 'publish'. Se for qualquer outra coisa (como 'draft') -> 'draft'
