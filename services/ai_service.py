@@ -8,11 +8,15 @@ load_dotenv()
 def generate_text(prompt, system_prompt="Você é um assistente especialista em SEO.", quick=False):
     # TRAVA DE SEGURANÇA PARA CONTA DEMO
     if hasattr(current_user, 'email') and current_user.email == "demo@wpautoblog.com":
-        return "Este é um exemplo de texto gerado automaticamente pela IA para o usuário de demonstração. Em uma conta real, este conteúdo seria personalizado de acordo com o seu tema e SEO."
+        return "Este é um exemplo de texto gerado automaticamente pela IA para o usuário de demonstração."
     
+    # Busca os novos nomes de variáveis do seu .env otimizado
     model_name = os.environ.get("GROQ_MODEL_QUICK") if quick else os.environ.get("GROQ_MODEL_MAIN")
     
-    # O LangChain gerencia o cliente internamente de forma mais isolada
+    if not model_name:
+        print("❌ Erro: Modelo Groq não configurado no .env")
+        return None
+
     llm = ChatGroq(
         temperature=0.7,
         model_name=model_name,

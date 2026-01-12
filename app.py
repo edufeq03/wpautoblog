@@ -20,7 +20,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- CONFIGURAÇÕES ---
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'chave-padrao-segura')
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY')
+
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -30,8 +31,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configuração do Agendador (Correção de instâncias e Timezone)
 class SchedulerConfig:
-    SCHEDULER_API_ENABLED = True
-    SCHEDULER_TIMEZONE = "America/Sao_Paulo"
+    SCHEDULER_API_ENABLED = os.environ.get('SCHEDULER_API_ENABLED', 'True') == 'True'
+    SCHEDULER_TIMEZONE = os.environ.get('SCHEDULER_TIMEZONE', 'America/Sao_Paulo')
     SCHEDULER_JOB_DEFAULTS = {"coalesce": True, "max_instances": 1}
 
 app.config.from_object(SchedulerConfig())
@@ -48,14 +49,13 @@ scheduler = APScheduler()
 def job_automation():
     with app.app_context():
         from services.schedule_service import check_and_post_all_sites
-        # Correção: Usando datetime nativo para não travar o terminal no Windows
         agora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         print(f"\n--- [SCHEDULER] Iniciando Verificação: {agora} ---")
         try:
             check_and_post_all_sites(app)
-            print(f"--- [SCHEDULER] Verificação Concluída com Sucesso ---")
+            print(f"--- [SCHEDULER] Verificação Concluída ---")
         except Exception as e:
-            print(f"--- [SCHEDULER] Erro Crítico na Automação: {e} ---")
+            print(f"--- [SCHEDULER] Erro: {e} ---")
 
 # --- BLUEPRINTS ---
 app.register_blueprint(auth_bp)
@@ -93,5 +93,7 @@ if not scheduler.running:
         print(f">>> [SISTEMA] Aviso: Job já existe ou falhou ao iniciar: {e}")
 
 if __name__ == '__main__':
-    # use_reloader=False é essencial para o Windows não abrir o scheduler 2 vezes!
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    # Nova lógica de Debug requisitada
+    debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
+    print(f">>> [SISTEMA] Modo: {'DEBUG' if debug_mode else 'PRODUÇÃO'}")
+    app.run(host='0.0.0.0', debug=debug_mode, port=5000, use_reloader=False)
