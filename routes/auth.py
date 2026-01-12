@@ -182,5 +182,6 @@ def send_welcome_email(user):
                                    dashboard_url=link_completo)
         mail.send(msg)
         print(f"✅ Email de boas-vindas enviado para {user.email}")
+        print(f"✅ Email enviado com link: {link_completo}")
     except Exception as e:
         print(f"❌ Erro ao renderizar ou enviar email: {e}")
