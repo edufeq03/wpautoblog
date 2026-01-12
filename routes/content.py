@@ -16,10 +16,16 @@ def ideas():
 @login_required
 def generate_ideas():
     site_id = request.form.get('site_id')
+    if not site_id:
+        flash('Por favor, selecione um site para gerar ideias.', 'warning')
+        return redirect(url_for('content.ideas'))
+        
     blog = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     count = content_service.generate_ideas_logic(blog)
-    flash(f'{count} ideias geradas para {blog.site_name}!', 'success')
-    return redirect(url_for('content.ideas'))
+    
+    flash(f'{count} novas ideias geradas para {blog.site_name}!', 'success')
+    # Mantém o filtro do site após gerar
+    return redirect(url_for('content.ideas', site_id=site_id))
 
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
