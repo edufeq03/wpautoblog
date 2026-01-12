@@ -29,10 +29,15 @@ def generate_ideas():
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
-    # TRAVA DE IA ATIVA
+    # Regra 1: Post de IA consome crédito
+    if not current_user.consume_credit(1):
+        flash("Saldo insuficiente! Cada postagem por IA consome 1 crédito.", "danger")
+        return redirect(url_for('content.ideas'))
+
+    # Trava de limite diário (mantida como segunda camada de segurança)
     reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
     if reached:
-        flash(f"Limite diário de IA atingido ({current}/{limit}). Posts manuais continuam liberados!", "danger")
+        flash(f"Limite diário do plano atingido.", "danger")
         return redirect(url_for('content.ideas'))
 
     idea = ContentIdea.query.get_or_404(idea_id)
@@ -68,16 +73,12 @@ def spy_writer():
     processed = None
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
     if request.method == 'POST':
-        # Trava para Spy Writer (IA)
-        reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
-        if reached:
-            flash(f"Limite diário de IA atingido.", "danger")
-            return redirect(url_for('content.spy_writer'))
-
-        url = request.form.get('url')
-        processed = content_service.analyze_spy_link(url, getattr(current_user, 'is_demo', False))
-        if not processed:
-            flash("Falha ao extrair conteúdo.", "warning")
+        # Regra 2: Spy Writer consome crédito (ex: 2 créditos por ser uma função avançada)
+        if current_user.consume_credit(2):
+            url = request.form.get('url')
+            processed = content_service.analyze_spy_link(url, getattr(current_user, 'is_demo', False))
+        else:
+            flash("Créditos insuficientes para usar o Spy Writer.", "danger")
     return render_template('spy_writer.html', processed_content=processed, blogs=blogs)
 
 @content_bp.route('/post-report')

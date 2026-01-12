@@ -6,55 +6,48 @@
 <div class="p-6 space-y-8">
     <div>
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Painel de Controle</h1>
-        <p class="text-slate-500">Bem-vindo de volta! Acompanhe o desempenho de seus {{ current_user.sites|length }} sites conectados.</p>
+        <p class="text-slate-500">Gestão de performance para seus {{ current_user.sites|length }} sites.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                    <i class="fas fa-bolt text-xl"></i>
-                </div>
-                <span class="text-[10px] font-black px-2 py-1 bg-slate-100 rounded-lg text-slate-500 uppercase">Diário</span>
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                <i class="fas fa-bolt text-xl"></i>
             </div>
-            <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Capacidade de IA</p>
-            <h3 class="text-2xl font-black text-slate-800">{{ posts_hoje }} / {{ current_user.plan.posts_per_day }}</h3>
-            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
-                {% set percent = (posts_hoje / current_user.plan.posts_per_day * 100) if current_user.plan.posts_per_day > 0 else 0 %}
-                <div class="bg-blue-600 h-full transition-all duration-500" style="width: {{ percent if percent <= 100 else 100 }}%"></div>
-            </div>
+            <span class="text-[10px] font-black px-2 py-1 bg-slate-100 rounded-lg text-slate-500 uppercase">Limite Diário</span>
         </div>
-
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 shadow-sm shadow-green-100">
-                    <i class="fas fa-coins text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Créditos Disponíveis</p>
-                    <h3 class="text-2xl font-black text-slate-800">{{ current_user.credits if current_user.credits is defined else saldo }}</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shadow-sm shadow-purple-100">
-                    <i class="fas fa-clock text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Status de Automação</p>
-                    <h3 class="text-sm font-bold text-slate-700">
-                        {% if current_user.sites %}
-                            <span class="text-green-600">Ativa e Monitorando</span>
-                        {% else %}
-                            <span class="text-slate-400">Aguardando Site</span>
-                        {% endif %}
-                    </h3>
-                </div>
-            </div>
+        <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Capacidade de IA</p>
+        <h3 class="text-2xl font-black text-slate-800">{{ posts_hoje }} <span class="text-slate-300 text-lg">/ {{ current_user.plan.posts_per_day }}</span></h3>
+        <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3 overflow-hidden">
+            {% set percent = (posts_hoje / current_user.plan.posts_per_day * 100) if current_user.plan.posts_per_day > 0 else 0 %}
+            <div class="bg-blue-600 h-full transition-all duration-500" style="width: {{ percent if percent <= 100 else 100 }}%"></div>
         </div>
     </div>
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                <i class="fas fa-coins text-xl"></i>
+            </div>
+            <span class="text-[10px] font-black px-2 py-1 bg-amber-100 rounded-lg text-amber-600 uppercase">Saldo</span>
+        </div>
+        <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Créditos Disponíveis</p>
+        <h3 class="text-2xl font-black text-slate-800">{{ current_user.credits }}</h3>
+        <p class="text-[10px] text-slate-400 mt-2 italic">* Usado em Spy Writer e Radar</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                <i class="fas fa-globe text-xl"></i>
+            </div>
+            <span class="text-[10px] font-black px-2 py-1 bg-green-100 rounded-lg text-green-600 uppercase">Status</span>
+        </div>
+        <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Domínios</p>
+        <h3 class="text-2xl font-black text-slate-800">{{ current_user.sites|length }}</h3>
+    </div>
+</div>
 
     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">

@@ -54,14 +54,17 @@ def sync_radar():
         flash('Modo Demo: Sincronização desativada.', 'info')
         return redirect(url_for('radar.radar'))
 
+    # REGRA 4: Sincronização consome crédito
+    if not current_user.consume_credit(1):
+        flash("Saldo insuficiente para sincronizar o Radar.", "danger")
+        return redirect(url_for('radar.radar'))
+
     fontes = ContentSource.query.join(Blog).filter(Blog.user_id == current_user.id).all()
     if not fontes:
         flash("Adicione uma fonte primeiro!", "warning")
         return redirect(url_for('radar.radar'))
 
-    # Delega a inteligência para o serviço
     novos = content_service.sync_sources_logic(fontes, extrair_texto_da_url)
-    
     flash(f"Radar atualizado! {novos} novas análises geradas.", "success")
     return redirect(url_for('radar.radar'))
 
