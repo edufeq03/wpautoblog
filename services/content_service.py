@@ -184,21 +184,58 @@ def publish_content_flow(idea, user):
     
     return False, "Falha na comunicação com o WordPress."
 
-def _send_to_wp(blog, titulo, conteudo, id_img):
+def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
+    # Se não for passado status, ele usa o padrão do banco (que geralmente é 'publish')
+    post_status = status if status else blog.post_status
+    
     payload = {
         'title': titulo, 
         'content': conteudo, 
-        'status': blog.post_status or 'publish'
+        'status': post_status  # Agora o WP respeitará 'draft' ou 'publish'
     }
+    
     if id_img:
         payload['featured_media'] = id_img
-    
+
+    auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
     try:
-        return requests.post(
-            f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts",
-            auth=HTTPBasicAuth(blog.wp_user, blog.wp_app_password),
-            json=payload, 
-            timeout=30
-        )
-    except:
+        url = f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
+        r = requests.post(url, auth=auth, json=payload, timeout=30)
+        return r
+    except Exception as e:
+        print(f"Erro na requisição WP: {e}")
         return None
+    
+def process_manual_post(user, site_id, title, content, action, image_file=None):
+    blog = Blog.query.filter_by(id=site_id, user_id=user.id).first()
+    if not blog:
+        return False, "Site não encontrado."
+
+    wp_image_id = None
+    if image_file and image_file.filename != '':
+        if upload_manual_image:
+            wp_image_id = upload_manual_image(image_file, blog.wp_url, (blog.wp_user, blog.wp_app_password))
+    
+    # Define o status baseado na escolha do usuário
+    # Se for 'now' -> 'publish'. Se for qualquer outra coisa (como 'draft') -> 'draft'
+    wp_status = 'publish' if action == 'now' else 'draft'
+    
+    response = _send_to_wp(blog, title, content, wp_image_id, status=wp_status)
+    
+    if response and response.status_code in [200, 201]:
+        data = response.json()
+        status_label = "Publicado" if wp_status == 'publish' else "Rascunho Enviado"
+        
+        log = PostLog(
+            blog_id=blog.id,
+            title=title,
+            content=content[:500],
+            status=status_label,
+            wp_post_id=data.get('id'),
+            post_url=data.get('link')
+        )
+        db.session.add(log)
+        db.session.commit()
+        return True, f"Sucesso! O post foi enviado como {status_label}."
+    
+    return False, "Erro ao comunicar com o WordPress."

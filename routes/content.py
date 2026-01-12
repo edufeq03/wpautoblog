@@ -48,6 +48,36 @@ def manual_post():
     
     return render_template('manual_post.html', blogs=blogs)
 
+def process_manual_post(user, site_id, title, content, action, image_file=None):
+    """
+    Processa a postagem manual enviada pelo formulário.
+    """
+    from models import Blog, db
+    import services.wordpress_service as wp_service
+    import services.image_service as image_service
+
+    blog = Blog.query.filter_by(id=site_id, user_id=user.id).first()
+    if not blog:
+        return False, "Site não encontrado ou você não tem permissão."
+
+    # Lógica de Imagem
+    image_url = None
+    if image_file and image_file.filename != '':
+        # Se o usuário subiu uma imagem, processamos ela
+        image_url = image_service.upload_to_storage(image_file)
+    
+    # Se for postagem imediata ('now')
+    if action == 'now':
+        success, msg = wp_service.post_to_wordpress(blog, title, content, image_url)
+        if success:
+            return True, f"Postagem realizada com sucesso no site {blog.site_name}!"
+        else:
+            return False, f"Erro ao postar no WordPress: {msg}"
+    
+    # Se for para a fila ('queue') - Exemplo de implementação simples
+    # Aqui você pode salvar em uma tabela de agendamento se tiver uma
+    return False, "A função de fila (queue) ainda está em desenvolvimento."
+
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required
 def spy_writer():
