@@ -57,14 +57,7 @@ app.register_blueprint(teste_bp, url_prefix='/teste')
 @app.route('/')
 def index():
     planos_db = Plan.query.order_by(Plan.id.asc()).all()
-    # Identidade visual EL Postador
-    t = {
-        "hero_title": "EL Postador",
-        "hero_subtitle": "Sua máquina de conteúdo SEO no piloto automático.",
-        "hero_button": "¡PROBAR GRATIS!",
-        "hero_line": "Onde a tendência vira lucro."
-    }
-    return render_template('landing.html', planos=planos_db, t=t)
+    return render_template('landing.html', planos=planos_db)
 
 # --- CONFIGURAÇÃO DO SCHEDULER (AUTOMAÇÃO) ---
 def job_automation():

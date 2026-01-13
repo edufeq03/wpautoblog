@@ -1,104 +1,90 @@
-from flask import Blueprint, request, jsonify, redirect, url_for, flash
-from flask_login import login_required, current_user
-from models import db, User
-import mercadopago
+# payments.py corrigido
 import os
+import stripe
+from dotenv import load_dotenv
+from flask import Blueprint, redirect, url_for, request, render_template, jsonify
+from flask_login import login_required, current_user
+from models import db, User, Plan
 
 payments_bp = Blueprint('payments', __name__)
 
-# --- CONFIGURAÇÃO GLOBAL DE PLANOS ---
-# Esta é a variável que o seu app.py está procurando
-PLANS_CONFIG = {
-    1: {"titulo": "Plano Basic", "preco": 47.00, "creditos": 20},
-    2: {"titulo": "Plano Pro", "preco": 97.00, "creditos": 50}
-}
+load_dotenv()
 
-@payments_bp.route('/webhook/mercadopago', methods=['POST'])
-def webhook_mercadopago():
-    sdk = mercadopago.SDK(os.environ.get("MP_ACCESS_TOKEN"))
-    data = request.get_json()
-    
-    print(f"DEBUG WEBHOOK RECEBIDO: {data}")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-    if data and data.get("type") == "payment":
-        payment_id = data.get("data", {}).get("id")
-        
-        # Consulta os detalhes reais do pagamento
-        payment_info = sdk.payment().get(payment_id)
-        
-        if payment_info["status"] == 200:
-            res = payment_info["response"]
-            
-            # Verificamos se o status é 'approved'
-            if res.get("status") == "approved":
-                # USAR O ID QUE PASSAMOS NO CHECKOUT
-                user_id = res.get("external_reference")
-                amount = res.get("transaction_amount")
-                
-                user = User.query.get(user_id)
-                
-                if user:
-                    print(f"✅ Processando pagamento para o usuário: {user.username}")
-                    # Busca a configuração do plano baseada no valor pago
-                    for p_id, info in PLANS_CONFIG.items():
-                        if amount >= info["preco"]:
-                            user.plan_id = p_id
-                            user.credits += info["creditos"]
-                            break
-                    
-                    db.session.commit()
-                    print(f"💰 Créditos atualizados! Novo saldo de {user.username}: {user.credits}")
-                    return jsonify({"status": "success"}), 200
-                else:
-                    print(f"⚠️ Usuário ID {user_id} não encontrado no banco.")
-            else:
-                print(f"ℹ️ Pagamento {payment_id} com status: {res.get('status')}")
-
-    return jsonify({"status": "received"}), 200
-
-@payments_bp.route('/buy-credits/<int:plan_id>')
+@payments_bp.route('/checkout/<int:plan_id>')
 @login_required
-def buy_credits(plan_id):
-    plan = PLANS_CONFIG.get(plan_id)
-    sdk = mercadopago.SDK(os.environ.get("MP_ACCESS_TOKEN"))
+def checkout(plan_id):
+    # Usamos plano_id ou plan_id conforme sua rota no landing.html
+    plan = Plan.query.get_or_404(plan_id)
     
-    preference_data = {
-        "items": [
-            {
-                "title": plan["titulo"],
-                "quantity": 1,
-                "unit_price": plan["preco"],
-                "currency_id": "BRL"
+    # Mapeamento de IDs do Stripe
+    stripe_price_id = ""
+    if plan.name == 'Lite':
+        stripe_price_id = os.getenv('STRIPE_PRICE_ID_LITE')
+    elif plan.name == 'Pro':
+        stripe_price_id = os.getenv('STRIPE_PRICE_ID_PRO')
+    elif plan.name == 'VIP':
+        stripe_price_id = os.getenv('STRIPE_PRICE_ID_VIP')
+
+    if not stripe_price_id:
+        return f"Erro: Preço para o plano '{plan.name}' não configurado no .env", 400
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=current_user.email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': stripe_price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            # _external=True é vital para gerar a URL completa para o Stripe
+            success_url=url_for('payments.success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('index', _external=True),
+            metadata={
+                'user_id': current_user.id,
+                'plan_id': plan.id
             }
-        ],
-        "payer": {
-            "email": "test_user_123456@testuser.com" # USE UM EMAIL DE TESTE DIFERENTE DO SEU
-        },
-        "external_reference": str(current_user.id),
-        "back_urls": {
-            "success": url_for('content.ideas', _external=True),
-            "failure": url_for('content.ideas', _external=True)
-        },
-        "auto_return": "approved",
-        "payer": {
-            "email": "test_user_123456@testuser.com" 
-        },
-        # "notification_url": "https://sua-url.ngrok..."  <-- COMENTE ESTA LINHA COM '#'
-    }
+        )
+        
+        # AQUI ESTÁ A CORREÇÃO: Você deve retornar o redirect para a URL do Stripe
+        return redirect(checkout_session.url, code=303)
+        
+    except Exception as e:
+        print(f"Erro Stripe: {str(e)}")
+        return f"Erro ao processar pagamento: {str(e)}", 400
     
-    preference_response = sdk.preference().create(preference_data)
-    
-    if preference_response["status"] in [200, 201]:
-        return redirect(preference_response["response"]["init_point"])
-    else:
-        print(f"❌ Erro Detalhado: {preference_response['response']}")
-        flash("Erro ao iniciar pagamento. Tente novamente em instantes.", "danger")
-        return redirect(url_for('content.ideas'))
-    
-
-# No arquivo routes/payments.py
-@payments_bp.route('/checkout/<int:plano_id>')
+@payments_bp.route('/success')
 @login_required
-def checkout(plano_id):
-    # Lógica do checkout...
-    return f"Página de checkout para o plano {plano_id}"
+def success():
+    return render_template('payments/success.html')
+
+@payments_bp.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Quando o pagamento da assinatura é concluído com sucesso
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # Pegamos os dados que enviamos no checkout_session.create
+        user_id = session['metadata'].get('user_id')
+        plan_id = session['metadata'].get('plan_id')
+
+        if user_id and plan_id:
+            user = User.query.get(user_id)
+            if user:
+                user.plan_id = plan_id
+                # Aqui você pode adicionar lógica para somar créditos, se tiver
+                db.session.commit()
+                print(f">>> [STRIPE] Plano {plan_id} liberado para o usuário {user.email}")
+
+    return jsonify({'status': 'success'}), 200

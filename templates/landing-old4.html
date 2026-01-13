@@ -102,8 +102,8 @@
 
     <header class="pt-48 pb-32 px-6 text-center bg-gradient-to-b from-blue-50 to-[#f1f5f9]">
         <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight tracking-tighter">
-            El Postador<br>
-            <span class="gradient-text">Sua máquina de conteúdo no piloto automático</span>
+            {{ t.hero_title }}<br>
+            <span class="gradient-text">{{ t.hero_subtitle }}</span>
         </h1>
         <p class="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto mb-10 leading-relaxed">
                 A tecnologia que monitora concorrentes, gera artigos perfeitos e publica no seu WordPress. Menos trabalho, mais tráfego orgânico.
@@ -289,80 +289,54 @@
             </div>
         </div>
     </section>
-    <section id="precos" class="py-24 px-6 bg-slate-50">
+     <section id="precos" class="py-24 px-6">
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-20">
                 <h2 class="text-4xl font-black text-slate-900 mb-4 tracking-tight">Investimento para o seu sucesso</h2>
                 <p class="text-slate-500 max-w-xl mx-auto font-medium text-lg">Escolha o plano ideal para a escala do seu negócio.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full bg-white relative">
-                    <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">Free</h3>
-                    <div class="mb-8">
-                        <span class="text-5xl font-black text-slate-900">R$ 0</span>
-                        <span class="text-slate-400 font-bold">/mês</span>
-                    </div>
-                    <ul class="space-y-4 mb-10 flex-grow">
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 1 Site WordPress
-                        </li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 1 Postagem / dia
-                        </li>
-                    </ul>
-                    <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-100 text-slate-800 hover:bg-slate-200">
-                        Começar Grátis
-                    </a>
-                </div>
-
-                <div class="price-card p-8 rounded-[2.5rem] border-2 border-blue-600 flex flex-col h-full bg-white relative shadow-2xl shadow-blue-500/10 scale-105 z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {% for plano in planos %}
+                <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full relative overflow-hidden">
+                    {% if plano.name == 'Pro' %}
                     <div class="absolute top-0 right-0 bg-blue-600 text-white px-6 py-2 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest">Mais Popular</div>
+                    {% endif %}
                     
-                    <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">Pro</h3>
+                    <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">{{ plano.name }}</h3>
                     <div class="mb-8">
-                        <span class="text-5xl font-black text-slate-900">R$ 97</span>
+                        <span class="text-5xl font-black text-slate-900">R$ {{ "%.0f"|format(plano.price) }}</span>
                         <span class="text-slate-400 font-bold">/mês</span>
                     </div>
+
                     <ul class="space-y-4 mb-10 flex-grow">
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 5 Sites WordPress
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 
+                            {{ plano.max_sites }} {{ 'Site' if plano.max_sites == 1 else 'Sites' }} WordPress
                         </li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Postagens Ilimitadas
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 
+                            {{ plano.posts_per_day }} {{ 'Postagem' if plano.posts_per_day == 1 else 'Postagens' }} / dia
                         </li>
+                        {% if plano.has_images %}
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Imagens por IA inclusas
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Imagens Inclusas
                         </li>
+                        {% endif %}
                     </ul>
-                    <a href="{{ url_for('payments.checkout', plan_id=3) }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30">
-                        Assinar Agora
-                    </a>
-                </div>
 
-                <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full bg-white relative">
-                    <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">VIP</h3>
-                    <div class="mb-8">
-                        <span class="text-5xl font-black text-slate-900">R$ 247</span>
-                        <span class="text-slate-400 font-bold">/mês</span>
-                    </div>
-                    <ul class="space-y-4 mb-10 flex-grow">
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Sites Ilimitados
-                        </li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Radar de Tendências VIP
-                        </li>
-                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Suporte Prioritário
-                        </li>
-                    </ul>
-                    <a href="https://wa.me/5519981119287?text=Quero+conhecer+o+plano+VIP+do+EL+Postador" target="_blank" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-900 text-white hover:bg-black">
-                        Falar com Consultor
-                    </a>
+                    {% if plano.name == 'VIP' %}
+                        <a href="https://wa.me/5519981119287?text=Lead_VIP_AutoBlog" 
+                        class="block text-center w-full py-5 rounded-[1.5rem] font-black bg-blue-600 text-white hover:bg-blue-700 transition-all">
+                            Falar com Consultor
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-slate-900 text-white hover:bg-black">
+                            Selecionar Plano
+                        </a>
+                    {% endif %}
                 </div>
-
+                {% endfor %}
             </div>
         </div>
     </section>
