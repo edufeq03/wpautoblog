@@ -1,9 +1,10 @@
-# payments.py corrigido
+# routes/payments.py
 import os
 import stripe
 from dotenv import load_dotenv
-from flask import Blueprint, redirect, url_for, request, render_template, jsonify
+from flask import Blueprint, redirect, url_for, request, render_template, jsonify, current_app
 from flask_login import login_required, current_user
+from flask_mail import Message
 from models import db, User, Plan
 
 payments_bp = Blueprint('payments', __name__)
@@ -12,13 +13,43 @@ load_dotenv()
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
+def send_welcome_email(user_email, plan_name):
+    """Envia e-mail de confirmação após o pagamento."""
+    try:
+        # Importação local para evitar erros de importação circular com o objeto 'mail' do app.py
+        from app import mail 
+        
+        msg = Message(
+            f'¡Bienvenido a EL Postador! 🚀 Plano {plan_name} Ativo',
+            recipients=[user_email]
+        )
+        
+        msg.body = f"""
+        Olá! 
+        
+        Seu pagamento foi confirmado com sucesso e seu plano '{plan_name}' já está ativo no EL Postador.
+        
+        O que você pode fazer agora:
+        1. Conectar seu site WordPress no painel.
+        2. Configurar seu primeiro Radar de Conteúdo.
+        3. Gerar seus primeiros artigos com IA de alta qualidade.
+        
+        Acesse seu painel aqui: {url_for('dashboard.dashboard_view', _external=True)}
+        
+        Estamos ansiosos para ver seu conteúdo escalando!
+        """
+        
+        mail.send(msg)
+        print(f">>> [E-MAIL] Boas-vindas enviado com sucesso para {user_email}")
+    except Exception as e:
+        print(f">>> [ERRO E-MAIL] Falha ao enviar para {user_email}: {str(e)}")
+
 @payments_bp.route('/checkout/<int:plan_id>')
 @login_required
 def checkout(plan_id):
-    # Usamos plano_id ou plan_id conforme sua rota no landing.html
     plan = Plan.query.get_or_404(plan_id)
     
-    # Mapeamento de IDs do Stripe
+    # Mapeamento dinâmico baseado no .env
     stripe_price_id = ""
     if plan.name == 'Lite':
         stripe_price_id = os.getenv('STRIPE_PRICE_ID_LITE')
@@ -39,7 +70,6 @@ def checkout(plan_id):
                 'quantity': 1,
             }],
             mode='subscription',
-            # _external=True é vital para gerar a URL completa para o Stripe
             success_url=url_for('payments.success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=url_for('index', _external=True),
             metadata={
@@ -47,17 +77,15 @@ def checkout(plan_id):
                 'plan_id': plan.id
             }
         )
-        
-        # AQUI ESTÁ A CORREÇÃO: Você deve retornar o redirect para a URL do Stripe
         return redirect(checkout_session.url, code=303)
-        
     except Exception as e:
         print(f"Erro Stripe: {str(e)}")
-        return f"Erro ao processar pagamento: {str(e)}", 400
+        return f"Erro ao criar sessão: {str(e)}", 400
     
 @payments_bp.route('/success')
 @login_required
 def success():
+    # Renderiza o template de sucesso que criamos
     return render_template('payments/success.html')
 
 @payments_bp.route('/webhook', methods=['POST'])
@@ -71,20 +99,23 @@ def stripe_webhook():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-    # Quando o pagamento da assinatura é concluído com sucesso
+    # Lógica disparada quando o pagamento é concluído
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         
-        # Pegamos os dados que enviamos no checkout_session.create
         user_id = session['metadata'].get('user_id')
         plan_id = session['metadata'].get('plan_id')
 
         if user_id and plan_id:
             user = User.query.get(user_id)
-            if user:
-                user.plan_id = plan_id
-                # Aqui você pode adicionar lógica para somar créditos, se tiver
+            plan = Plan.query.get(plan_id)
+            if user and plan:
+                # 1. Atualiza o banco de dados
+                user.plan_id = plan.id
                 db.session.commit()
-                print(f">>> [STRIPE] Plano {plan_id} liberado para o usuário {user.email}")
+                print(f">>> [STRIPE] Plano {plan.name} liberado para {user.email}")
+                
+                # 2. Envia o e-mail de boas-vindas
+                send_welcome_email(user.email, plan.name)
 
     return jsonify({'status': 'success'}), 200
