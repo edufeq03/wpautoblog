@@ -118,13 +118,42 @@ def manual_post():
 def spy_writer():
     processed = None
     blogs = Blog.query.filter_by(user_id=current_user.id).all()
+    
     if request.method == 'POST':
-        # Regra 2: Spy Writer consome crédito (ex: 2 créditos por ser uma função avançada)
-        if current_user.consume_credit(2):
-            url = request.form.get('url')
+        # 1. Verificação de Limite Diário (Antes de cobrar)
+        # O Spy Writer é um post de IA, então passamos is_ai_post=True
+        reached, limit, current = current_user.reached_daily_limit(is_ai_post=True)
+        
+        if reached:
+            flash(f"Limite diário atingido ({current}/{limit}). Faça upgrade para postar mais.", "warning")
+            return render_template('spy_writer.html', processed_content=None, blogs=blogs)
+
+        # 2. Consumo de Créditos (Função avançada: 2 créditos)
+        if not current_user.consume_credit(2):
+            flash("Créditos insuficientes para usar o Spy Writer. Recarregue seu saldo.", "danger")
+            return render_template('spy_writer.html', processed_content=None, blogs=blogs)
+
+        # 3. Execução da Lógica
+        url = request.form.get('url')
+        try:
+            # Chamada ao serviço para extrair e reescrever o conteúdo
             processed = content_service.analyze_spy_link(url, getattr(current_user, 'is_demo', False))
-        else:
-            flash("Créditos insuficientes para usar o Spy Writer.", "danger")
+            
+            if not processed:
+                # Estorno se a extração falhar
+                current_user.increase_credit(2)
+                flash("Não conseguimos extrair conteúdo desta URL. Verifique o link.", "danger")
+            else:
+                # Registro de Vigilância de API para o Spy Writer
+                from services.credit_service import log_api_usage
+                log_api_usage(current_user.id, "Groq/Scraper", "Spy Writer", tokens=1500)
+                flash("Conteúdo espiado e reescrito com sucesso!", "success")
+                
+        except Exception as e:
+            current_user.increase_credit(2) # Estorno em caso de erro técnico
+            print(f">>> [ERRO SPY] {str(e)}")
+            flash("Erro técnico ao processar o Spy Writer. Créditos devolvidos.", "danger")
+
     return render_template('spy_writer.html', processed_content=processed, blogs=blogs)
 
 # Rota para listar as postagens
