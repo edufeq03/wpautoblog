@@ -45,21 +45,32 @@ def delete_idea(idea_id):
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
-    # Regra 1: Post de IA consome crédito
+    # 1. Tenta consumir o crédito primeiro
+    # Usamos o método da classe User definido no seu models.py
     if not current_user.consume_credit(1):
         flash("Saldo insuficiente! Cada postagem por IA consome 1 crédito.", "danger")
         return redirect(url_for('content.ideas'))
 
-    # Trava de limite diário (mantida como segunda camada de segurança)
+    # 2. Verifica limites diários do plano
     reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
     if reached:
+        # Importante: Se o limite diário barrou, devolvemos o crédito debitado acima
+        current_user.increase_credit(1) 
         flash(f"Limite diário do plano atingido.", "danger")
         return redirect(url_for('content.ideas'))
 
+    # 3. Busca a ideia e tenta publicar
     idea = ContentIdea.query.get_or_404(idea_id)
-    # Passando o current_user para o serviço
     sucesso, msg = content_service.publish_content_flow(idea, current_user)
-    flash(msg, "success" if sucesso else "danger")
+
+    if sucesso:
+        flash(msg, "success")
+    else:
+        # LÓGICA DE ESTORNO:
+        # Se o fluxo de publicação falhou (erro na OpenAI ou WordPress), devolve o crédito.
+        current_user.increase_credit(1)
+        flash(f"Falha na publicação: {msg}. Seu crédito foi estornado.", "danger")
+
     return redirect(url_for('content.ideas'))
 
 # Rota para post manual
