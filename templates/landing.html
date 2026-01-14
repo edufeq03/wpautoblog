@@ -296,9 +296,8 @@
                 <p class="text-slate-500 max-w-xl mx-auto font-medium text-lg">Escolha o plano ideal para a escala do seu negócio.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
-                <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full bg-white relative">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full relative overflow-hidden">
                     <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">Free</h3>
                     <div class="mb-8">
                         <span class="text-5xl font-black text-slate-900">R$ 0</span>
@@ -322,15 +321,38 @@
                     
                     <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">Pro</h3>
                     <div class="mb-8">
-                        <span class="text-5xl font-black text-slate-900">R$ 97</span>
+                        <span class="text-5xl font-black text-slate-900">R$ 19,90</span>
                         <span class="text-slate-400 font-bold">/mês</span>
                     </div>
                     <ul class="space-y-4 mb-10 flex-grow">
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 5 Sites WordPress
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 1 Site WordPress
                         </li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
-                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Postagens Ilimitadas
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 5 Postagem / dia
+                        </li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> Imagens por IA inclusas
+                        </li>
+                    </ul>
+                    <a href="{{ url_for('payments.checkout', plan_id=3) }}" class="block text-center w-full py-5 rounded-[1.5rem] font-black transition-all text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30">
+                        Assinar Agora
+                    </a>
+                </div>
+
+                <div class="price-card p-8 rounded-[2.5rem] border-2 border-blue-600 flex flex-col h-full bg-white relative shadow-2xl shadow-blue-500/10 scale-105 z-10">
+                    
+                    <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">Pro</h3>
+                    <div class="mb-8">
+                        <span class="text-5xl font-black text-slate-900">R$ 39,90</span>
+                        <span class="text-slate-400 font-bold">/mês</span>
+                    </div>
+                    <ul class="space-y-4 mb-10 flex-grow">
+                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 2 Sites WordPress
+                        </li>
+                        <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
+                            <i class="fas fa-check-circle text-blue-500 text-lg"></i> 10 Postagem / dia
                         </li>
                         <li class="flex items-center gap-3 text-sm font-bold text-slate-600">
                             <i class="fas fa-check-circle text-blue-500 text-lg"></i> Imagens por IA inclusas
@@ -344,7 +366,7 @@
                 <div class="price-card p-8 rounded-[2.5rem] border border-slate-200 flex flex-col h-full bg-white relative">
                     <h3 class="text-slate-500 font-black uppercase tracking-widest text-xs mb-4">VIP</h3>
                     <div class="mb-8">
-                        <span class="text-5xl font-black text-slate-900">R$ 247</span>
+                        <span class="text-5xl font-black text-slate-900">R$ 347</span>
                         <span class="text-slate-400 font-bold">/mês</span>
                     </div>
                     <ul class="space-y-4 mb-10 flex-grow">
