@@ -324,28 +324,3 @@ def analyze_spy_link(url, is_demo=False):
         print(f"!!! [SPY-WRITER] Erro ao processar IA: {e}")
         
     return None
-
-def user_reached_limit(user, is_ai_post=False):
-    """
-    Verifica se o usuário atingiu o limite diário de postagens de IA.
-    Postagens manuais (is_ai_post=False) são sempre liberadas.
-    """
-    if not is_ai_post or user.is_admin:
-        return False, 0, 0
-
-    if not user.plan:
-        return True, 0, 0 
-    
-    limite_diario = user.plan.posts_per_day
-    if limite_diario >= 999:
-        return False, limite_diario, 0
-
-    hoje = date.today()
-    # Conta apenas postagens que vieram de ideias (IA) se necessário, 
-    # ou todas as postagens do dia para controle de tráfego.
-    post_count = PostLog.query.join(Blog).filter(
-        Blog.user_id == user.id,
-        db.func.date(PostLog.posted_at) == hoje
-    ).count()
-
-    return post_count >= limite_diario, limite_diario, post_count

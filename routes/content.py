@@ -67,11 +67,11 @@ def publish_idea(idea_id):
         return redirect(url_for('content.ideas'))
 
     # 2. Verifica limites diários do plano
-    reached, limit, current = content_service.user_reached_limit(current_user, is_ai_post=True)
+    reached, limit, current = current_user.reached_daily_limit(is_ai_post=True)
+
     if reached:
-        # Importante: Se o limite diário barrou, devolvemos o crédito debitado acima
         current_user.increase_credit(1) 
-        flash(f"Limite diário do plano atingido.", "danger")
+        flash(f"Limite diário do plano atingido ({current}/{limit}).", "danger")
         return redirect(url_for('content.ideas'))
 
     # 3. Busca a ideia e tenta publicar

@@ -98,6 +98,36 @@ class User(db.Model, UserMixin):
     def get_reset_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
         return s.dumps({'user_id': self.id})
+    
+    def reached_daily_limit(self, is_ai_post=False):
+        """
+        Verifica se o usuário atingiu o limite diário de postagens de IA.
+        """
+        # Admins e posts manuais não têm trava
+        if not is_ai_post or self.is_admin:
+            return False, 0, 0
+
+        # Usuários sem plano são bloqueados por segurança
+        if not self.plan:
+            return True, 0, 0 
+        
+        limite_diario = self.plan.posts_per_day
+        
+        # Planos ilimitados (ex: valor 999 no banco)
+        if limite_diario >= 999:
+            return False, limite_diario, 0
+
+        hoje = date.today()
+        
+        # Importação local do PostLog e Blog para evitar erro de importação circular
+        from models import PostLog, Blog 
+        
+        post_count = PostLog.query.join(Blog).filter(
+            Blog.user_id == self.id,
+            db.func.date(PostLog.posted_at) == hoje
+        ).count()
+
+        return post_count >= limite_diario, limite_diario, post_count
 
 class Plan(db.Model):
     __tablename__ = 'plans'
