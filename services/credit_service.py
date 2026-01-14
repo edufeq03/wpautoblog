@@ -1,5 +1,5 @@
 # services/credit_service.py
-from models import db, User
+from models import db, User, ApiUsage
 
 def adicionar_creditos(user_id, quantidade):
     """Soma créditos ao saldo do usuário."""
@@ -33,3 +33,16 @@ def debitar_creditos(user_id, quantidade):
     except Exception as e:
         db.session.rollback()
         return False, str(e)
+    
+def log_api_usage(user_id, api_name, feature, tokens=0):
+    try:
+        usage = ApiUsage(
+            user_id=user_id,
+            api_name=api_name,
+            feature=feature,
+            tokens_used=tokens
+        )
+        db.session.add(usage)
+        db.session.commit()
+    except Exception as e:
+        print(f"Erro ao logar uso de API: {e}")

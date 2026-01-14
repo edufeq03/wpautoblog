@@ -23,9 +23,24 @@ def generate_ideas():
         return redirect(url_for('content.ideas'))
         
     blog = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
-    count = content_service.generate_ideas_logic(blog)
     
-    flash(f'{count} novas ideias geradas para {blog.site_name}!', 'success')
+    # 1. Executa a lógica no serviço
+    count = content_service.generate_ideas_logic(blog)
+
+    # 2. NOVA LÓGICA DE VIGILÂNCIA (Movida para antes do feedback)
+    from services.credit_service import log_api_usage
+    log_api_usage(current_user.id, "Groq", "Generate Ideas", tokens=500) 
+    print(f">>> [VIGILÂNCIA] Consumo registrado para {current_user.email}")
+    
+    # 3. Feedback para o usuário e Logs do Terminal
+    if count > 0:
+        flash(f'{count} novas ideias geradas para {blog.site_name}!', 'success')
+        print(f">>> [IDEIAS] Usuário {current_user.email} gerou {count} ideias para o blog ID {blog.id}")
+    else:
+        flash('Não foi possível gerar novas ideias no momento.', 'danger')
+        print(f">>> [ERRO] Falha na geração de ideias para {blog.email}")
+
+    # 4. Redirecionamento ÚNICO ao final de tudo
     return redirect(url_for('content.ideas', site_id=site_id))
 
 # Rota para excluir ideias da lista

@@ -70,7 +70,7 @@ if not scheduler.running:
     scheduler.start()
     try:
         # Verifica a cada 60 segundos
-        scheduler.add_job(id='job_automation', func=job_automation, trigger='interval', seconds=60)
+        scheduler.add_job(id='job_automation', func=job_automation, trigger='interval', minutes=5)
         print(">>> [SISTEMA] EL Postador: Automação agendada (60s).")
     except Exception as e:
         print(f">>> [ERRO SCHEDULER] {e}")

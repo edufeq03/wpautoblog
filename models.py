@@ -183,3 +183,13 @@ class CapturedContent(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     source = db.relationship('ContentSource', backref=db.backref('captures', lazy=True))
     
+class ApiUsage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    api_name = db.Column(db.String(50), nullable=False)  # Ex: 'Groq', 'OpenAI'
+    feature = db.Column(db.String(50), nullable=False)   # Ex: 'Generate Ideas', 'Post-IA'
+    tokens_used = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamento para facilitar consultas no admin
+    user = db.relationship('User', backref=db.backref('api_usages', lazy=True))

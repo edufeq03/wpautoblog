@@ -1,6 +1,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
-from models import db, ContentIdea, PostLog, Blog, CapturedContent
+from models import db, ContentIdea, PostLog, Blog, CapturedContent, ApiUsage
 from services.ai_service import generate_text
 from services.scraper_service import extrair_texto_da_url
 import os
@@ -54,6 +54,17 @@ def generate_ideas_logic(blog):
             ],
             temperature=0.7
         )
+        # --- LÓGICA DE VIGILÂNCIA ---
+        # Pegamos o consumo real retornado pela API
+        tokens = response.usage.total_tokens if hasattr(response, 'usage') else 0
+        usage_log = ApiUsage(
+            user_id=blog.user_id,
+            api_name="Groq",
+            feature="Generate Ideas",
+            tokens_used=tokens
+        )
+        db.session.add(usage_log)
+        # ----------------------------
         
         conteudo = response.choices[0].message.content.strip()
         linhas = [l.strip() for l in conteudo.split('\n') if len(l.strip()) > 5]
@@ -136,50 +147,68 @@ def convert_radar_insight_to_idea(insight_id):
         return False
 
 # --- PUBLICAÇÃO FINAL ---
-def publish_content_flow(idea, user):
-    """Gera o post final usando Título + Contexto (se houver) e publica no WP."""
-    if getattr(user, 'is_demo', False):
-        return True, "Modo Demo ativo."
-
-    # Se a ideia veio do Radar, usamos o contexto capturado para um post fiel
+def _gerar_texto_do_artigo(idea):
+    """Subfunção 1: Cuida apenas da inteligência artificial."""
     if idea.context_insight:
-        prompt_final = (
+        prompt = (
             f"Escreva um artigo de blog completo com o título '{idea.title}'. "
             f"Baseie o conteúdo nestes fatos: {idea.context_insight}"
         )
     else:
-        prompt_final = f"Escreva um artigo de blog completo sobre: {idea.title}"
-
-    conteudo_post = generate_text(prompt_final)
+        prompt = f"Escreva um artigo de blog completo sobre: {idea.title}"
     
-    # Lógica de Imagem
+    return generate_text(prompt)
+
+def _obter_imagem_destacada(idea):
+    """Subfunção 2: Cuida apenas da lógica de imagem."""
     wp_image_id = idea.featured_image_id
     if not wp_image_id and processar_imagem_featured:
         auth = HTTPBasicAuth(idea.blog.wp_user, idea.blog.wp_app_password)
         wp_image_id = processar_imagem_featured(idea.title, idea.blog.wp_url, auth)
+    return wp_image_id
 
-    # Envio ao WordPress
-    response = _send_to_wp(idea.blog, idea.title, conteudo_post, wp_image_id)
-    
-    if response and response.status_code in [200, 201]:
-        data = response.json()
-        idea.is_posted = True
+def publish_content_flow(idea, user):
+    """Função Principal: Agora ela apenas COORDENA as subfunções."""
+    if getattr(user, 'is_demo', False):
+        return True, "Modo Demo ativo."
+
+    try:
+        # 1. Geração do conteúdo
+        conteudo_post = _gerar_texto_do_artigo(idea)
+        if not conteudo_post:
+            return False, "Erro ao gerar texto com a IA."
+
+        # 2. Obtenção da imagem
+        wp_image_id = _obter_imagem_destacada(idea)
+
+        # 3. Envio ao WordPress (Comunicação Externa)
+        response = _send_to_wp(idea.blog, idea.title, conteudo_post, wp_image_id)
         
-        # Salva no Post Report
-        log = PostLog(
-            blog_id=idea.blog_id,
-            title=idea.title,
-            content=conteudo_post[:500],
-            status="Publicado",
-            wp_post_id=data.get('id'),
-            post_url=data.get('link')
-        )
-        db.session.add(log)
-        user.last_post_date = date.today()
-        db.session.commit()
-        return True, "Post publicado com sucesso!"
-    
-    return False, "Falha na comunicação com o WordPress."
+        if response and response.status_code in [200, 201]:
+            data = response.json()
+            # Marcar como postado para não repetir
+            idea.is_posted = True
+            
+            # 4. Registro de Logs (Banco de Dados)
+            log = PostLog(
+                blog_id=idea.blog_id,
+                title=idea.title,
+                content=conteudo_post[:500],
+                status="Publicado",
+                wp_post_id=data.get('id'),
+                post_url=data.get('link')
+            )
+            db.session.add(log)
+            user.last_post_date = date.today()
+            db.session.commit()
+            return True, "Post publicado com sucesso!"
+        
+        return False, "O WordPress recusou a publicação (verifique credenciais)."
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro crítico no fluxo: {e}")
+        return False, f"Erro interno: {str(e)}"
 
 def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     # Se não for passado status, ele usa o padrão do banco (que geralmente é 'publish')
