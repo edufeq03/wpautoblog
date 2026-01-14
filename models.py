@@ -49,6 +49,20 @@ class User(db.Model, UserMixin):
             return True
         return False
     
+    def increase_credit(self, amount=1):
+        try:
+            # 1. Usa o operador de adição para aumentar o saldo
+            self.credits += amount
+            
+            # 2. Salva a alteração no banco de dados
+            db.session.commit()
+            return True
+        except Exception as e:
+            # 3. Se houver erro (ex: banco fora do ar), desfaz a alteração pendente
+            db.session.rollback()
+            print(f"Erro ao adicionar créditos: {e}")
+            return False
+    
     def can_post_today(self):
         """Verifica se o usuário atingiu o limite de posts do plano hoje"""
         # Se for admin, não tem trava diária

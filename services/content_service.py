@@ -22,7 +22,6 @@ def get_groq_client():
     return Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # --- BUSCAS E RELATÓRIOS ---
-
 def get_filtered_ideas(user_id, site_id=None):
     query = ContentIdea.query.join(Blog).filter(Blog.user_id == user_id, ContentIdea.is_posted == False)
     if site_id:
@@ -36,7 +35,6 @@ def get_post_reports(user_id, site_id=None):
     return query.order_by(PostLog.posted_at.desc()).all()
 
 # --- GERAÇÃO DE IDEIAS (BRAINSTORM) ---
-
 def generate_ideas_logic(blog):
     """Gera 5 ideias de títulos SEO baseados no nome/nicho do blog."""
     groq_client = get_groq_client()
@@ -74,7 +72,6 @@ def generate_ideas_logic(blog):
         return 0
 
 # --- FLUXO DO RADAR (INSIGHTS) ---
-
 def sync_sources_logic(fontes, scraper_func):
     """Extrai conteúdo das fontes e gera insights analíticos."""
     groq_client = get_groq_client()
@@ -139,7 +136,6 @@ def convert_radar_insight_to_idea(insight_id):
         return False
 
 # --- PUBLICAÇÃO FINAL ---
-
 def publish_content_flow(idea, user):
     """Gera o post final usando Título + Contexto (se houver) e publica no WP."""
     if getattr(user, 'is_demo', False):

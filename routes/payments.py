@@ -6,6 +6,8 @@ from flask import Blueprint, redirect, url_for, request, render_template, jsonif
 from flask_login import login_required, current_user
 from flask_mail import Message
 from models import db, User, Plan
+# Importando as funções do seu novo service
+from services.credit_service import adicionar_creditos 
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -16,7 +18,6 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 def send_welcome_email(user_email, plan_name):
     """Envia e-mail de confirmação após o pagamento."""
     try:
-        # Importação local para evitar erros de importação circular com o objeto 'mail' do app.py
         from app import mail 
         
         msg = Message(
@@ -44,12 +45,12 @@ def send_welcome_email(user_email, plan_name):
     except Exception as e:
         print(f">>> [ERRO E-MAIL] Falha ao enviar para {user_email}: {str(e)}")
 
+ # Rota para pagina de checkout
 @payments_bp.route('/checkout/<int:plan_id>')
 @login_required
 def checkout(plan_id):
     plan = Plan.query.get_or_404(plan_id)
     
-    # Mapeamento dinâmico baseado no .env
     stripe_price_id = ""
     if plan.name == 'Lite':
         stripe_price_id = os.getenv('STRIPE_PRICE_ID_LITE')
@@ -85,7 +86,6 @@ def checkout(plan_id):
 @payments_bp.route('/success')
 @login_required
 def success():
-    # Renderiza o template de sucesso que criamos
     return render_template('payments/success.html')
 
 @payments_bp.route('/webhook', methods=['POST'])
@@ -99,7 +99,6 @@ def stripe_webhook():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-    # Lógica disparada quando o pagamento é concluído
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         
@@ -110,12 +109,24 @@ def stripe_webhook():
             user = User.query.get(user_id)
             plan = Plan.query.get(plan_id)
             if user and plan:
-                # 1. Atualiza o banco de dados
+                # 1. Atualiza o plano do usuário
                 user.plan_id = plan.id
                 db.session.commit()
                 print(f">>> [STRIPE] Plano {plan.name} liberado para {user.email}")
                 
-                # 2. Envia o e-mail de boas-vindas
+                # 2. Adiciona créditos baseados no plano usando o credit_service
+                creditos_por_plano = {
+                    'Lite': 10,
+                    'Pro': 100,
+                    'VIP': 500
+                }
+                quantidade = creditos_por_plano.get(plan.name, 0)
+                
+                if quantidade > 0:
+                    # Chamando a função de serviço para somar créditos com segurança
+                    adicionar_creditos(user.id, quantidade) 
+                
+                # 3. Envia o e-mail de boas-vindas
                 send_welcome_email(user.email, plan.name)
 
     return jsonify({'status': 'success'}), 200

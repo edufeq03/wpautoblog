@@ -1,10 +1,11 @@
-from flask import render_template, request, redirect, url_for, flash, Blueprint
+from flask import render_template, request, redirect, url_for, flash, Blueprint, jsonify
 from flask_login import login_required, current_user
 from models import db, Blog, ContentIdea, PostLog
 from services import content_service
 
 content_bp = Blueprint('content', __name__)
 
+# Rota para litar ideias
 @content_bp.route('/ideas')
 @login_required
 def ideas():
@@ -12,6 +13,7 @@ def ideas():
     ideas_list = content_service.get_filtered_ideas(current_user.id, site_id)
     return render_template('ideas.html', ideas=ideas_list)
 
+# Rota para gerar ideias (botao)
 @content_bp.route('/generate-ideas', methods=['POST'])
 @login_required
 def generate_ideas():
@@ -26,6 +28,20 @@ def generate_ideas():
     flash(f'{count} novas ideias geradas para {blog.site_name}!', 'success')
     return redirect(url_for('content.ideas', site_id=site_id))
 
+# Rota para excluir ideias da lista
+@content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
+@login_required
+def delete_idea(idea_id):
+    if not getattr(current_user, 'is_demo', False):
+        idea = ContentIdea.query.get_or_404(idea_id)
+        db.session.delete(idea)
+        db.session.commit()
+        flash('Ideia removida.', 'info')
+    return redirect(url_for('content.ideas'))
+
+# Rota para publicar uma ideia no WP
+# Consome 1 credito
+# Incrementa numero de posts
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
@@ -46,6 +62,8 @@ def publish_idea(idea_id):
     flash(msg, "success" if sucesso else "danger")
     return redirect(url_for('content.ideas'))
 
+# Rota para post manual
+# Não consome crédito
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
 def manual_post():
@@ -67,6 +85,8 @@ def manual_post():
         flash(message, "danger")
     return render_template('manual_post.html', blogs=blogs)
 
+# Rota para escritor inteligente
+# Consome 2 créditos
 @content_bp.route('/spy-writer', methods=['GET', 'POST'])
 @login_required
 def spy_writer():
@@ -81,18 +101,59 @@ def spy_writer():
             flash("Créditos insuficientes para usar o Spy Writer.", "danger")
     return render_template('spy_writer.html', processed_content=processed, blogs=blogs)
 
+# Rota para listar as postagens
 @content_bp.route('/post-report')
 @login_required
 def post_report():
     logs = PostLog.query.join(Blog).filter(Blog.user_id == current_user.id).order_by(PostLog.posted_at.desc()).all()
     return render_template('post_report.html', logs=logs)
 
-@content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
+@content_bp.route('/consome/<int:quantidade>')
 @login_required
-def delete_idea(idea_id):
-    if not getattr(current_user, 'is_demo', False):
-        idea = ContentIdea.query.get_or_404(idea_id)
-        db.session.delete(idea)
-        db.session.commit()
-        flash('Ideia removida.', 'info')
-    return redirect(url_for('content.ideas'))
+def consome_creditos(quantidade):
+    # O current_user já é o objeto do usuário logado
+    user = current_user 
+
+    # 1. Verificar se o usuário tem créditos suficientes
+    if user.credits < quantidade:
+        return jsonify({
+            "status": "erro", 
+            "mensagem": f"Créditos insuficientes. Você tem {user.credits}."
+        }), 400
+
+    # 2. Subtrair os créditos
+    try:
+        user.credits -= quantidade
+        db.session.commit() # Salva a alteração no banco de dados
+        
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"{quantidade} créditos consumidos!",
+            "saldo_atual": user.credits
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+    
+
+@content_bp.route('/aumenta/<int:quantidade>')
+@login_required
+def aumenta_creditos(quantidade):
+    # O current_user já é o objeto do usuário logado
+    user = current_user 
+
+    # 1. Incrementa os créditos
+    try:
+        user.credits += quantidade
+        db.session.commit() # Salva a alteração no banco de dados
+        
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"{quantidade} créditos incrementados!",
+            "saldo_atual": user.credits
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
