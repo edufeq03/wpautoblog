@@ -34,54 +34,6 @@ def get_post_reports(user_id, site_id=None):
         query = query.filter(PostLog.blog_id == site_id)
     return query.order_by(PostLog.posted_at.desc()).all()
 
-# --- GERAÇÃO DE IDEIAS (BRAINSTORM) ---
-def generate_ideas_logic(blog):
-    """Gera 5 ideias de títulos SEO baseados no nome/nicho do blog."""
-    groq_client = get_groq_client()
-    
-    prompt_sistema = (
-        "Você é um estrategista de conteúdo SEO. Retorne APENAS os títulos, "
-        "um por linha, sem números, sem aspas e sem markdown. Gere 5 títulos."
-    )
-    prompt_usuario = f"Gere 5 títulos de posts para o blog: {blog.site_name}"
-
-    try:
-        response = groq_client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": prompt_usuario}
-            ],
-            temperature=0.7
-        )
-        # --- LÓGICA DE VIGILÂNCIA ---
-        # Pegamos o consumo real retornado pela API
-        tokens = response.usage.total_tokens if hasattr(response, 'usage') else 0
-        usage_log = ApiUsage(
-            user_id=blog.user_id,
-            api_name="Groq",
-            feature="Generate Ideas",
-            tokens_used=tokens
-        )
-        db.session.add(usage_log)
-        # ----------------------------
-        
-        conteudo = response.choices[0].message.content.strip()
-        linhas = [l.strip() for l in conteudo.split('\n') if len(l.strip()) > 5]
-        
-        count = 0
-        for titulo in linhas:
-            titulo_limpo = titulo.lstrip('0123456789. -')
-            nova_ideia = ContentIdea(blog_id=blog.id, title=titulo_limpo, is_posted=False)
-            db.session.add(nova_ideia)
-            count += 1
-        
-        db.session.commit()
-        return count
-    except Exception as e:
-        print(f"Erro ao gerar ideias: {e}")
-        return 0
-
 # --- FLUXO DO RADAR (INSIGHTS) ---
 def sync_sources_logic(fontes, scraper_func):
     """Extrai conteúdo das fontes e gera insights analíticos."""
@@ -168,69 +120,53 @@ def _obter_imagem_destacada(idea):
     return wp_image_id
 
 def publish_content_flow(idea, user):
-    """Função Principal: Agora ela apenas COORDENA as subfunções."""
+    """
+    Agora atua como coordenador do fluxo.
+    """
     if getattr(user, 'is_demo', False):
         return True, "Modo Demo ativo."
 
+    # ETAPA 1: Gerar Texto
+    conteudo_post = gerar_conteudo_ia(idea.title, idea.context_insight)
+    if not conteudo_post:
+        return False, "A IA falhou ao gerar o conteúdo. Tente novamente."
+
+    # ETAPA 2: Preparar Imagem
+    wp_image_id = preparar_imagem_post(idea)
+
+    # ETAPA 3: Enviar ao WordPress
     try:
-        # 1. Geração do conteúdo
-        conteudo_post = _gerar_texto_do_artigo(idea)
-        if not conteudo_post:
-            return False, "Erro ao gerar texto com a IA."
-
-        # 2. Obtenção da imagem
-        wp_image_id = _obter_imagem_destacada(idea)
-
-        # 3. Envio ao WordPress (Comunicação Externa)
         response = _send_to_wp(idea.blog, idea.title, conteudo_post, wp_image_id)
         
         if response and response.status_code in [200, 201]:
             data = response.json()
-            # Marcar como postado para não repetir
-            idea.is_posted = True
-            
-            # 4. Registro de Logs (Banco de Dados)
-            log = PostLog(
-                blog_id=idea.blog_id,
-                title=idea.title,
-                content=conteudo_post[:500],
-                status="Publicado",
-                wp_post_id=data.get('id'),
-                post_url=data.get('link')
-            )
-            db.session.add(log)
-            user.last_post_date = date.today()
-            db.session.commit()
+            # Salvar Logs e Marcar como Postado
+            registrar_sucesso_post(idea, user, conteudo_post, data)
             return True, "Post publicado com sucesso!"
         
-        return False, "O WordPress recusou a publicação (verifique credenciais)."
+        return False, f"WordPress rejeitou o post (Erro {response.status_code if response else 'Conexão'})."
 
     except Exception as e:
-        db.session.rollback()
-        print(f"Erro crítico no fluxo: {e}")
-        return False, f"Erro interno: {str(e)}"
+        print(f">>> [ERRO CRÍTICO] Falha na publicação: {e}")
+        return False, "Erro inesperado ao conectar com o WordPress."
 
-def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
-    # Se não for passado status, ele usa o padrão do banco (que geralmente é 'publish')
-    post_status = status if status else (blog.post_status or 'publish')
-    
-    payload = {
-        'title': titulo, 
-        'content': conteudo, 
-        'status': post_status  # Agora o WP respeitará 'draft' ou 'publish'
-    }
-    
-    if id_img:
-        payload['featured_media'] = int(id_img)
+def registrar_sucesso_post(idea, user, conteudo, wp_data):
+    """Salva os dados no banco após confirmação de sucesso."""
+    idea.is_posted = True
+    log = PostLog(
+        blog_id=idea.blog_id,
+        title=idea.title,
+        content=conteudo[:500],
+        status="Publicado",
+        wp_post_id=wp_data.get('id'),
+        post_url=wp_data.get('link')
+    )
+    db.session.add(log)
+    user.last_post_date = date.today()
+    db.session.commit()
+         
 
-    auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
-    try:
-        url = f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
-        r = requests.post(url, auth=auth, json=payload, timeout=30)
-        return r
-    except Exception as e:
-        print(f"Erro na requisição WP: {e}")
-        return None
+
     
 def process_manual_post(user, site_id, title, content, action, image_file=None):
     blog = Blog.query.filter_by(id=site_id, user_id=user.id).first()
@@ -268,6 +204,115 @@ def process_manual_post(user, site_id, title, content, action, image_file=None):
         return True, f"Sucesso! O post foi enviado como {status_label}."
     
     return False, "Erro ao comunicar com o WordPress."
+
+
+
+# --- 1. SUBFUNÇÕES DE APOIO (ATOMICIDADE) ---
+
+def gerar_conteudo_ia(titulo, contexto=None):
+    """Responsabilidade: Apenas conversar com a IA e retornar o texto."""
+    if contexto:
+        prompt = (
+            f"Escreva um artigo de blog completo com o título '{titulo}'. "
+            f"Baseie o conteúdo nestes fatos: {contexto}"
+        )
+    else:
+        prompt = f"Escreva um artigo de blog completo sobre: {titulo}"
+
+    try:
+        # Chama a sua função de serviço de IA existente
+        conteudo = generate_text(prompt)
+        return conteudo
+    except Exception as e:
+        print(f">>> [ERRO IA] Falha ao gerar texto: {e}")
+        return None
+
+def preparar_imagem_post(idea):
+    """Responsabilidade: Resolver o ID da imagem destacada."""
+    wp_image_id = idea.featured_image_id
+    if not wp_image_id and processar_imagem_featured:
+        try:
+            auth = HTTPBasicAuth(idea.blog.wp_user, idea.blog.wp_app_password)
+            wp_image_id = processar_imagem_featured(idea.title, idea.blog.wp_url, auth)
+        except Exception as e:
+            print(f">>> [AVISO IMAGEM] Falha ao processar imagem: {e}")
+    return wp_image_id
+
+def registrar_sucesso_post(idea, user, conteudo, wp_data):
+    """Responsabilidade: Persistir os dados de sucesso no Banco de Dados."""
+    idea.is_posted = True
+    log = PostLog(
+        blog_id=idea.blog_id,
+        title=idea.title,
+        content=conteudo[:500],
+        status="Publicado",
+        wp_post_id=wp_data.get('id'),
+        post_url=wp_data.get('link')
+    )
+    db.session.add(log)
+    user.last_post_date = date.today()
+    db.session.commit()
+
+# --- 2. FLUXO PRINCIPAL (COORDENADOR) ---
+
+def publish_content_flow(idea, user):
+    """Coordenador do fluxo: IA -> Imagem -> WordPress."""
+    if getattr(user, 'is_demo', False):
+        return True, "Modo Demo ativo."
+
+    # PASSO 1: Geração de Texto
+    conteudo_post = gerar_conteudo_ia(idea.title, idea.context_insight)
+    if not conteudo_post:
+        return False, "Erro: A IA não conseguiu gerar o texto."
+
+    # PASSO 2: Imagem Destacada
+    wp_image_id = preparar_imagem_post(idea)
+
+    # PASSO 3: Envio ao WordPress
+    try:
+        response = _send_to_wp(idea.blog, idea.title, conteudo_post, wp_image_id)
+        
+        if response and response.status_code in [200, 201]:
+            data = response.json()
+            registrar_sucesso_post(idea, user, conteudo_post, data)
+            return True, "Post publicado com sucesso!"
+        
+        return False, f"O WordPress recusou a postagem (Status: {response.status_code if response else 'Timeout'})"
+
+    except Exception as e:
+        print(f">>> [ERRO CRÍTICO WP] {e}")
+        return False, "Erro de conexão com o seu site WordPress."
+    
+# --- 3. OUTRAS FUNÇÕES DE LÓGICA ---
+
+def generate_ideas_logic(blog):
+    """Gera 5 ideias de títulos SEO."""
+    groq_client = get_groq_client()
+    prompt_sistema = "Você é um estrategista de conteúdo SEO. Retorne APENAS os títulos, um por linha."
+    prompt_usuario = f"Gere 5 títulos de posts para o blog: {blog.site_name}"
+
+    try:
+        response = groq_client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            temperature=0.7
+        )
+        conteudo = response.choices[0].message.content.strip()
+        linhas = [l.strip() for l in conteudo.split('\n') if len(l.strip()) > 5]
+        
+        count = 0
+        for titulo in linhas:
+            titulo_limpo = titulo.lstrip('0123456789. -')
+            db.session.add(ContentIdea(blog_id=blog.id, title=titulo_limpo))
+            count += 1
+        db.session.commit()
+        return count
+    except Exception as e:
+        print(f"Erro ao gerar ideias: {e}")
+        return 0
 
 def analyze_spy_link(url, is_demo=False):
     """
@@ -324,3 +369,16 @@ def analyze_spy_link(url, is_demo=False):
         print(f"!!! [SPY-WRITER] Erro ao processar IA: {e}")
         
     return None
+
+def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
+    post_status = status if status else (blog.post_status or 'publish')
+    payload = {'title': titulo, 'content': conteudo, 'status': post_status}
+    if id_img: payload['featured_media'] = int(id_img)
+
+    auth = HTTPBasicAuth(blog.wp_user, blog.wp_app_password)
+    try:
+        url = f"{blog.wp_url.rstrip('/')}/wp-json/wp/v2/posts"
+        return requests.post(url, auth=auth, json=payload, timeout=30)
+    except Exception as e:
+        print(f"Erro na requisição WP: {e}")
+        return None
