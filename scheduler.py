@@ -60,43 +60,30 @@ def check_and_enqueue_auto_posts():
                         db.session.commit()
 
 def processar_fila_de_postagem():
-    """
-    SISTEMA DE EXECUÇÃO:
-    Processa o que está marcado como 'pending' (Fila).
-    """
     with app.app_context():
+        # Pegamos apenas um por vez, o mais antigo
         tarefa = ContentIdea.query.filter_by(status='pending', is_posted=False).first()
 
-        if not tarefa:
-            return
-
-        logging.info(f"🚀 [WORKER] Processando ID {tarefa.id}: {tarefa.title}")
-        
-        try:
-            usuario = tarefa.blog.owner
-            if not usuario:
-                tarefa.status = 'failed'
+        if tarefa:
+            # BLOQUEIO PREVENTIVO: Mudamos o status ANTES de começar o trabalho pesado
+            tarefa.status = 'processing' 
+            db.session.commit()
+            
+            try:
+                sucesso, mensagem = publish_content_flow(tarefa, tarefa.blog.owner)
+                
+                if sucesso:
+                    tarefa.status = 'completed'
+                    tarefa.is_posted = True
+                else:
+                    tarefa.status = 'failed'
+                    # Opcional: registrar a mensagem de erro no PostLog
+                
                 db.session.commit()
-                return
-
-            # Executa a escrita IA e Postagem WP
-            sucesso, mensagem = publish_content_flow(tarefa, usuario)
-            
-            if sucesso:
-                tarefa.status = 'completed'
-                tarefa.is_posted = True
-                logging.info(f"✅ [SUCESSO] Publicado: {tarefa.title}")
-            else:
-                tarefa.status = 'failed'
-                logging.error(f"❌ [FALHA] {mensagem}")
-            
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            if tarefa: tarefa.status = 'failed'
-            db.session.commit()
-            logging.critical(f"🔥 [ERRO CRÍTICO] {str(e)}")
+            except Exception as e:
+                db.session.rollback()
+                tarefa.status = 'failed' # Libera a fila em caso de erro grave
+                db.session.commit()
 
 # --- DEFINIÇÃO DOS CICLOS ---
 

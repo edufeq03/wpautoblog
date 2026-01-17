@@ -40,33 +40,36 @@
             
             <nav class="p-4 space-y-2 flex-1">
                 {% set menu_items = [
-                    {'name': 'Dashboard', 'icon': 'fa-th-large', 'ep': 'dashboard.dashboard_view'},
-                    {'name': 'Meus Sites', 'icon': 'fa-globe', 'ep': 'sites.manage_sites'},
-                    {'name': 'Post Manual', 'icon': 'fa-pen-nib', 'ep': 'content.manual_post'},
-                    {'name': 'Fila de Ideias', 'icon': 'fa-lightbulb', 'ep': 'content.ideas'},
-                    {'name': 'Relatórios', 'icon': 'fa-chart-line', 'ep': 'content.post_report'},
-                    {'name': 'Radar de Trend', 'icon': 'fa-satellite-dish', 'ep': 'radar.radar'},
-                    {'name': 'Spy Writer', 'icon': 'fa-user-secret', 'ep': 'content.spy_writer'},
-                    {'name': 'Logs de Sistema', 'icon': 'fa-user-secret', 'ep': 'dashboard.reports'}
-                ] %}
+                {'name': 'Dashboard', 'icon': 'fa-th-large', 'ep': 'dashboard.dashboard_view'},
+                {'name': 'Meus Sites', 'icon': 'fa-globe', 'ep': 'sites.manage_sites'},
+                {'name': 'Conteúdo Manual', 'icon': 'fa-pen-nib', 'ep': 'content.manual_post'},
+                
+                {'name': '--- PRODUÇÃO ---', 'is_label': True},
+                
+                {'name': '1. Banco de Ideias', 'icon': 'fa-lightbulb', 'ep': 'content.brainstorm'},
+                {'name': '2. Fila de Postagem', 'icon': 'fa-clock', 'ep': 'content.queue'},
+                {'name': '3. Já Publicados', 'icon': 'fa-check-double', 'ep': 'content.published'},
+                
+                {'name': '--- FERRAMENTAS ---', 'is_label': True},
+                
+                {'name': 'Radar de Trend', 'icon': 'fa-satellite-dish', 'ep': 'radar.radar'},
+                {'name': 'Spy Writer', 'icon': 'fa-user-secret', 'ep': 'content.spy_writer'},
+                {'name': 'Relatórios Técnicos', 'icon': 'fa-file-alt', 'ep': 'content.post_report'}
+            ] %}
 
-                {% for item in menu_items %}
+            {% for item in menu_items %}
+                {% if item.is_label %}
+                    <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest px-4 mt-6 mb-2">{{ item.name }}</p>
+                {% else %}
                     {% set is_active = request.endpoint == item.ep %}
-                    {% set can_access = (setup_status == 'complete' or (current_user.sites | length > 0) or item.ep in ['dashboard.dashboard_view', 'sites.manage_sites']) %}
-
-                    <a href="{% if can_access %}{{ url_for(item.ep) }}{% else %}#{% endif %}"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
-                              {% if is_active %} nav-active text-white {% else %} text-gray-400 hover:bg-gray-800 hover:text-white {% endif %}
-                              {% if not can_access %} opacity-40 cursor-not-allowed {% endif %}">
-                        
-                        <i class="fas {{ item.icon }} text-sm {% if not is_active %}group-hover:text-blue-400{% endif %}"></i>
+                    <a href="{{ url_for(item.ep) }}" 
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group
+                            {% if is_active %} nav-active text-white {% else %} text-gray-400 hover:bg-gray-800 hover:text-white {% endif %}">
+                        <i class="fas {{ item.icon }} text-sm"></i>
                         <span class="font-bold text-sm">{{ item.name }}</span>
-                        
-                        {% if not can_access %}
-                            <i class="fas fa-lock text-[10px] ml-auto opacity-50"></i>
-                        {% endif %}
                     </a>
-                {% endfor %}
+                {% endif %}
+            {% endfor %}
             </nav>
 
             <div class="p-4 border-t border-gray-800">

@@ -5,14 +5,6 @@ from services import content_service
 
 content_bp = Blueprint('content', __name__)
 
-# Rota para listar ideias
-@content_bp.route('/ideas')
-@login_required
-def ideas():
-    site_id = request.args.get('site_id', type=int)
-    ideas_list = content_service.get_filtered_ideas(current_user.id, site_id)
-    return render_template('ideas.html', ideas=ideas_list)
-
 # Rota para gerar ideias via IA (Groq)
 @content_bp.route('/generate-ideas', methods=['POST'])
 @login_required
@@ -22,7 +14,7 @@ def generate_ideas():
     
     if not site_id:
         flash('Por favor, selecione um site para gerar ideias.', 'warning')
-        return redirect(url_for('content.ideas'))
+        return redirect(url_for('content.brainstorm'))
         
     blog = Blog.query.filter_by(id=site_id, user_id=current_user.id).first_or_404()
     
@@ -38,7 +30,7 @@ def generate_ideas():
     else:
         flash('Não foi possível gerar novas ideias no momento.', 'danger')
 
-    return redirect(url_for('content.ideas', site_id=site_id))
+    return redirect(url_for('content.brainstorm', site_id=site_id))
 
 # Rota para excluir ideias
 @content_bp.route('/delete-idea/<int:idea_id>', methods=['POST'])
@@ -49,32 +41,52 @@ def delete_idea(idea_id):
         db.session.delete(idea)
         db.session.commit()
         flash('Ideia removida.', 'info')
-    return redirect(url_for('content.ideas'))
+    return redirect(url_for('content.brainstorm'))
 
-# PUBLICAÇÃO VIA FILA (Otimizado para o Scheduler)
+# PUBLICAÇÃO VIA FILA (Otimizado para o Scheduler com Debug)
 @content_bp.route('/publish-idea/<int:idea_id>', methods=['POST'])
 @login_required
 def publish_idea(idea_id):
-    # 1. Validação de Créditos
-    if not current_user.consume_credit(1):
-        flash("Saldo insuficiente! Recarregue seus créditos.", "danger")
-        return redirect(url_for('content.ideas'))
+    # 1. Busca a ideia e valida dono (Segurança adicional)
+    idea = ContentIdea.query.get_or_404(idea_id)
+    
+    # Debug inicial
+    print(f"🔍 [DEBUG] Tentando enfileirar ideia ID: {idea.id} | Status Atual: {idea.status}")
 
-    # 2. Validação de Limites do Plano
+    # 2. Validação de Créditos
+    if not current_user.consume_credit(1):
+        print(f"❌ [DEBUG] Falha: Usuário {current_user.id} sem créditos.")
+        flash("Saldo insuficiente! Recarregue seus créditos.", "danger")
+        return redirect(url_for('content.brainstorm'))
+
+    # 3. Validação de Limites do Plano
     reached, limit, current = current_user.reached_daily_limit(is_ai_post=True)
     if reached:
         current_user.increase_credit(1) # Estorno imediato
+        print(f"❌ [DEBUG] Falha: Limite diário atingido ({current}/{limit}).")
         flash(f"Limite diário atingido ({current}/{limit}).", "danger")
-        return redirect(url_for('content.ideas'))
+        return redirect(url_for('content.brainstorm'))
 
-    # 3. Envio para a Fila
-    idea = ContentIdea.query.get_or_404(idea_id)
-    idea.status = 'pending'
-    db.session.commit()
+    try:
+        # 4. Envio para a Fila (Mudança de Status)
+        idea.status = 'pending'
+        
+        # Forçamos a expiração para garantir que o SQLAlchemy veja a mudança
+        db.session.add(idea) 
+        db.session.commit()
+        
+        # Debug de confirmação
+        print(f"✅ [DEBUG] Sucesso! Novo status no banco: {idea.status}")
 
-    flash(f"O post '{idea.title}' foi enviado para processamento e aparecerá no blog em instantes.", "success")
-    return redirect(url_for('content.ideas'))
+        flash(f"O post '{idea.title}' foi enviado para a fila e será processado pelo robô.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"🔥 [DEBUG ERRO] Falha ao atualizar banco: {str(e)}")
+        flash("Erro ao enviar para a fila. Tente novamente.", "danger")
 
+    return redirect(url_for('content.brainstorm'))
+    
 # POST MANUAL (Opção de Fila ou Imediato)
 @content_bp.route('/manual-post', methods=['GET', 'POST'])
 @login_required
@@ -183,3 +195,28 @@ def consome_creditos(quantidade):
 def aumenta_creditos(quantidade):
     current_user.increase_credit(quantidade)
     return jsonify({"status": "sucesso", "saldo_atual": current_user.credits}), 200
+
+# --- TELA 1: BRAINSTORM (IDEIAS) ---
+@content_bp.route('/brainstorm')
+def brainstorm():
+    # Apenas ideias que ainda não foram para a fila
+    ideas = ContentIdea.query.filter_by(status='draft').join(Blog).filter(Blog.user_id == current_user.id).all()
+    return render_template('ideas/brainstorm.html', ideas=ideas)
+
+# --- TELA 2: FILA (AGUARDANDO) ---
+@content_bp.route('/queue')
+def queue():
+    # O que o scheduler vai processar em breve
+    pending = ContentIdea.query.filter(ContentIdea.status.in_(['pending', 'processing'])).all()
+    return render_template('ideas/queue.html', pending=pending)
+
+# --- TELA 3: POSTS EFETIVADOS (Ajustado) ---
+@content_bp.route('/published')
+@login_required
+def published():
+    # Filtra apenas o que já foi postado com sucesso via scheduler
+    posts = ContentIdea.query.filter_by(status='completed')\
+        .join(Blog).filter(Blog.user_id == current_user.id)\
+        .order_by(ContentIdea.created_at.desc()).all()
+    
+    return render_template('ideas/published.html', posts=posts)

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Conteúdo Publicado - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-6">
+    <div class="mb-8">
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">✅ Conteúdo Publicado</h1>
+        <p class="text-sm text-slate-500">Histórico de artigos processados e enviados com sucesso para o WordPress.</p>
+    </div>
+
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Blog</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Título</th>
+                        <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for post in posts %}
+                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <p class="text-xs font-bold text-slate-700">{{ post.created_at.strftime('%d/%m/%Y') }}</p>
+                            <p class="text-[10px] text-slate-400 font-medium">{{ post.created_at.strftime('%H:%M') }}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-xs font-black text-slate-600 uppercase">{{ post.blog.site_name }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-xs font-bold text-slate-800 line-clamp-1 md:max-w-md group-hover:text-blue-700 transition-colors" title="{{ post.title }}">
+                                {{ post.title }}
+                            </p>
+                        </td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] font-black tracking-tighter shadow-sm border border-green-200">
+                                <i class="fas fa-check-circle mr-1"></i> PUBLICADO
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Processado pela Fila</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-history text-slate-200 text-4xl mb-3"></i>
+                                <p class="text-slate-400 font-medium">Nenhum post finalizado pela fila ainda.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Mantendo sua estilização de scrollbar */
+    ::-webkit-scrollbar { height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+{% endblock %}

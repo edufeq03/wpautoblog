@@ -1,6 +1,6 @@
 from flask import render_template, request, Blueprint
 from flask_login import login_required, current_user
-from models import db, Blog, PostLog, Plan  # Adicionado Plan aqui
+from models import db, Blog, PostLog, Plan, ContentIdea
 from datetime import datetime
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -31,7 +31,18 @@ def dashboard_view():
         db.func.date(PostLog.posted_at) == hoje
     ).count()
 
-    return render_template('dashboard.html', 
+    # NOVAS MÉTRICAS PARA A HOME:
+    ideias_rascunho = ContentIdea.query.filter_by(status='draft').join(Blog).filter(Blog.user_id == current_user.id).count()
+    na_fila = ContentIdea.query.filter_by(status='pending').join(Blog).filter(Blog.user_id == current_user.id).count()
+    
+    # Pega o próximo post que o scheduler vai processar
+    proximo_post = ContentIdea.query.filter_by(status='pending').join(Blog)\
+        .filter(Blog.user_id == current_user.id).order_by(ContentIdea.created_at.asc()).first()
+
+    return render_template('dashboard.html',
+                           ideias_count=ideias_rascunho, 
+                           fila_count=na_fila,
+                           proximo=proximo_post,
                            user=current_user, 
                            limite_posts=limites['posts_por_dia'],
                            saldo=saldo_atual, 

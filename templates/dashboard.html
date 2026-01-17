@@ -9,6 +9,37 @@
         <p class="text-slate-500">Gestão de performance para seus {{ current_user.sites|length }} sites.</p>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-3xl shadow-lg text-white">
+            <h4 class="text-blue-100 text-xs font-black uppercase tracking-widest mb-2">Próxima Automação</h4>
+            {% if proximo %}
+                <p class="text-lg font-bold mb-1">{{ proximo.title }}</p>
+                <span class="text-xs bg-blue-500/30 px-2 py-1 rounded">Aguardando Scheduler...</span>
+            {% else %}
+                <p class="text-lg font-medium opacity-80 italic">Nenhum post agendado na fila.</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 flex justify-between items-center">
+            <div>
+                <p class="text-[10px] text-slate-400 uppercase font-black mb-1">Esteira de Produção</p>
+                <div class="flex gap-4">
+                    <div>
+                        <span class="block text-2xl font-black text-slate-800">{{ ideias_count }}</span>
+                        <span class="text-[10px] text-slate-400">Ideias no Lab</span>
+                    </div>
+                    <div class="border-l border-slate-100 pl-4">
+                        <span class="block text-2xl font-black text-blue-600">{{ fila_count }}</span>
+                        <span class="text-[10px] text-slate-400">Na Fila</span>
+                    </div>
+                </div>
+            </div>
+            <a href="{{ url_for('content.queue') }}" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between mb-4">

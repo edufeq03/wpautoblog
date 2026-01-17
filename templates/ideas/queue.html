@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Fila de Postagem - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800">⏳ Fila de Postagem</h1>
+            <p class="text-slate-500">Conteúdos que o robô está processando ou agendados para sair.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black">
+                <tr>
+                    <th class="px-6 py-4">Título do Post</th>
+                    <th class="px-6 py-4">Site Destino</th>
+                    <th class="px-6 py-4 text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for item in pending %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-700">{{ item.title }}</td>
+                    <td class="px-6 py-4 text-slate-500">{{ item.blog.site_name }}</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if item.status == 'processing' %}
+                            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-[10px] font-black animate-pulse">
+                                ESCREVENDO...
+                            </span>
+                        {% else %}
+                            <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-600 text-[10px] font-black uppercase">
+                                NA FILA
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="px-6 py-16 text-center text-slate-400 italic">
+                        Nenhum post aguardando na fila no momento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

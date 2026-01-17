@@ -28,7 +28,7 @@ def admin_dashboard():
 
     # Se você não for admin, bloqueie o acesso (recomendado)
     if not current_user.is_admin: # Ajuste conforme seu campo de admin
-        return redirect(url_for('content.ideas'))
+        return redirect(url_for('content.brainstorm'))
     # 1. Calculando as estatísticas para o template
     uma_semana_atras = datetime.utcnow() - timedelta(days=7)
     
