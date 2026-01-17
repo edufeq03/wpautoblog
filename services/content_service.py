@@ -319,55 +319,80 @@ import requests
 from bs4 import BeautifulSoup
 
 def analyze_spy_link(url, is_demo=False):
-    """
-    Analisa uma URL externa e retorna título e conteúdo extraído.
-    """
-    # 1. Inicializa a variável para evitar erro de referência local
-    soup = None 
+    soup = None # Inicialização para evitar o erro de variável local
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     
     try:
-        # Define um User-Agent para evitar ser bloqueado por sites
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        
         response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status() # Lança erro para status 4xx ou 5xx
-        
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
-        
     except Exception as e:
-        print(f"Erro ao acessar a URL {url}: {e}")
+        print(f"❌ Erro na requisição: {e}")
         return None
 
-    # 2. Verifica se o soup foi criado com sucesso antes de prosseguir
     if not soup:
         return None
 
+    # Extração de dados brutos
+    title_tag = soup.find('h1')
+    raw_title = title_tag.get_text().strip() if title_tag else "Artigo Extraído"
+    
+    paragraphs = soup.find_all('p')
+    raw_content = "\n\n".join([p.get_text().strip() for p in paragraphs if len(p.get_text()) > 20])
+
+    if not raw_content:
+        return None
+
+    # --- INTEGRAÇÃO COM IA (ai_service.py) ---
+    # Criamos um prompt para a IA reescrever o conteúdo
+    prompt_ia = f"Reescreva o seguinte artigo de forma original e otimizada para SEO:\n\nTítulo: {raw_title}\nConteúdo: {raw_content}"
+    
+    # Usamos a função do seu ficheiro ai_service.py
+    reescrita = generate_text(
+        prompt=prompt_ia, 
+        system_prompt="Você é um redator experiente. Transforme o conteúdo fornecido em um post de blog único em português.",
+        quick=False
+    )
+
+    if not reescrita:
+        return {"title": raw_title, "content": raw_content} # Fallback se a IA falhar
+
+    return {
+        "title": raw_title, 
+        "content": reescrita
+    }
+
+def rephrase_content_with_ai(title, content):
+    """
+    Usa a Groq para transformar o texto 'espiado' num post novo e original.
+    """
+    # Exemplo de Prompt para a Groq
+    prompt = f"""
+    Atue como um redator SEO profissional. 
+    Reescreva o artigo abaixo de forma original, em português do Brasil, 
+    mantendo o valor informativo mas mudando a estrutura para evitar plágio.
+    
+    Título Original: {title}
+    Conteúdo: {content}
+    
+    Retorne apenas o novo Título e o novo Conteúdo.
+    """
+    
     try:
-        # 3. Extração segura de dados
-        # Tenta pegar o H1, se não houver, tenta o title da página
-        title_tag = soup.find('h1')
-        title = title_tag.get_text().strip() if title_tag else soup.title.string if soup.title else "Sem Título"
-
-        # Tenta extrair o corpo do texto (parágrafos)
-        paragraphs = soup.find_all('p')
-        content = "\n\n".join([p.get_text().strip() for p in paragraphs if len(p.get_text()) > 20])
-
-        if not content:
-            return None
-
-        # 4. Aqui você chamaria sua IA (Groq) para reescrever o texto extraído
-        # rephrased_content = call_groq_to_rewrite(title, content)
+        # Aqui entra a sua lógica atual de chamada à Groq
+        # chat_completion = client.chat.completions.create(...)
+        
+        # Simulação de retorno da IA
+        new_title = f"[REESCRITO] {title}"
+        new_content = f"Este é o conteúdo processado pela IA baseado no original...\n\n{content[:200]}..." 
         
         return {
-            "title": title,
-            "content": content # ou rephrased_content após integrar a IA
+            "title": new_title,
+            "content": new_content
         }
-
     except Exception as e:
-        print(f"Erro ao processar conteúdo do HTML: {e}")
-        return None
+        print(f"Erro na IA: {e}")
+        return {"title": title, "content": content} # Fallback para o original se a IA falhar
 
 def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     post_status = status if status else (blog.post_status or 'publish')
