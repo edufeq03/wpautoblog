@@ -287,32 +287,52 @@ def publish_content_flow(idea, user_id):
 # --- 3. OUTRAS FUNÇÕES DE LÓGICA ---
 
 def generate_ideas_logic(blog):
-    """Gera 5 ideias de títulos SEO."""
-    groq_client = get_groq_client()
-    prompt_sistema = "Você é um estrategista de conteúdo SEO. Retorne APENAS os títulos, um por linha."
-    prompt_usuario = f"Gere 5 títulos de posts para o blog: {blog.site_name}"
+    """
+    Motor de geração de ideias que garante a integridade referencial com o Blog.
+    """
+    # 1. Validação de Segurança (SDD Requirement)
+    if not blog or not hasattr(blog, 'id'):
+        print("❌ Erro: Objeto Blog inválido passado para o serviço.")
+        return 0
+
+    client = get_groq_client()
+    
+    # Prompt usando os dados do blog validado
+    prompt = f"""
+    Como um estrategista de conteúdo para o site {blog.site_name}, 
+    gere 5 títulos de posts originais baseados nestes temas: {blog.macro_themes}.
+    Retorne apenas os títulos, um por linha sem numerações ou marcações: apenas os títulos.
+    """
 
     try:
-        response = groq_client.chat.completions.create(
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
             model=model_name,
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": prompt_usuario}
-            ],
-            temperature=0.7
         )
-        conteudo = response.choices[0].message.content.strip()
-        linhas = [l.strip() for l in conteudo.split('\n') if len(l.strip()) > 5]
+        
+        raw_output = response.choices[0].message.content.strip()
+        titulos = [t.strip() for t in raw_output.split('\n') if t.strip()]
         
         count = 0
-        for titulo in linhas:
-            titulo_limpo = titulo.lstrip('0123456789. -')
-            db.session.add(ContentIdea(blog_id=blog.id, title=titulo_limpo))
+        for t in titulos:
+            # 2. Criação vinculada explicitamente (Garante o NOT NULL do banco)
+            nova_ideia = ContentIdea(
+                title=t[:250],
+                blog_id=blog.id, # O coração da correção
+                status='draft',
+                created_at=datetime.now()
+            )
+            db.session.add(nova_ideia)
             count += 1
+        
+        # 3. Commit único para a transação
         db.session.commit()
+        print(f"✅ {count} ideias geradas e vinculadas ao Blog ID: {blog.id}")
         return count
+
     except Exception as e:
-        print(f"Erro ao gerar ideias: {e}")
+        db.session.rollback()
+        print(f"❌ Erro na geração/persistência: {e}")
         return 0
 
 import requests

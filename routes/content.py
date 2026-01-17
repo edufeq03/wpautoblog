@@ -18,6 +18,8 @@ def ideas():
 @login_required
 def generate_ideas():
     site_id = request.form.get('site_id')
+    print(f"DEBUG: Gerando ideias para o site_id: {site_id}")
+    
     if not site_id:
         flash('Por favor, selecione um site para gerar ideias.', 'warning')
         return redirect(url_for('content.ideas'))

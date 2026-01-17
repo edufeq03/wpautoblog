@@ -17,192 +17,143 @@
                 <button disabled class="bg-slate-200 text-slate-400 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 cursor-not-allowed border border-slate-300">
                     <i class="fas fa-lock"></i> Limite de Sites Atingido
                 </button>
-                <a href="{{ url_for('dashboard.pricing') }}" class="text-[10px] font-bold text-blue-600 mt-2 hover:underline animate-pulse">
-                    <i class="fas fa-arrow-up"></i> Fazer upgrade para adicionar mais sites
-                </a>
             {% endif %}
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for site in current_user.sites %}
-        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group">
-            <div class="p-6 space-y-4">
-                <div class="flex justify-between items-start">
-                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for site in sites %}
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
                         <i class="fab fa-wordpress text-2xl"></i>
                     </div>
-                    <form action="{{ url_for('sites.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('Tem certeza?');">
-                        <button type="submit" class="text-slate-300 hover:text-red-500 transition-colors">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </form>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-slate-800 tracking-tight">{{ site.site_name }}</h3>
+                            <span class="flex items-center gap-1 text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                <i class="fas fa-check-circle"></i> Integrado
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium truncate max-w-[200px]">{{ site.wp_url }}</p>
+                    </div>
                 </div>
+                
+                <form action="{{ url_for('sites.delete_site', site_id=site.id) }}" method="POST" onsubmit="return confirm('ATENÇÃO: Isso removerá todas as configurações deste site. Continuar?')">
+                    <button type="submit" class="text-slate-300 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                </form>
+            </div>
 
-                <div>
-                    <h3 class="font-bold text-slate-800 text-lg">{{ site.site_name }}</h3>
-                    <p class="text-slate-400 text-xs truncate">{{ site.wp_url }}</p>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 pt-4">
-                    <button onclick="openAuthModal('{{ site.id }}', '{{ site.wp_url }}', '{{ site.wp_user }}')" class="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all">
-                        <i class="fas fa-key text-sm mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase tracking-wider">Acesso</span>
-                    </button>
-                    <button onclick="openPromptModal('{{ site.id }}', '{{ site.master_prompt }}', '{{ site.macro_themes }}')" class="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-purple-50 hover:text-purple-600 transition-all">
-                        <i class="fas fa-brain text-sm mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase tracking-wider">IA</span>
-                    </button>
-                    <button onclick="openPrefsModal('{{ site.id }}', '{{ site.posts_per_day }}', '{{ site.post_status }}', '{{ site.schedule_time }}')" class="flex flex-col items-center p-3 rounded-2xl bg-slate-50 hover:bg-orange-50 hover:text-orange-600 transition-all">
-                        <i class="fas fa-robot text-sm mb-1"></i>
-                        <span class="text-[10px] font-bold uppercase tracking-wider">Automação</span>
-                    </button>
-                </div>
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="openAuthModal('{{ site.id }}', '{{ site.wp_url }}', '{{ site.wp_user }}')" class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all border border-transparent hover:border-slate-200">
+                    <i class="fas fa-key text-slate-400 mb-2"></i>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase">Acesso</span>
+                </button>
+                <button onclick="openPromptModal('{{ site.id }}', '{{ site.ai_prompt }}', '{{ site.macro_themes }}')" class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all border border-transparent hover:border-slate-200">
+                    <i class="fas fa-robot text-slate-400 mb-2"></i>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase">IA</span>
+                </button>
+                <button onclick="openPrefsModal('{{ site.id }}', '{{ site.posts_per_day }}', '{{ site.post_status }}', '{{ site.schedule_time }}', '{{ site.timezone }}')" class="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all border border-transparent hover:border-slate-200">
+                    <i class="fas fa-cog text-slate-400 mb-2"></i>
+                    <span class="text-[10px] font-bold text-slate-600 uppercase">Postagem</span>
+                </button>
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
 
-<div id="addSiteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50">
-            <h3 class="font-black text-blue-800 italic uppercase tracking-tighter">Conectar Novo Site</h3>
-            <button onclick="closeModal('addSiteModal')" class="text-blue-400 hover:text-blue-600"><i class="fas fa-times"></i></button>
+<div id="addSiteModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-xl font-black text-slate-800">Conectar Novo Site</h3>
+            <button onclick="closeModal('addSiteModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
         </div>
-        <form action="{{ url_for('sites.add_site') }}" method="POST" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <form action="{{ url_for('sites.add_site') }}" method="POST" class="p-8 space-y-4" onsubmit="return showLoading(this)">
+            <input type="text" name="site_name" required placeholder="Nome do Site" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="url" name="wp_url" required placeholder="https://seublog.com" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" name="wp_user" required placeholder="Usuário WordPress" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" name="wp_app_password" required placeholder="Senha de Aplicativo (Application Password)" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
             <input type="hidden" name="timezone" class="user-tz-detector">
-
-            <div class="space-y-4">
-                <h4 class="text-xs font-black text-blue-600 uppercase tracking-widest border-b pb-2">1. Acesso WordPress</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Site (Apelido)</label>
-                        <input type="text" name="site_name" required placeholder="Ex: Meu Blog de Viagens" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">URL do Site</label>
-                        <input type="url" name="wp_url" required placeholder="https://seusite.com.br" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Usuário WP</label>
-                        <input type="text" name="wp_user" required placeholder="admin" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Senha de Aplicativo</label>
-                        <input type="password" name="wp_app_password" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-4">
-                <h4 class="text-xs font-black text-purple-600 uppercase tracking-widest border-b pb-2">2. Configurações de IA</h4>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Temas principais (separados por vírgula)</label>
-                    <input type="text" name="macro_themes" placeholder="Tecnologia, Gadgets, Inovação" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Prompt Mestre (Personalidade da IA)</label>
-                    <textarea name="master_prompt" rows="3" placeholder="Escreva como um especialista em tecnologia..." class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-purple-500"></textarea>
-                </div>
-            </div>
-
-            <div class="space-y-4">
-                <h4 class="text-xs font-black text-orange-600 uppercase tracking-widest border-b pb-2">3. Agendamento</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Posts/Dia</label>
-                        <input type="number" name="posts_per_day" value="1" min="1" max="10" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Horário</label>
-                        <input type="time" name="schedule_time" value="09:00" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Status</label>
-                        <select name="post_status" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-orange-500">
-                            <option value="publish">Publicar</option>
-                            <option value="draft">Rascunho</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
-                Salvar e Conectar Site
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 submit-btn">
+                <span class="btn-text">Validar e Salvar Site</span>
+                <i class="fas fa-rocket btn-icon"></i>
             </button>
         </form>
     </div>
 </div>
 
-<div id="prefsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-orange-50">
-            <h3 class="font-black text-orange-800 italic uppercase tracking-tighter">Editar Automação</h3>
-            <button onclick="closeModal('prefsModal')" class="text-orange-400 hover:text-orange-600"><i class="fas fa-times"></i></button>
-        </div>
-        <form id="prefsForm" method="POST" class="p-6 space-y-4">
-            <input type="hidden" name="timezone" id="modalTimezone">
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Posts por Dia</label>
-                <input type="number" name="posts_per_day" id="modalPostsPerDay" min="1" class="w-full bg-slate-50 border-none rounded-xl p-3">
+<div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-[32px] p-8">
+        <h3 class="text-xl font-black mb-6">Atualizar Credenciais</h3>
+        <form id="authForm" method="POST" class="space-y-4" onsubmit="return showLoading(this)">
+            <input type="url" id="modalWpUrl" name="wp_url" required class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+            <input type="text" id="modalWpUser" name="wp_user" required class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+            <input type="password" name="wp_app_password" required placeholder="Nova Senha de Aplicativo" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+            <div class="flex gap-3">
+                <button type="button" onclick="closeModal('authModal')" class="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl">Cancelar</button>
+                <button type="submit" class="flex-[2] bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg submit-btn">
+                    <span class="btn-text">Validar e Atualizar</span>
+                    <i class="fas fa-sync btn-icon ml-2"></i>
+                </button>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Status</label>
-                <select name="post_status" id="modalPostStatus" class="w-full bg-slate-50 border-none rounded-xl p-3">
-                    <option value="publish">Publicar</option>
-                    <option value="draft">Rascunho</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Horário</label>
-                <input type="time" name="schedule_time" id="modalScheduleTime" class="w-full bg-slate-50 border-none rounded-xl p-3">
-            </div>
-            <button type="submit" class="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl hover:bg-orange-700">Salvar Alterações</button>
         </form>
     </div>
 </div>
 
-<div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="font-bold text-slate-800">Conexão WordPress</h3>
-            <button onclick="closeModal('authModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-        </div>
-        <form id="authForm" method="POST" class="p-6 space-y-4">
-            <input type="url" name="wp_url" id="modalWpUrl" placeholder="URL do Site" class="w-full bg-slate-50 border-none rounded-xl p-3">
-            <input type="text" name="wp_user" id="modalWpUser" placeholder="Usuário" class="w-full bg-slate-50 border-none rounded-xl p-3">
-            <input type="password" name="wp_app_password" placeholder="Nova Senha (opcional)" class="w-full bg-slate-50 border-none rounded-xl p-3">
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-all">Atualizar Acesso</button>
+<div id="promptModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-[32px] p-8">
+        <h3 class="text-xl font-black mb-6">Inteligência do Site</h3>
+        <form id="promptForm" method="POST" class="space-y-4">
+            <textarea id="modalPromptText" name="ai_prompt" rows="5" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl" placeholder="Instruções para a IA..."></textarea>
+            <input type="text" id="modalMacroThemesText" name="macro_themes" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl" placeholder="Temas (separados por vírgula)">
+            <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl">Salvar IA</button>
         </form>
     </div>
 </div>
 
-<div id="promptModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="font-bold text-slate-800">Cérebro da IA</h3>
-            <button onclick="closeModal('promptModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-        </div>
-        <form id="promptForm" method="POST" class="p-6 space-y-4">
-            <textarea name="macro_themes" id="modalMacroThemesText" rows="3" placeholder="Temas" class="w-full bg-slate-50 border-none rounded-xl p-3"></textarea>
-            <textarea name="master_prompt" id="modalPromptText" rows="5" placeholder="Prompt" class="w-full bg-slate-50 border-none rounded-xl p-3"></textarea>
-            <button type="submit" class="w-full bg-purple-600 text-white font-bold py-4 rounded-2xl hover:bg-purple-700 transition-all">Salvar IA</button>
+<div id="prefsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-[32px] p-8">
+        <h3 class="text-xl font-black mb-6">Configurações de Postagem</h3>
+        <form id="prefsForm" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="number" id="modalPostsPerDay" name="posts_per_day" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+                <input type="time" id="modalScheduleTime" name="schedule_time" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+            </div>
+            <select id="modalPostStatus" name="post_status" class="w-full bg-slate-50 border border-slate-200 py-3.5 px-5 rounded-2xl">
+                <option value="publish">Publicar Imediatamente</option>
+                <option value="draft">Salvar como Rascunho</option>
+            </select>
+            <input type="hidden" id="modalTimezone" name="timezone">
+            <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl">Salvar Automação</button>
         </form>
     </div>
 </div>
 
 <script>
-    function openModal(id) { 
-        document.getElementById(id).classList.remove('hidden');
-        // Detecta fuso horário sempre que abrir um modal que tenha o detector
-        const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    function openModal(id) {
         const detectors = document.querySelectorAll('.user-tz-detector');
+        const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
         detectors.forEach(d => d.value = userTZ);
+        document.getElementById(id).classList.remove('hidden');
     }
-    
+
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
+    function showLoading(form) {
+        const btn = form.querySelector('.submit-btn');
+        if (!btn) return true;
+        btn.disabled = true;
+        btn.classList.add('opacity-70');
+        btn.querySelector('.btn-text').innerText = "Testando Conexão...";
+        btn.querySelector('.btn-icon').className = "fas fa-spinner fa-spin";
+        return true;
+    }
+
+    // Funções para popular os modais de edição
     function openAuthModal(id, url, user) {
         document.getElementById('authForm').action = "/sites/update-auth/" + id;
         document.getElementById('modalWpUrl').value = url;
@@ -217,17 +168,19 @@
         openModal('promptModal');
     }
 
-    function openPrefsModal(id, posts, status, time) {
+    function openPrefsModal(id, posts, status, time, tz) {
         document.getElementById('prefsForm').action = "/sites/update-prefs/" + id;
         document.getElementById('modalPostsPerDay').value = posts || 1;
         document.getElementById('modalPostStatus').value = status || 'publish';
         document.getElementById('modalScheduleTime').value = time || '09:00';
-        
-        const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        document.getElementById('modalTimezone').value = userTZ;
+        document.getElementById('modalTimezone').value = tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
         openModal('prefsModal');
     }
 
-    window.onclick = function(e) { if (e.target.classList.contains('fixed')) { e.target.classList.add('hidden'); } };
+    window.onclick = function(e) {
+        if (e.target.classList.contains('bg-slate-900/60')) {
+            e.target.classList.add('hidden');
+        }
+    }
 </script>
 {% endblock %}
