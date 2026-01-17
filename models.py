@@ -176,6 +176,7 @@ class ContentIdea(db.Model):
     is_manual = db.Column(db.Boolean, default=False)
     is_posted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='draft') # draft, pending, completed, failed
     
     # RELAÇÃO CORRIGIDA:
     # Usamos backref='ideas' aqui e MAIS EM LUGAR NENHUM (remova do Blog se houver algo parecido)

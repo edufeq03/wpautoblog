@@ -1,6 +1,6 @@
 # app.py revisado e completo - EL POSTADOR
 from flask import Flask, render_template, redirect, url_for, request
-from models import db, login_manager, Plan, User
+from models import db, login_manager, Plan
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from routes.payments import payments_bp
@@ -11,9 +11,7 @@ from routes.admin import admin_bp
 from routes.teste import teste_bp
 from flask_login import login_required, current_user
 from flask_mail import Mail
-from flask_apscheduler import APScheduler
 import os
-from datetime import datetime
 from dotenv import load_dotenv
 
 # 1. Carrega variáveis de ambiente
@@ -42,7 +40,6 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
 db.init_app(app)
 login_manager.init_app(app)
 mail = Mail(app) # Agora o mail lerá as configurações acima corretamente
-scheduler = APScheduler()
 
 # --- REGISTRO DE BLUEPRINTS ---
 app.register_blueprint(auth_bp)
@@ -58,22 +55,6 @@ app.register_blueprint(teste_bp, url_prefix='/teste')
 def index():
     planos_db = Plan.query.order_by(Plan.id.asc()).all()
     return render_template('landing.html', planos=planos_db)
-
-# --- CONFIGURAÇÃO DO SCHEDULER (AUTOMAÇÃO) ---
-def job_automation():
-    with app.app_context():
-        # Aqui entra a lógica de verificação de posts agendados
-        pass
-
-if not scheduler.running:
-    scheduler.init_app(app)
-    scheduler.start()
-    try:
-        # Verifica a cada 60 segundos
-        scheduler.add_job(id='job_automation', func=job_automation, trigger='interval', minutes=5)
-        print(">>> [SISTEMA] EL Postador: Automação agendada (60s).")
-    except Exception as e:
-        print(f">>> [ERRO SCHEDULER] {e}")
 
 if __name__ == '__main__':
     with app.app_context():

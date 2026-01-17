@@ -7,6 +7,7 @@ import os
 from datetime import datetime, date
 from dotenv import load_dotenv
 from groq import Groq
+from bs4 import BeautifulSoup
 
 load_dotenv()
 model_name = os.environ.get("GROQ_MODEL_QUICK", "llama-3.3-70b-versatile")
@@ -255,9 +256,9 @@ def registrar_sucesso_post(idea, user, conteudo, wp_data):
 
 # --- 2. FLUXO PRINCIPAL (COORDENADOR) ---
 
-def publish_content_flow(idea, user):
+def publish_content_flow(idea, user_id):
     """Coordenador do fluxo: IA -> Imagem -> WordPress."""
-    if getattr(user, 'is_demo', False):
+    if getattr(user_id, 'is_demo', False):
         return True, "Modo Demo ativo."
 
     # PASSO 1: Geração de Texto
@@ -274,7 +275,7 @@ def publish_content_flow(idea, user):
         
         if response and response.status_code in [200, 201]:
             data = response.json()
-            registrar_sucesso_post(idea, user, conteudo_post, data)
+            registrar_sucesso_post(idea, user_id, conteudo_post, data)
             return True, "Post publicado com sucesso!"
         
         return False, f"O WordPress recusou a postagem (Status: {response.status_code if response else 'Timeout'})"
@@ -314,61 +315,59 @@ def generate_ideas_logic(blog):
         print(f"Erro ao gerar ideias: {e}")
         return 0
 
+import requests
+from bs4 import BeautifulSoup
+
 def analyze_spy_link(url, is_demo=False):
     """
-    Extrai o conteúdo de uma URL e usa IA para criar uma nova versão.
+    Analisa uma URL externa e retorna título e conteúdo extraído.
     """
-    if not url:
-        return None
-
-    # 1. Extrai o texto bruto da URL informada
-    # Certifique-se que o scraper_service está funcionando
-    texto_extraido = extrair_texto_da_url(url)
-    print(f"O texto extraido foi:\n{texto_extraido[:500]}...")
+    # 1. Inicializa a variável para evitar erro de referência local
+    soup = None 
     
-    if not texto_extraido:
-        print(f"!!! [SPY-WRITER] Falha ao extrair texto da URL: {url}")
+    try:
+        # Define um User-Agent para evitar ser bloqueado por sites
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status() # Lança erro para status 4xx ou 5xx
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+    except Exception as e:
+        print(f"Erro ao acessar a URL {url}: {e}")
         return None
 
-    # 2. Se for usuário demo, retorna um texto fixo para economizar tokens
-    if is_demo:
+    # 2. Verifica se o soup foi criado com sucesso antes de prosseguir
+    if not soup:
+        return None
+
+    try:
+        # 3. Extração segura de dados
+        # Tenta pegar o H1, se não houver, tenta o title da página
+        title_tag = soup.find('h1')
+        title = title_tag.get_text().strip() if title_tag else soup.title.string if soup.title else "Sem Título"
+
+        # Tenta extrair o corpo do texto (parágrafos)
+        paragraphs = soup.find_all('p')
+        content = "\n\n".join([p.get_text().strip() for p in paragraphs if len(p.get_text()) > 20])
+
+        if not content:
+            return None
+
+        # 4. Aqui você chamaria sua IA (Groq) para reescrever o texto extraído
+        # rephrased_content = call_groq_to_rewrite(title, content)
+        
         return {
-            'title': "Título Exemplo do Spy Writer (Modo Demo)",
-            'content': "Este é um conteúdo de exemplo gerado pelo modo espião. Na versão completa, a IA leria o site original e reescreveria o texto com SEO."
+            "title": title,
+            "content": content # ou rephrased_content após integrar a IA
         }
 
-    # 3. Usa a IA para processar o conteúdo
-    try:
-        prompt_sistema = "Você é um redator especialista em SEO e reescrita de artigos."
-        prompt_usuario = f"""
-        Analise o texto abaixo extraído de um site concorrente e crie um NOVO artigo baseado nele.
-        O novo artigo deve ter um título chamativo e um conteúdo rico em detalhes, formatado em HTML (apenas tags p, h2, h3, ul, li).
-        Não copie o texto original, crie uma versão única e melhorada.
-        
-        Texto original:
-        {texto_extraido[:4000]} 
-        
-        Responda EXATAMENTE neste formato:
-        TITULO: [O seu título aqui]
-        CONTEUDO: [O seu conteúdo em HTML aqui]
-        """
-        
-        resposta_ia = generate_text(prompt_usuario, system_prompt=prompt_sistema)
-        
-        if resposta_ia and "TITULO:" in resposta_ia and "CONTEUDO:" in resposta_ia:
-            partes = resposta_ia.split("CONTEUDO:")
-            titulo = partes[0].replace("TITULO:", "").strip()
-            conteudo = partes[1].strip()
-            
-            return {
-                'title': titulo,
-                'content': resposta_ia if resposta_ia else texto_extraido
-            }
-            
     except Exception as e:
-        print(f"!!! [SPY-WRITER] Erro ao processar IA: {e}")
-        
-    return None
+        print(f"Erro ao processar conteúdo do HTML: {e}")
+        return None
 
 def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     post_status = status if status else (blog.post_status or 'publish')
