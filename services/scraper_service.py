@@ -1,57 +1,62 @@
-# services/scraper_service.py
 import requests
 from bs4 import BeautifulSoup
 
 def extrair_texto_da_url(url):
     """
-    Extrai o conteúdo textual principal de uma URL, simulando um navegador real.
-    Retorna o texto limpo ou None se houver falha.
+    Extrai o conteúdo principal de uma URL simulando um navegador real.
     """
-    if not url:
-        return None
+    # Cabeçalhos para simular um navegador Chrome no Windows
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Referer': 'https://www.google.com/'
+    }
+
+    # No scraper_service.py, dentro da função extrair_texto_da_url
+
+    # 1. Tags para remover completamente
+    tags_para_remover = [
+        'script', 'style', 'nav', 'footer', 'header', 'aside', 
+        'form', 'iframe', 'noscript', 'svg', 'button'
+    ]
+    for element in soup(tags_para_remover):
+        element.decompose()
+
+    # 2. Remover classes e IDs comuns de publicidade e menus (Opcional, mas potente)
+    lixo_seletivo = [
+        'cookie', 'banner', 'ads', 'sidebar', 'social-share', 'menu'
+    ]
+    for tag in soup.find_all(True, {'class': True}):
+        if any(lixo in ' '.join(tag['class']).lower() for lixo in lixo_seletivo):
+            tag.decompose()
 
     try:
-        # Cabeçalhos robustos para simular um navegador real (evita erro 403)
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Referer': 'https://www.google.com/',
-            'DNT': '1'
-        }
+        # Timeout curto para não travar o sistema (15 segundos)
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status() # Levanta erro se for 403, 404, 500, etc.
         
-        session = requests.Session()
-        response = session.get(url, headers=headers, timeout=15)
+        # Define a codificação correta para evitar caracteres estranhos
+        response.encoding = response.apparent_encoding 
         
-        # Verifica se o request foi bem sucedido
-        response.raise_for_status()
-        
-        # Força o encoding correto se o site não informar
-        if response.encoding == 'ISO-8859-1':
-            response.encoding = response.apparent_encoding
-
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Limpeza de ruído (elementos que não são conteúdo)
-        for tag in ["script", "style", "nav", "footer", "header", "aside", "form", "ads", "iframe"]:
-            for element in soup.find_all(tag):
-                element.decompose()
 
-        # Focamos na parte central do conteúdo
-        # Muitas vezes os blogs usam a tag <article> ou <main>
-        corpo_artigo = soup.find('article') or soup.find('main') or soup.find('div', {'class': 'content'}) or soup
-        
-        # Pegamos parágrafos e títulos para manter a estrutura do texto
-        paragrafos = corpo_artigo.find_all(['p', 'h1', 'h2', 'h3'])
-        
-        # Filtramos textos muito curtos (que costumam ser legendas ou botões)
-        texto_limpo = "\n".join([p.get_text().strip() for p in paragrafos if len(p.get_text().strip()) > 30])
-        
-        return texto_limpo if texto_limpo else None
+        # Remove elementos irrelevantes para o post
+        for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'form']):
+            element.decompose()
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Erro de conexão ao acessar {url}: {e}")
-        return None
+        # Pega o texto limpo
+        texto = soup.get_text(separator=' ')
+        
+        # Limpeza de espaços excessivos
+        linhas = (line.strip() for line in texto.splitlines())
+        chunks = (phrase.strip() for line in linhas for phrase in line.split("  "))
+        texto_limpo = '\n'.join(chunk for chunk in chunks if chunk)
+
+        return texto_limpo[:10000] # Limite de segurança para a API de IA
+
     except Exception as e:
-        print(f"❌ Erro inesperado ao extrair texto: {e}")
+        print(f">>> [ERRO SCRAPER] Falha ao ler {url}: {str(e)}")
         return None

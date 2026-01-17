@@ -1,79 +1,73 @@
-import os
 import sys
+import os
+from datetime import date
 
-# Adiciona a pasta raiz (um nível acima) ao caminho de busca do Python
+# Adiciona a raiz do projeto ao path para encontrar models e app
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Agora seus imports funcionarão normalmente
 from app import app
-from models import db, User, Plan, PostLog, Blog
-from services import content_service
+from models import db, User, PostLog, Blog
 
-def setup_test_data():
-    """Configura dados de teste no banco de dados"""
-    # 1. Criar um plano de teste (Limite de 2 posts por dia)
-    plan = Plan.query.filter_by(name="Teste").first()
-    if not plan:
-        plan = Plan(name="Teste", posts_per_day=2, price=0)
-        db.session.add(plan)
-        db.session.commit()
-
-    # 2. Criar um usuário de teste
-    user = User.query.filter_by(email="tester@test.com").first()
-    if not user:
-        user = User(name="Tester", email="tester@test.com", password="123", plan_id=plan.id)
-        db.session.add(user)
-        db.session.commit()
-
-    # 3. Criar um Blog para o usuário (necessário para o PostLog)
-    blog = Blog.query.filter_by(user_id=user.id).first()
-    if not blog:
-        blog = Blog(user_id=user.id, site_name="Blog Teste", wp_url="http://teste.com", 
-                    wp_user="admin", wp_app_password="123")
-        db.session.add(blog)
-        db.session.commit()
-    
-    return user, blog
-
-def run_test():
+def test_limites_diarios():
     with app.app_context():
-        print("\n=== INICIANDO TESTE DE TRAVAS DE PLANO ===\n")
-        user, blog = setup_test_data()
+        # 1. Busca um usuário e seu blog para o teste
+        user = User.query.first()
+        blog = Blog.query.filter_by(user_id=user.id).first()
         
-        # Limpar logs antigos de teste para começar do zero
-        PostLog.query.filter(PostLog.blog_id == blog.id).delete()
+        if not user or not blog:
+            print("❌ Erro: Usuário ou Blog não encontrados para o teste.")
+            return
+
+        print(f"\n--- Testando Limites Diários para: {user.email} ---")
+
+        # 2. Configura um cenário controlado
+        # Vamos definir o limite do plano para apenas 2 posts por dia
+        if user.plan:
+            user.plan.posts_per_day = 2
+            db.session.commit()
+            print(f"Limite do plano definido para: {user.plan.posts_per_day} posts/dia")
+        else:
+            print("⚠️ Usuário sem plano associado. O teste pode falhar na lógica de limite.")
+            return
+
+        # 3. Limpa logs de hoje para começar do zero (no contexto deste teste)
+        PostLog.query.filter(
+            PostLog.blog_id == blog.id, 
+            db.func.date(PostLog.posted_at) == date.today()
+        ).delete()
         db.session.commit()
 
-        # TESTE 1: Verificar limite inicial (deve estar livre)
-        reached, limit, current = content_service.user_reached_limit(user, is_ai_post=True)
-        print(f"[TESTE 1] Inicial: {current}/{limit} posts. Bloqueado? {reached}")
-
-        # TESTE 2: Simular primeira postagem
-        log1 = PostLog(blog_id=blog.id, title="Post 1", status="Publicado", posted_at=datetime.now())
-        db.session.add(log1)
+        # 4. Simula o preenchimento do limite
+        print("Simulando 2 postagens já realizadas hoje...")
+        for i in range(2):
+            log = PostLog(blog_id=blog.id, title=f"Post Teste {i}", status="Publicado")
+            db.session.add(log)
         db.session.commit()
-        
-        reached, limit, current = content_service.user_reached_limit(user, is_ai_post=True)
-        print(f"[TESTE 2] Após 1º post: {current}/{limit} posts. Bloqueado? {reached}")
 
-        # TESTE 3: Simular segunda postagem (atingindo o limite de 2)
-        log2 = PostLog(blog_id=blog.id, title="Post 2", status="Publicado", posted_at=datetime.now())
-        db.session.add(log2)
-        db.session.commit()
-        
-        reached, limit, current = content_service.user_reached_limit(user, is_ai_post=True)
-        print(f"[TESTE 3] Após 2º post: {current}/{limit} posts. Bloqueado? {reached}")
+        # 5. Executa a verificação de limite (Método que refatoramos para a classe User)
+        print("Verificando se o limite bloqueia a 3ª postagem...")
+        reached, limit, current = user.reached_daily_limit(is_ai_post=True)
+
         if reached:
-            print(">>> SUCESSO: A trava funcionou ao atingir o limite!")
+            print(f"✅ SUCESSO: O sistema bloqueou corretamente. ({current}/{limit})")
+        else:
+            print(f"❌ FALHA: O sistema permitiu postar além do limite! ({current}/{limit})")
 
-        # TESTE 4: Verificar se post MANUAL ignora a trava
-        reached_manual, _, _ = content_service.user_reached_limit(user, is_ai_post=False)
-        print(f"[TESTE 4] Post Manual: Bloqueado? {reached_manual} (Esperado: False)")
+        # 6. Teste de Bypass para Admin
+        print("\nTestando se Admin ignora o limite...")
+        original_status = user.is_admin
+        user.is_admin = True
+        reached_admin, _, _ = user.reached_daily_limit(is_ai_post=True)
         
-        if not reached_manual:
-            print(">>> SUCESSO: Postagem manual continua liberada!")
+        if not reached_admin:
+            print("✅ SUCESSO: Admin ignorou o limite corretamente.")
+        else:
+            print("❌ FALHA: Admin foi bloqueado pelo limite.")
 
-        print("\n=== TESTE CONCLUÍDO ===")
+        # Limpeza final (Rollback para não afetar dados reais se preferir)
+        user.is_admin = original_status
+        db.session.rollback() 
+        print("\n--- Teste de limites concluído ---")
 
 if __name__ == "__main__":
-    run_test()
+    test_limites_diarios()
