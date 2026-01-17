@@ -160,7 +160,6 @@ class Blog(db.Model):
     posts_per_day = db.Column(db.Integer, default=1)      # Adicionado
     schedule_time = db.Column(db.String(10), default='09:00') # Adicionado
     default_category = db.Column(db.String(100), nullable=True) # Adicionado
-    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relacionamentos

@@ -426,3 +426,40 @@ def _send_to_wp(blog, titulo, conteudo, id_img, status=None):
     except Exception as e:
         print(f"Erro na requisição WP: {e}")
         return None
+    
+def check_and_enqueue_auto_posts():
+    """
+    Varre todos os blogs e move ideias de 'draft' para 'pending' 
+    conforme o cronograma de cada usuário.
+    """
+    with app.app_context():
+        hoje = date.today()
+        agora_hora = datetime.now().strftime("%H:%M")
+        
+        blogs = Blog.query.all()
+        for blog in blogs:
+            # 1. Verifica se é o horário de postagem (ou se já passou e não postou hoje)
+            # Simplificação: Se o horário atual for igual ou maior que o agendado
+            if agora_hora >= blog.schedule_time:
+                
+                # 2. Verifica quantos posts já foram feitos/agendados hoje para este blog
+                posts_hoje = ContentIdea.query.filter(
+                    ContentIdea.blog_id == blog.id,
+                    db.func.date(ContentIdea.created_at) == hoje,
+                    ContentIdea.status.in_(['pending', 'completed'])
+                ).count()
+
+                if posts_hoje < blog.posts_per_day:
+                    # 3. Busca a próxima ideia na fila de rascunhos
+                    proxima_ideia = ContentIdea.query.filter_by(
+                        blog_id=blog.id, 
+                        status='draft',
+                        is_posted=False
+                    ).order_by(ContentIdea.created_at.asc()).first()
+
+                    if proxima_ideia:
+                        print(f"🤖 Automação: Movendo '{proxima_ideia.title}' para a fila (Blog: {blog.site_name})")
+                        proxima_ideia.status = 'pending'
+                        # Atualiza a data de criação para 'hoje' para o controle de limite diário
+                        proxima_ideia.created_at = datetime.now() 
+                        db.session.commit()

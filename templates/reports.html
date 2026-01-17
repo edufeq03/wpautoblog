@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Relatórios de Automação - WP AutoBlog{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+    <div>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Relatórios de Automação</h2>
+        <p class="text-slate-500 text-sm">Acompanhe cada ação realizada pela IA nos seus sites.</p>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-[32px] overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100">
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data/Hora</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Site</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Título do Post</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Resultado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for log in reports %}
+                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-bold text-slate-500">{{ log.created_at.strftime('%d/%m/%Y') }}</span>
+                            <div class="text-[10px] text-slate-400">{{ log.created_at.strftime('%H:%M:%S') }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fab fa-wordpress text-slate-300"></i>
+                                <span class="text-xs font-bold text-slate-700">{{ log.blog.site_name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-xs font-medium text-slate-600 truncate max-w-xs">{{ log.title }}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if log.status == 'success' %}
+                                <span class="bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">Sucesso</span>
+                            {% else %}
+                                <span class="bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">Falha</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if log.status == 'success' %}
+                                <span class="text-[10px] text-slate-400 italic">Enviado para o WordPress</span>
+                            {% else %}
+                                <span class="text-[10px] text-red-400 font-bold" title="{{ log.message }}">Ver detalhes do erro</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="fas fa-history text-slate-200 text-4xl mb-2"></i>
+                                <p class="text-slate-400 text-sm font-medium">Nenhuma atividade registrada ainda.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
