@@ -220,3 +220,31 @@ def published():
         .order_by(ContentIdea.created_at.desc()).all()
     
     return render_template('ideas/published.html', posts=posts)
+
+# --- AÇÕES DA FILA ---
+
+@content_bp.route('/cancel-queue-item/<int:idea_id>', methods=['POST'])
+@login_required
+def cancel_queue_item(idea_id):
+    """ Tira o item da fila e volta para o Banco de Ideias (Draft) """
+    idea = ContentIdea.query.get_or_404(idea_id)
+    idea.status = 'draft'
+    db.session.commit()
+    flash(f"Agendamento de '{idea.title}' cancelado. Ele voltou para o Banco de Ideias.", "info")
+    return redirect(url_for('content.queue'))
+
+@content_bp.route('/clear-queue', methods=['POST'])
+@login_required
+def clear_queue():
+    """ Remove TODOS os itens que estão pendentes na fila do usuário """
+    pending_items = ContentIdea.query.filter_by(status='pending')\
+        .join(Blog).filter(Blog.user_id == current_user.id).all()
+    
+    count = 0
+    for item in pending_items:
+        item.status = 'draft'
+        count += 1
+    
+    db.session.commit()
+    flash(f"Fila limpa! {count} itens voltaram para o Banco de Ideias.", "success")
+    return redirect(url_for('content.queue'))
