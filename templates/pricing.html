@@ -8,34 +8,49 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        {% for plano in planos %}
-            <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg relative flex flex-col h-full {% if plano.nome == 'VIP' %}border-2 border-blue-500 transform lg:scale-105{% endif %}">
-                {% if plano.name == 'VIP' %}
-                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-md">Mais Popular</div>
+        {% for plano in planos %} 
+            
+            <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-xl relative flex flex-col h-full 
+                {% if plano.name == 'Pro' %} ring-2 ring-blue-500 transform lg:scale-105 z-10 {% endif %}">
+                
+                {% if plano.name == 'Pro' %}
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                    MELHOR CUSTO-BENEFÍCIO
+                </div>
                 {% endif %}
-                <h3 class="text-xl font-bold mb-2 {% if plano.name == 'VIP' %}text-blue-600{% else %}text-gray-700{% endif %}">Plano {{ plano.name }}</h3>
-                <div class="text-4xl font-black mb-6">R$ {{ plano.price }}<span class="text-lg text-gray-400 font-normal">/mês</span></div>
-                <ul class="space-y-4 mb-8 text-sm text-gray-600 flex-grow">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.max_sites }} Sites WordPress</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.posts_per_day }} Postagens por dia</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> {{ plano.credits_monthly }} Créditos Mensais</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> Redator Espião Liberado</li>
-                    {% if plano.has_images %}
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> Geração de Imagens por IA</li>
+
+                <h3 class="text-xl font-black text-slate-800 mb-1">Plano {{ plano.name }}</h3>
+                
+                <div class="mb-6">
+                    {% if plano.name == 'VIP' %}
+                        <span class="text-3xl font-black text-slate-900">Sob Medida</span>
+                    {% else %}
+                        <span class="text-4xl font-black text-slate-900">R$ {{ "%.2f"|format(plano.price) }}</span>
+                        <span class="text-slate-400 text-sm font-bold">/mês</span>
                     {% endif %}
+                </div>
+
+                <ul class="space-y-4 mb-10 text-sm text-slate-600 flex-grow font-medium">
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.max_sites }} Site(s)</li>
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.posts_per_day }} Posts/dia</li>
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.credits_monthly }} Créditos</li>
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.ia_principal }} Créditos</li>
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.permite_img }} Créditos</li>
+                    <li><i class="fas fa-check-circle text-blue-500 mr-2"></i> {{ plano.support_type }} Créditos</li>
                 </ul>
 
-                {# Ajustado para usar o ID do plano como referência para o checkout #}
-                <a href="{{ url_for('payments.checkout', plano_id=plano.id) }}" 
-                   class="block text-center w-full py-3 {% if plano.name == 'VIP' %}bg-blue-600 hover:bg-blue-700{% else %}bg-slate-800 hover:bg-slate-900{% endif %} text-white rounded-xl font-bold transition-all shadow-lg">
-                    Assinar Agora
-                </a>
+                {% if plano.name == 'VIP' %}
+                    <a href="https://wa.me/5519981119287" class="block text-center w-full py-4 bg-purple-600 text-white rounded-2xl font-black">
+                        FALAR COM ESPECIALISTA
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('payments.checkout', plan_id=plano.id) }}" class="block text-center w-full py-4 bg-slate-800 text-white rounded-2xl font-black">
+                        ASSINAR AGORA
+                    </a>
+                {% endif %}
             </div>
-        {% endfor %}
-    </div>
 
-    <div class="mt-16 text-center text-gray-400 text-sm">
-        <p><i class="fas fa-shield-alt mr-2"></i> Pagamento seguro via Stripe ou Mercado Pago.</p>
+        {% endfor %} 
     </div>
 </div>
 {% endblock %}

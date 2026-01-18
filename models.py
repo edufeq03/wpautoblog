@@ -140,6 +140,11 @@ class Plan(db.Model):
     has_radar = db.Column(db.Boolean, default=False)
     has_spy = db.Column(db.Boolean, default=False)
     has_images = db.Column(db.Boolean, default=False)
+    # NOVAS COLUNAS
+    ia_principal = db.Column(db.String(100), default="Llama 3 (Quick)")
+    permite_img = db.Column(db.String(50), default="Não") # "Sim" ou "Não" para o texto do card
+    support_type = db.Column(db.String(100), default="Comunidade") # "Comunidade", "WhatsApp", etc.
+    is_public = db.Column(db.Boolean, default=True) # Para esconder o VIP se quiser
     users = db.relationship('User', back_populates='plan')
 
 class Blog(db.Model):
