@@ -23,37 +23,55 @@
                     <p class="text-4xl font-black text-blue-700 mt-4">R$ {{ plan.price }}</p>
                     
                     <form action="{{ url_for('admin.edit_plan', id=plan.id) }}" method="POST" class="mt-8 space-y-5">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-800 mb-1">Posts p/ Dia</label>
-                            <input type="number" name="posts_per_day" value="{{ plan.posts_per_day }}" 
-                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-slate-800 mb-1">Máximo de Sites</label>
-                            <input type="number" name="max_sites" value="{{ plan.max_sites }}" 
-                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-slate-800 mb-1">Preço (Valor Real)</label>
-                            <input type="text" name="price" value="{{ plan.price }}" 
-                                   class="w-full border-2 border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                        </div>
-
-                        <div class="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-slate-300 shadow-sm">
-                            <div class="relative inline-block w-10 h-6 transition duration-200 ease-in-out">
-                                <input type="checkbox" name="has_images" id="has_images_{{ plan.id }}" 
-                                       {% if plan.has_images %}checked{% endif %}
-                                       class="w-5 h-5 text-blue-600 rounded border-slate-400 focus:ring-blue-500 cursor-pointer">
+    
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Preço (R$)</label>
+                                <input type="number" step="0.01" name="price" value="{{ plan.price }}" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
                             </div>
-                            <label for="has_images_{{ plan.id }}" class="text-sm font-black text-slate-800 cursor-pointer">
-                                Gerar Imagens com IA (DALL-E)
-                            </label>
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Sites</label>
+                                <input type="number" name="max_sites" value="{{ plan.max_sites }}" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
+                            </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-black transition-all shadow-md mt-4 uppercase tracking-widest text-sm">
-                            Atualizar Plano
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Posts/Dia</label>
+                                <input type="number" name="posts_per_day" value="{{ plan.posts_per_day }}" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Créditos/Mês</label>
+                                <input type="number" name="credits_monthly" value="{{ plan.credits_monthly }}" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">IA Principal (Texto do Card)</label>
+                            <input type="text" name="ia_principal" value="{{ plan.ia_principal }}" placeholder="Ex: GPT-4o ou Llama 3" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Tipo de Suporte</label>
+                            <input type="text" name="support_type" value="{{ plan.support_type }}" placeholder="Ex: WhatsApp ou Email" class="w-full border-2 border-slate-300 rounded-lg p-2 bg-white font-bold">
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-3 bg-white rounded-xl border-2 border-slate-300">
+                                <input type="checkbox" name="permite_img" id="img_{{ plan.id }}" {% if plan.permite_img == 'Sim' %}checked{% endif %} class="w-5 h-5 text-blue-600 rounded">
+                                <label for="img_{{ plan.id }}" class="text-xs font-black text-slate-800 cursor-pointer uppercase">Liberar Imagens IA</label>
+                            </div>
+
+                            <div class="flex items-center gap-3 p-3 bg-white rounded-xl border-2 border-slate-300">
+                                <input type="checkbox" name="is_public" id="pub_{{ plan.id }}" {% if plan.is_public %}checked{% endif %} class="w-5 h-5 text-green-600 rounded">
+                                <label for="pub_{{ plan.id }}" class="text-xs font-black text-slate-800 cursor-pointer uppercase">Visível no Site</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-black transition-all shadow-md mt-4 uppercase tracking-widest text-xs">
+                            Salvar Alterações
                         </button>
                     </form>
                 </div>
