@@ -10,9 +10,7 @@ from models import db, User, Plan
 from services.credit_service import adicionar_creditos 
 
 payments_bp = Blueprint('payments', __name__)
-
 load_dotenv()
-
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 def send_welcome_email(user_email, plan_name):
@@ -51,28 +49,26 @@ def send_welcome_email(user_email, plan_name):
 def checkout(plan_id):
     plan = Plan.query.get_or_404(plan_id)
     
-    stripe_price_id = ""
-    if plan.name == 'Lite':
-        stripe_price_id = os.getenv('STRIPE_PRICE_ID_LITE')
-    elif plan.name == 'Pro':
-        stripe_price_id = os.getenv('STRIPE_PRICE_ID_PRO')
-    elif plan.name == 'VIP':
-        stripe_price_id = os.getenv('STRIPE_PRICE_ID_VIP')
+    # Mapeamento dinâmico dos IDs do Stripe vindo do .env
+    price_map = {
+        'Lite': os.getenv('STRIPE_PRICE_ID_LITE'),
+        'Pro': os.getenv('STRIPE_PRICE_ID_PRO'),
+        'VIP': os.getenv('STRIPE_PRICE_ID_VIP')
+    }
+    
+    stripe_price_id = price_map.get(plan.name)
 
     if not stripe_price_id:
-        return f"Erro: Preço para o plano '{plan.name}' não configurado no .env", 400
+        flash("Este plano não está disponível para assinatura online.", "warning")
+        return redirect(url_for('dashboard.pricing'))
 
     try:
         checkout_session = stripe.checkout.Session.create(
-            customer_email=current_user.email,
             payment_method_types=['card'],
-            line_items=[{
-                'price': stripe_price_id,
-                'quantity': 1,
-            }],
+            line_items=[{'price': stripe_price_id, 'quantity': 1}],
             mode='subscription',
             success_url=url_for('payments.success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('index', _external=True),
+            cancel_url=url_for('dashboard.pricing', _external=True),
             metadata={
                 'user_id': current_user.id,
                 'plan_id': plan.id
@@ -80,8 +76,9 @@ def checkout(plan_id):
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
-        print(f"Erro Stripe: {str(e)}")
-        return f"Erro ao criar sessão: {str(e)}", 400
+        print(f"Erro Stripe: {e}")
+        flash("Erro ao conectar com o meio de pagamento.", "danger")
+        return redirect(url_for('dashboard.pricing'))
     
 @payments_bp.route('/success')
 @login_required
@@ -89,9 +86,9 @@ def success():
     return render_template('payments/success.html')
 
 @payments_bp.route('/webhook', methods=['POST'])
-def stripe_webhook():
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
+def webhook():
+    payload = request.get_data()
+    sig_header = request.environ.get('HTTP_STRIPE_SIGNATURE')
     endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
     try:
@@ -101,32 +98,30 @@ def stripe_webhook():
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        
         user_id = session['metadata'].get('user_id')
         plan_id = session['metadata'].get('plan_id')
 
         if user_id and plan_id:
-            user = User.query.get(user_id)
-            plan = Plan.query.get(plan_id)
-            if user and plan:
-                # 1. Atualiza o plano do usuário
-                user.plan_id = plan.id
-                db.session.commit()
-                print(f">>> [STRIPE] Plano {plan.name} liberado para {user.email}")
-                
-                # 2. Adiciona créditos baseados no plano usando o credit_service
-                creditos_por_plano = {
-                    'Lite': 10,
-                    'Pro': 100,
-                    'VIP': 500
-                }
-                quantidade = creditos_por_plano.get(plan.name, 0)
-                
-                if quantidade > 0:
-                    # Chamando a função de serviço para somar créditos com segurança
-                    adicionar_creditos(user.id, quantidade) 
-                
-                # 3. Envia o e-mail de boas-vindas
-                send_welcome_email(user.email, plan.name)
-
+            with current_app.app_context():
+                user = User.query.get(user_id)
+                plan = Plan.query.get(plan_id)
+                if user and plan:
+                    user.plan_id = plan.id
+                    # Adiciona os créditos definidos no banco para este plano
+                    adicionar_creditos(user.id, plan.credits_monthly)
+                    db.session.commit()
+                    send_payment_confirmation_email(user.email, plan.name)
+    
     return jsonify({'status': 'success'}), 200
+
+def send_payment_confirmation_email(user_email, plan_name):
+    mail = current_app.extensions.get('mail')
+    if not mail: return
+    
+    msg = Message(f'Pagamento Confirmado! 🚀 Plano {plan_name} Ativo',
+                  recipients=[user_email])
+    msg.body = f"Seu plano {plan_name} foi ativado com sucesso. Aproveite as automações!"
+    try:
+        mail.send(msg)
+    except Exception as e:
+        print(f"Erro email: {e}")

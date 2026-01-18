@@ -8,6 +8,9 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    # 1. Captura o plan_id da URL (GET)
+    plan_id_url = request.args.get('plan_id', type=int)
+
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.dashboard_view'))
         
@@ -16,62 +19,63 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         
+        # 2. Prioriza o ID que veio do formulário (POST)
+        # Se não houver no formulário, usa o da URL, se não houver, usa o padrão 1 (Starter)
+        chosen_plan_id = request.form.get('chosen_plan_id', type=int) or plan_id_url or 1
+        
         if User.query.filter_by(email=email).first():
             flash('E-mail já cadastrado.', 'error')
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('auth.register', plan_id=chosen_plan_id))
             
-        free_plan = Plan.query.filter_by(name='Free').first()
+        # Criação do usuário
         new_user = User(
             name=name,
             email=email, 
             password=generate_password_hash(password, method='scrypt'),
-            plan_id=free_plan.id if free_plan else None,
-            credits=5
-            )
-        db.session.add(new_user)
-        db.session.commit()
-
-        # --- ADICIONE ISSO AQUI ---
-        try:
-            send_welcome_email(new_user)
-        except Exception as e:
-            print(f"Erro ao enviar email: {e}") 
-            # Não bloqueamos o registro se o email falhar
-        # --------------------------
+            plan_id=chosen_plan_id  # Aqui garantimos que o ID correto seja salvo
+        )
         
-        login_user(new_user)
-        return redirect(url_for('dashboard.dashboard_view'))
-    return render_template('register.html')
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            login_user(new_user)
+            
+            # Se for plano pago, redireciona para o checkout do Stripe
+            if chosen_plan_id != 1:
+                return redirect(url_for('payments.checkout', plan_id=chosen_plan_id))
+            
+            # Se for grátis, segue para o dashboard
+            send_welcome_email(new_user)
+            flash('Conta criada com sucesso!', 'success')
+            return redirect(url_for('dashboard.dashboard_view'))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro no registro: {e}")
+            flash('Erro ao criar conta. Tente novamente.', 'error')
+            return redirect(url_for('auth.register', plan_id=chosen_plan_id))
+
+    # No GET, passamos o plan_id para o template
+    return render_template('register.html', plan_id=plan_id_url or 1)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin.admin_dashboard'))
         return redirect(url_for('dashboard.dashboard_view'))
-
+        
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        remember = True if request.form.get('remember') else False # Captura o 'lembrar-me'
+        remember = True if request.form.get('remember') else False
         
         user = User.query.filter_by(email=email).first()
         
-        if user and check_password_hash(user.password, password):
-            login_user(user, remember=remember)
+        if not user or not check_password_hash(user.password, password):
+            flash('E-mail ou senha incorretos.', 'error')
+            return redirect(url_for('auth.login'))
             
-            # 1. Prioridade: Se o usuário tentou acessar uma página restrita antes (parâmetro next)
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
-                
-            # 2. Redirecionamento baseado no cargo (Admin vs Cliente)
-            if hasattr(user, 'is_admin') and user.is_admin:
-                return redirect(url_for('admin.admin_dashboard'))
-            
-            return redirect(url_for('dashboard.dashboard_view'))
-            
-        flash('Dados inválidos. Verifique seu e-mail e senha.', 'error')
+        login_user(user, remember=remember)
+        return redirect(url_for('dashboard.dashboard_view'))
         
     return render_template('login.html')
 

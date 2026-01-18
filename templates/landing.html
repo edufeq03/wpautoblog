@@ -333,7 +333,8 @@
                         FALAR COM ESPECIALISTA
                     </a>
                     {% else %}
-                    <a href="{{ url_for('auth.register') }}" class="block text-center w-full py-4 {% if plano.name == 'Pro' %} bg-blue-600 hover:bg-blue-700 {% else %} bg-slate-800 hover:bg-slate-900 {% endif %} text-white rounded-2xl font-black transition-all">
+                    <a href="{{ url_for('auth.register', plan_id=plano.id) }}" 
+                    class="block text-center w-full py-4 {% if plano.name == 'Pro' %} bg-blue-600 {% else %} bg-slate-800 {% endif %} text-white rounded-2xl font-black transition-all hover:-translate-y-1">
                         COMEÇAR AGORA
                     </a>
                     {% endif %}
