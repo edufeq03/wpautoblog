@@ -299,7 +299,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                 {% for plano in planos %}
                 {% if plano.is_public or plano.name == 'VIP' %}
-                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl relative flex flex-col h-full transition-all hover:shadow-2xl 
+                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl relative flex flex-col h-full transition-all hover:shadow-2xl transition-all duration-300 ease-out hover:-translate-y-3 hover:shadow-2xl hover:border-blue-200
                     {% if plano.name == 'Pro' %} ring-2 ring-blue-500 transform lg:scale-105 z-10 {% endif %}">
                     
                     {% if plano.name == 'Pro' %}
