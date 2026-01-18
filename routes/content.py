@@ -104,7 +104,7 @@ def manual_post():
             nova_ideia = ContentIdea(
                 blog_id=site_id,
                 title=title,
-                content_insight=content,
+                context_insight=content,
                 status='pending',
                 is_posted=False
             )
@@ -141,7 +141,7 @@ def spy_writer():
             nova_ideia = ContentIdea(
                 blog_id=site_id,
                 title=title,
-                content_insight=content,
+                context_insight=content,
                 status='pending'
             )
             db.session.add(nova_ideia)
