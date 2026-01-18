@@ -91,7 +91,7 @@ def processar_fila_de_postagem():
 schedule.every(30).seconds.do(processar_fila_de_postagem)
 
 # 2. Tenta agendar novos posts a cada 5 minutos (evita duplicatas no mesmo minuto)
-schedule.every(5).minutes.do(check_and_enqueue_auto_posts)
+schedule.every(2).minutes.do(check_and_enqueue_auto_posts)
 
 if __name__ == "__main__":
     logging.info("=== 🤖 SISTEMA DE AUTOMAÇÃO AUTOBLOG INICIADO ===")
