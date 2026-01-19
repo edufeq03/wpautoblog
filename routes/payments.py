@@ -110,18 +110,50 @@ def webhook():
                     # Adiciona os créditos definidos no banco para este plano
                     adicionar_creditos(user.id, plan.credits_monthly)
                     db.session.commit()
-                    send_payment_confirmation_email(user.email, plan.name)
+                    send_payment_confirmation_email(user.email, plan)
     
+    # EVENTO: ASSINATURA CANCELADA OU FALHA TOTAL (Inadimplência)
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        # Aqui você precisaria buscar o usuário pelo stripe_customer_id ou metadata
+        # E setar o plan_id = 1 (Free) de volta.
+        print("Assinatura cancelada pelo Stripe.")
+
     return jsonify({'status': 'success'}), 200
 
-def send_payment_confirmation_email(user_email, plan_name):
+def send_payment_confirmation_email(user_email, plan):
     mail = current_app.extensions.get('mail')
     if not mail: return
     
-    msg = Message(f'Pagamento Confirmado! 🚀 Plano {plan_name} Ativo',
+    msg = Message(f'¡Pago Confirmado! 🚀 Plano {plan.name} Ativo',
+                  sender=current_app.config.get('MAIL_DEFAULT_SENDER'),
                   recipients=[user_email])
-    msg.body = f"Seu plano {plan_name} foi ativado com sucesso. Aproveite as automações!"
+    
+    # Geramos o link para o dashboard
+    dashboard_url = url_for('dashboard.dashboard_view', _external=True)
+    
     try:
+        # Enviando as variáveis para o HTML do e-mail
+        msg.html = render_template('emails/payment_confirmed.html', 
+                                   plan_name=plan.name, 
+                                   credits=plan.credits_monthly,
+                                   dashboard_url=dashboard_url)
         mail.send(msg)
+        print(f"✅ E-mail de confirmação enviado para {user_email}")
     except Exception as e:
-        print(f"Erro email: {e}")
+        print(f"❌ Erro ao enviar e-mail de confirmação: {e}")
+
+@payments_bp.route('/test/email-confirmation')
+@login_required
+def preview_email_confirmation():
+    # Simula um plano para o template
+    plan = Plan.query.first() or type('Obj', (object,), {'name': 'Pro', 'credits_monthly': 100})
+    return render_template('emails/payment_confirmed.html', 
+                           plan_name=plan.name, 
+                           credits=plan.credits_monthly,
+                           dashboard_url="#")
+
+@payments_bp.route('/test/success-page')
+@login_required
+def preview_success_page():
+    return render_template('payments/success.html')

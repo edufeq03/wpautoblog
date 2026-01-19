@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento Confirmado - EL Postador</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
+{% extends "base.html" %}
+
+{% block content %}
 <body class="bg-slate-50 flex items-center justify-center min-h-screen">
     <div class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl text-center border border-slate-100">
         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 text-3xl">
@@ -14,11 +8,14 @@
         </div>
         <h1 class="text-3xl font-black text-slate-900 mb-4">¡Pago Confirmado!</h1>
         <p class="text-slate-500 mb-10 leading-relaxed">
-            Obrigado por assinar o <strong>EL Postador</strong>. Seu acesso está sendo liberado e seus créditos serão atualizados em instantes.
+            Obrigado por assinar <strong>EL Postador</strong>. Seu acesso está sendo liberado e seus créditos serão atualizados em instantes. 
+            <br><br>
+            <em>Prepare-se para ver seu conteúdo escalando!</em>
         </p>
-        <a href="{{ url_for('dashboard.dashboard_view') }}" class="block w-full py-4 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
+        <a href="{{ url_for('dashboard.dashboard_view') }}" 
+           class="block w-full py-4 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
             Ir para o Painel
         </a>
     </div>
 </body>
-</html>
+{% endblock %}
