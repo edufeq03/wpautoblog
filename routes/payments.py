@@ -2,7 +2,7 @@
 import os
 import stripe
 from dotenv import load_dotenv
-from flask import Blueprint, redirect, url_for, request, render_template, jsonify, current_app
+from flask import Blueprint, redirect, url_for, request, render_template, jsonify, current_app, flash
 from flask_login import login_required, current_user
 from flask_mail import Message
 from models import db, User, Plan
